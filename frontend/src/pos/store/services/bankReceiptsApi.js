@@ -1,0 +1,124 @@
+import { api } from '../api';
+
+export const bankReceiptsApi = api.injectEndpoints({
+  endpoints: (builder) => ({
+    getBankReceiptById: builder.query({
+      query: (id) => ({
+        url: `bank-receipts/${id}`,
+        method: 'get',
+      }),
+      providesTags: (_result, _error, id) => [{ type: 'BankReceipts', id }],
+    }),
+    getBankReceipts: builder.query({
+      query: (params) => ({
+        url: 'bank-receipts',
+        method: 'get',
+        params,
+      }),
+      providesTags: (result) =>
+        result?.data?.receipts
+          ? [
+            ...result.data.receipts.map(({ _id, id }) => ({
+              type: 'BankReceipts',
+              id: _id || id,
+            })),
+            { type: 'BankReceipts', id: 'LIST' },
+          ]
+          : [{ type: 'BankReceipts', id: 'LIST' }],
+    }),
+    createBankReceipt: builder.mutation({
+      query: (data) => ({
+        url: 'bank-receipts',
+        method: 'post',
+        data,
+      }),
+      invalidatesTags: [
+        { type: 'BankReceipts', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'Accounting', id: 'TRIAL_BALANCE' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+        { type: 'Banks', id: 'LIST' },
+        { type: 'Reports', id: 'PL_STATEMENTS_SUMMARY' },
+        { type: 'Reports', id: 'PARTY_BALANCE' },
+        { type: 'Reports', id: 'BANK_CASH_SUMMARY' },
+        { type: 'Reports', id: 'SUMMARY_CARDS' },
+        { type: 'Reports', id: 'FINANCIAL_REPORT' },
+        { type: 'Reports', id: 'DASHBOARD_RANGE_SUMMARY' },
+      ],
+    }),
+    updateBankReceipt: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `bank-receipts/${id}`,
+        method: 'put',
+        data,
+      }),
+      invalidatesTags: (_r, _e, { id }) => [
+        { type: 'BankReceipts', id },
+        { type: 'BankReceipts', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'Accounting', id: 'TRIAL_BALANCE' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+        { type: 'Banks', id: 'LIST' },
+        { type: 'Reports', id: 'PL_STATEMENTS_SUMMARY' },
+        { type: 'Reports', id: 'PARTY_BALANCE' },
+        { type: 'Reports', id: 'BANK_CASH_SUMMARY' },
+        { type: 'Reports', id: 'SUMMARY_CARDS' },
+        { type: 'Reports', id: 'FINANCIAL_REPORT' },
+        { type: 'Reports', id: 'DASHBOARD_RANGE_SUMMARY' },
+      ],
+    }),
+    deleteBankReceipt: builder.mutation({
+      query: (id) => ({
+        url: `bank-receipts/${id}`,
+        method: 'delete',
+      }),
+      invalidatesTags: (_r, _e, id) => [
+        { type: 'BankReceipts', id },
+        { type: 'BankReceipts', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'Accounting', id: 'TRIAL_BALANCE' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+        { type: 'Banks', id: 'LIST' },
+        { type: 'Reports', id: 'PL_STATEMENTS_SUMMARY' },
+        { type: 'Reports', id: 'PARTY_BALANCE' },
+        { type: 'Reports', id: 'BANK_CASH_SUMMARY' },
+        { type: 'Reports', id: 'SUMMARY_CARDS' },
+        { type: 'Reports', id: 'FINANCIAL_REPORT' },
+        { type: 'Reports', id: 'DASHBOARD_RANGE_SUMMARY' },
+      ],
+    }),
+  }),
+  overrideExisting: false,
+});
+
+export const {
+  useGetBankReceiptsQuery,
+  useLazyGetBankReceiptsQuery,
+  useGetBankReceiptByIdQuery,
+  useLazyGetBankReceiptByIdQuery,
+  useCreateBankReceiptMutation,
+  useUpdateBankReceiptMutation,
+  useDeleteBankReceiptMutation,
+} = bankReceiptsApi;
+

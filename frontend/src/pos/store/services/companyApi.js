@@ -1,0 +1,42 @@
+import { api } from '../api';
+
+export const companyApi = api.injectEndpoints({
+  endpoints: (builder) => ({
+    fetchCompany: builder.query({
+      query: () => ({
+        url: 'company',
+        method: 'get',
+      }),
+      providesTags: [{ type: 'Company', id: 'SETTINGS' }],
+    }),
+    updateCompany: builder.mutation({
+      query: (body) => ({
+        url: 'company',
+        method: 'put',
+        data: body,
+      }),
+      invalidatesTags: [
+        { type: 'Company', id: 'SETTINGS' },
+        { type: 'Settings', id: 'COMPANY' },
+      ],
+    }),
+    uploadCompanyLogo: builder.mutation({
+      query: (formData) => ({
+        url: 'company/logo',
+        method: 'post',
+        data: formData,
+      }),
+      invalidatesTags: [
+        { type: 'Company', id: 'SETTINGS' },
+        { type: 'Settings', id: 'COMPANY' },
+      ],
+    }),
+  }),
+  overrideExisting: false,
+});
+
+export const {
+  useFetchCompanyQuery,
+  useUpdateCompanyMutation,
+  useUploadCompanyLogoMutation,
+} = companyApi;
