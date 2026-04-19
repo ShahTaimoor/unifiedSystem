@@ -5,7 +5,13 @@ export function loadCartState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { items: [] };
     const parsed = JSON.parse(raw);
-    return { items: Array.isArray(parsed.items) ? parsed.items : [] };
+    const items = Array.isArray(parsed.items) ? parsed.items : [];
+    // Ensure all products have _id for component compatibility
+    const normalizedItems = items.map(item => ({
+      ...item,
+      product: item.product ? { ...item.product, _id: item.product._id || item.product.id } : item.product
+    }));
+    return { items: normalizedItems };
   } catch {
     return { items: [] };
   }

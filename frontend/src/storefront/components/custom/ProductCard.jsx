@@ -132,14 +132,14 @@ const ProductCard = React.memo(({
 
   const handleQuantityChange = useCallback((value) => {
     if (value === '') {
-      onQuantityChange(product._id, '', product.stock);
+      onQuantityChange(product._id || product.id, '', product.stock);
       return;
     }
     const parsed = parseInt(value);
     if (!isNaN(parsed) && parsed >= 0) {
-      onQuantityChange(product._id, parsed, product.stock);
+      onQuantityChange(product._id || product.id, parsed, product.stock);
     }
-  }, [onQuantityChange, product._id, product.stock]);
+  }, [onQuantityChange, product._id, product.id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
     // Prevent default only if event is cancelable and not a touch event
@@ -157,7 +157,7 @@ const ProductCard = React.memo(({
     
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.max(currentQty - 1, 0);
-    onQuantityChange(product._id, newValue, product.stock);
+    onQuantityChange(product._id || product.id, newValue, product.stock);
     return false;
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
@@ -177,7 +177,7 @@ const ProductCard = React.memo(({
     
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.min(currentQty + 1, product.stock);
-    onQuantityChange(product._id, newValue, product.stock);
+    onQuantityChange(product._id || product.id, newValue, product.stock);
     return false;
   }, [quantity, onQuantityChange, product._id, product.stock]);
 

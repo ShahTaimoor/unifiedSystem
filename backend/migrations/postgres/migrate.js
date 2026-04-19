@@ -71,7 +71,10 @@ const MIGRATIONS = [
   '049_products_name_trgm.sql',
   '050_purchases_list_indexes.sql',
   '051_purchases_payment_status_index.sql',
-  '052_sales_cash_dashboard_partial_indexes.sql'
+  '052_sales_cash_dashboard_partial_indexes.sql',
+  '053_list_filters_composite_indexes.sql',
+  '054_add_city_to_customers.sql',
+  '055_sales_orders_created_by_nullable.sql',
 ];
 
 async function ensureMigrationsTable() {

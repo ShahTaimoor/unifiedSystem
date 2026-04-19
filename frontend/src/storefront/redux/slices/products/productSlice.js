@@ -104,7 +104,11 @@ export const productsSlice = createSlice({
             .addCase(fetchProducts.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 const { data, pagination } = action.payload || {};
-                state.products = data || [];
+                // Map id to _id for backward compatibility
+                state.products = (data || []).map(p => ({
+                    ...p,
+                    _id: p._id || p.id
+                }));
                 state.currentPage = pagination?.page || 1;
                 state.totalPages = pagination?.totalPages || 1;
                 state.totalItems = pagination?.total || 0;
@@ -119,7 +123,8 @@ export const productsSlice = createSlice({
             })
             .addCase(getSingleProduct.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.singleProducts = action.payload.product;
+                const product = action.payload.product;
+                state.singleProducts = product ? { ...product, _id: product._id || product.id } : null;
             })
             .addCase(getSingleProduct.rejected, (state, action) => {
                 state.status = 'failed';
@@ -132,7 +137,10 @@ export const productsSlice = createSlice({
             .addCase(searchProducts.fulfilled, (state, action) => {
                 state.searchStatus = 'succeeded';
                 const { data, query, pagination } = action.payload || {};
-                state.searchResults = data || [];
+                state.searchResults = (data || []).map(p => ({
+                    ...p,
+                    _id: p._id || p.id
+                }));
                 state.searchQuery = query || '';
                 state.searchPagination = pagination || {
                     total: 0,

@@ -26,7 +26,7 @@ const loginUser = async (userData) => {
 };
 
 const updateProfile = async (data) => {
-  const response = await axiosInstance.put('/auth/profile', data, {
+  const response = await axiosInstance.put('/storefront/profile', data, {
     headers: { 'Content-Type': 'application/json' },
   });
   const u = response.data?.user ?? response.data;

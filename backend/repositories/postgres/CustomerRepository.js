@@ -173,6 +173,10 @@ class CustomerRepository {
       updates.push(`phone = $${paramCount++}`);
       params.push(customerData.phone);
     }
+    if (customerData.city !== undefined) {
+      updates.push(`city = $${paramCount++}`);
+      params.push(customerData.city);
+    }
     if (customerData.addresses !== undefined || customerData.address !== undefined) {
       const addressData = customerData.addresses || (customerData.address ? [customerData.address] : undefined);
       if (addressData !== undefined) {

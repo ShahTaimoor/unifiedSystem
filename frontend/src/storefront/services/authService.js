@@ -7,7 +7,7 @@ import reduxAuthService from '@/redux/slices/auth/authService';
 export const authService = {
   verifyToken: async () => {
     try {
-      const response = await axiosInstance.get('/auth/me', {
+      const response = await axiosInstance.get('/storefront/me', {
         withCredentials: true,
       });
       const u = response.data?.user;

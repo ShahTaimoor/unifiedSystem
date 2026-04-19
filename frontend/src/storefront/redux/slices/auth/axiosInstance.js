@@ -52,6 +52,7 @@ axiosInstance.interceptors.response.use(
       originalRequest?.method === 'post';
     const isStorefrontLoginRequest =
       url.includes('/storefront/login') && originalRequest?.method === 'post';
+    const isSignupRequest = url.includes('/signup') && originalRequest?.method === 'post';
     const isSessionProbe = url.includes('/auth/me') && originalRequest?.method === 'get';
 
     // POS backend uses HTTP-only cookie + JWT; no refresh endpoint — clear session on 401.

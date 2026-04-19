@@ -34,7 +34,8 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const prevIsValid = useRef(true);
   const updateTimeoutRef = useRef(null);
-  const { _id, title, stock } = product;
+  const { id, _id: mongoId, title, stock } = product;
+  const _id = mongoId || id;
   const image = product.image || product.picture?.secure_url;
   const isOutOfStock = product.isOutOfStock || stock <= 0;
   const availableStock = product.availableStock !== undefined ? product.availableStock : stock;
@@ -323,7 +324,7 @@ const CartDrawer = () => {
   // Memoized cart items to prevent unnecessary re-renders
   // Filter out items with null/deleted products
   const memoizedCartItems = useMemo(() => 
-    cartItems.filter((item) => item.product && item.product._id), 
+    cartItems.filter((item) => item.product && (item.product._id || item.product.id)), 
     [cartItems]
   );
 
@@ -364,7 +365,7 @@ const CartDrawer = () => {
             {memoizedCartItems.length > 0 ? (
               memoizedCartItems.map((item) => (
                 <CartProduct
-                  key={item.product._id}
+                  key={item.product._id || item.product.id}
                   product={item.product}
                   quantity={item.quantity}
                   onValidationChange={handleValidationChange}

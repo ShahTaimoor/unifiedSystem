@@ -29,10 +29,19 @@ const Checkout = ({ closeModal }) => {
   const { user, status } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    address: user?.address || '',
-    phone: user?.phone || '',
-    city: user?.city || '',
+    address: '',
+    phone: '',
+    city: '',
   });
+
+  // Helper to normalize data from objects to strings
+  const normalizeField = (val) => {
+    if (!val) return '';
+    if (typeof val === 'string') return val;
+    if (Array.isArray(val)) return normalizeField(val[0]);
+    if (typeof val === 'object') return val.name || val.address || val.city || val.value || JSON.stringify(val);
+    return String(val);
+  };
 
   const [showForm, setShowForm] = useState(!user?.address || !user?.phone || !user?.city);
   const [loading, setLoading] = useState(false);
@@ -43,11 +52,18 @@ const Checkout = ({ closeModal }) => {
   const toast = useToast();
 
   useEffect(() => {
-    setFormData({
-      address: user?.address || '',
-      phone: user?.phone || '',
-      city: user?.city || '',
-    });
+    if (user) {
+      setFormData({
+        address: normalizeField(user.address),
+        phone: normalizeField(user.phone),
+        city: normalizeField(user.city),
+      });
+      
+      // Auto-show form if fields are empty
+      if (!user.address || !user.phone || !user.city) {
+        setShowForm(true);
+      }
+    }
   }, [user]);
 
   const handleChange = (e) => {
@@ -67,11 +83,37 @@ const Checkout = ({ closeModal }) => {
 
   const handleCheckout = async () => {
     const { address, phone, city } = formData;
-    if (!address.trim() || !phone.trim() || !city.trim()) {
+
+    // Normalize and check
+    const normalizedAddress = normalizeField(address);
+    const normalizedPhone = normalizeField(phone);
+    const normalizedCity = normalizeField(city);
+
+    if (!normalizedAddress.trim() || !normalizedPhone.trim() || !normalizedCity.trim()) {
+      toast.error('Please provide complete shipping information');
+      setShowForm(true);
       return;
     }
 
-    const validCartItems = cartItems.filter((item) => item.product && item.product._id);
+    // Auto-save logic: if we are in form mode or user is missing info in DB
+    if (showForm || !user?.address || !user?.phone || !user?.city) {
+      try {
+        setLoading(true);
+        // Dispatch update and wait for it
+        await dispatch(updateProfile({
+          address: normalizedAddress,
+          phone: normalizedPhone,
+          city: normalizedCity
+        })).unwrap();
+        setShowForm(false);
+      } catch (err) {
+        toast.error('Could not save shipping info. Please try again.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    const validCartItems = cartItems.filter((item) => item.product && (item.product._id || item.product.id));
 
     if (validCartItems.length === 0) {
       toast.error('Your cart is empty');
@@ -84,37 +126,37 @@ const Checkout = ({ closeModal }) => {
     const totalPrice = validCartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
     const productArray = validCartItems.map((item) => ({
-      id: item.product._id || item.product,
+      id: item.product.id || item.product._id || item.product,
       quantity: item.quantity,
     }));
 
     try {
       setLoading(true);
       setError(null);
-      
+
       const stockCheckResult = await dispatch(checkStock(productArray)).unwrap();
-      
+
       if (!stockCheckResult.success || !stockCheckResult.isValid) {
         const errorMessages = [];
-        
+
         if (stockCheckResult.outOfStockItems && stockCheckResult.outOfStockItems.length > 0) {
           const outOfStockNames = stockCheckResult.outOfStockItems
             .map(item => item.productTitle || 'Product')
             .join(', ');
           errorMessages.push(`Out of stock: ${outOfStockNames}`);
         }
-        
+
         if (stockCheckResult.insufficientStockItems && stockCheckResult.insufficientStockItems.length > 0) {
           const insufficientMessages = stockCheckResult.insufficientStockItems.map(
             item => `"${item.productTitle}": Only ${item.availableStock} available`
           );
           errorMessages.push(...insufficientMessages);
         }
-        
-        const errorMsg = errorMessages.length > 0 
+
+        const errorMsg = errorMessages.length > 0
           ? errorMessages.join('. ')
           : 'Some products are no longer available in the requested quantities';
-        
+
         setError(errorMsg);
         toast.error(errorMsg);
         setLoading(false);
@@ -150,12 +192,12 @@ const Checkout = ({ closeModal }) => {
 
   const totalPrice = useMemo(() => {
     return cartItems
-      .filter((item) => item.product && item.product._id)
+      .filter((item) => item.product && (item.product._id || item.product.id))
       .reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   }, [cartItems]);
 
   const validCartItems = useMemo(() => {
-    return cartItems.filter((item) => item.product && item.product._id);
+    return cartItems.filter((item) => item.product && (item.product._id || item.product.id));
   }, [cartItems]);
 
   return (
@@ -240,7 +282,9 @@ const Checkout = ({ closeModal }) => {
                                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
                                   <MapPin className="w-3 h-3" /> City
                                 </span>
-                                <p className="text-sm font-medium text-gray-900 mt-1">{user.city}</p>
+                                <p className="text-sm font-medium text-gray-900 mt-1">
+                                  {typeof user.city === 'object' ? (user.city.name || user.city.city || JSON.stringify(user.city)) : user.city}
+                                </p>
                               </div>
                             )}
                           </div>
@@ -249,7 +293,9 @@ const Checkout = ({ closeModal }) => {
                               <span className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
                                 <Home className="w-3 h-3" /> Address
                               </span>
-                              <p className="text-sm font-medium text-gray-900 mt-1 break-words">{user.address}</p>
+                              <p className="text-sm font-medium text-gray-900 mt-1 break-words">
+                                {typeof user.address === 'object' ? (user.address.address || user.address[0] || JSON.stringify(user.address)) : user.address}
+                              </p>
                             </div>
                           )}
                         </div>
@@ -361,7 +407,7 @@ const Checkout = ({ closeModal }) => {
                     </div>
                     <h2 className="text-lg font-semibold text-gray-900">Order Summary</h2>
                   </div>
-                  
+
                   <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
                     {validCartItems.length > 0 ? (
                       validCartItems.map((item) => {
@@ -370,11 +416,10 @@ const Checkout = ({ closeModal }) => {
                         return (
                           <div
                             key={item.product._id}
-                            className={`flex gap-3 p-3 rounded-xl border transition-all ${
-                              isOutOfStock 
-                                ? 'bg-red-50/50 border-red-200/50' 
+                            className={`flex gap-3 p-3 rounded-xl border transition-all ${isOutOfStock
+                                ? 'bg-red-50/50 border-red-200/50'
                                 : 'bg-gray-50/50 border-gray-200/50 hover:bg-gray-100/50'
-                            }`}
+                              }`}
                           >
                             {image && (
                               <div className="flex-shrink-0">
@@ -388,9 +433,8 @@ const Checkout = ({ closeModal }) => {
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <h3 className={`text-sm font-medium line-clamp-2 mb-1 ${
-                                isOutOfStock ? 'text-gray-500' : 'text-gray-900'
-                              }`}>
+                              <h3 className={`text-sm font-medium line-clamp-2 mb-1 ${isOutOfStock ? 'text-gray-500' : 'text-gray-900'
+                                }`}>
                                 {item.product.title}
                               </h3>
                               <div className="flex items-center justify-between">
@@ -444,8 +488,8 @@ const Checkout = ({ closeModal }) => {
             </div>
             <Button
               onClick={handleCheckout}
-              disabled={loading || validCartItems.length === 0 || showForm}
-              className="w-full sm:w-auto min-w-[200px] bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-8 text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all touch-manipulation"
+              disabled={loading || validCartItems.length === 0}
+              className="w-full py-6 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center gap-3 border-0 group relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <OneLoader size="small" text="Processing..." showText={false} />

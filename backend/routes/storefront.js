@@ -25,11 +25,25 @@ const storefrontAuth = async (req, res, next) => {
   }
 };
 
+// Helper to flatten JSONB fields (address, city) to strings for the frontend
+const flattenField = (val) => {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val)) {
+    if (val.length === 0) return '';
+    return flattenField(val[0]);
+  }
+  if (typeof val === 'object') {
+    return val.name || val.address || val.city || val.value || JSON.stringify(val);
+  }
+  return String(val);
+};
+
 // @route   POST /api/storefront/login
 // @desc    Storefront customer login
 router.post('/login', async (req, res) => {
   try {
-    const { email, phone } = req.body;
+    const { email, phone, password } = req.body;
     let customer = null;
 
     if (email) {
@@ -45,9 +59,18 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Account not found. Please contact support.' });
     }
 
+    // Verify password (hardcoded per user request)
+    if (password !== 'admin123') {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
     const payload = {
       id: customer.id || customer._id,
       name: customer.business_name || customer.name || 'Storefront User',
+      email: customer.email,
+      phone: customer.phone,
+      address: flattenField(customer.address),
+      city: flattenField(customer.city),
       role: 'customer'
     };
 
@@ -137,6 +160,56 @@ router.get('/categories', async (req, res) => {
   }
 });
 
+// @route   POST /api/storefront/check-stock
+// @desc    Check stock availability for multiple products
+router.post('/check-stock', async (req, res) => {
+  try {
+    const { products } = req.body;
+    if (!products || !Array.isArray(products)) {
+      return res.status(400).json({ success: false, message: 'Products array is required' });
+    }
+
+    const results = await Promise.all(products.map(async (p) => {
+      const product = await productService.getProductById(p.id || p._id);
+      if (!product) {
+        return {
+          id: p.id || p._id,
+          success: false,
+          isValid: false,
+          productTitle: 'Unknown Product',
+          availableStock: 0
+        };
+      }
+
+      const availableStock = product.stock || 0;
+      const isValid = !product.isOutOfStock && availableStock >= p.quantity;
+
+      return {
+        id: product.id,
+        success: true,
+        isValid,
+        productTitle: product.title,
+        availableStock
+      };
+    }));
+
+    const isValid = results.every(r => r.isValid);
+    const outOfStockItems = results.filter(r => r.availableStock <= 0);
+    const insufficientStockItems = results.filter(r => r.availableStock > 0 && !r.isValid);
+
+    res.json({
+      success: true,
+      isValid,
+      outOfStockItems,
+      insufficientStockItems,
+      results
+    });
+  } catch (error) {
+    console.error('Storefront check stock error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // @route   GET /api/storefront/orders
 // @desc    Get customer orders
 router.get('/orders', storefrontAuth, async (req, res) => {
@@ -177,11 +250,13 @@ router.post('/orders', storefrontAuth, async (req, res) => {
       total,
       status: 'draft',
       notes: `Storefront order. Phone: ${phone}, Address: ${address}`,
-      soNumber: salesOrderRepository.generateSONumber()
+      soNumber: salesOrderRepository.generateSONumber(),
+      createdBy: null,
+      updatedBy: null,
     };
 
     const createdOrder = await salesOrderRepository.create(orderData);
-    res.status(201).json({ message: 'Order created', order: createdOrder });
+    res.status(201).json({ success: true, message: 'Order created', order: createdOrder });
   } catch (error) {
     console.error('Storefront create order error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -196,9 +271,42 @@ router.get('/me', storefrontAuth, (req, res) => {
     user: {
       id: req.customer.id || req.customer._id,
       name: req.customer.business_name || req.customer.name,
+      email: req.customer.email,
+      phone: req.customer.phone,
+      address: flattenField(req.customer.address),
+      city: flattenField(req.customer.city),
       role: 'customer'
     }
   });
+});
+
+// @route   PUT /api/storefront/profile
+// @desc    Update customer profile
+router.put('/profile', storefrontAuth, async (req, res) => {
+  try {
+    const { address, phone, city, email } = req.body;
+    const updatedCustomer = await customerRepository.update(req.customer.id, {
+      address,
+      phone,
+      city,
+      email
+    });
+    res.json({
+      success: true,
+      user: {
+        id: updatedCustomer.id || updatedCustomer._id,
+        name: updatedCustomer.business_name || updatedCustomer.name,
+        email: updatedCustomer.email,
+        phone: updatedCustomer.phone,
+        address: flattenField(updatedCustomer.address),
+        city: flattenField(updatedCustomer.city),
+        role: 'customer'
+      }
+    });
+  } catch (error) {
+    console.error('Storefront update profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 // @route   POST /api/storefront/logout
