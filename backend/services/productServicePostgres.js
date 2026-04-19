@@ -99,6 +99,7 @@ function toApiProduct(row, categoryMap = null) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     imageUrl: row.image_url || null,
+    image: row.image_url || null,
     // Storefront legacy aliases
     title: row.name,
     price: parseFloat(row.selling_price) || 0,
