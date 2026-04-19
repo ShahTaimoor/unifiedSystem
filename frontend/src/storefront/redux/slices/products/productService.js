@@ -1,6 +1,6 @@
 import axiosInstance from '../auth/axiosInstance';
 
-const allProduct = async (category = 'all', page = 1, limit = 2000, stockFilter = 'active', sortBy = 'az') => {
+const allProduct = async (category = 'all', page = 1, limit = 24, stockFilter = 'active', sortBy = 'az') => {
     try {
       const params = { page, limit };
       if (category && category !== 'all') {

@@ -389,9 +389,9 @@ router.get('/deleted', [
 // @access  Private
 router.get('/search/:query', auth, async (req, res) => {
   try {
-    const query = req.params.query;
-    const products = await productService.searchProducts(query, 10);
-    res.json({ products });
+    const queryParam = req.params.query;
+    const result = await productService.searchProducts(queryParam, 10);
+    res.json({ products: result.products });
   } catch (error) {
     console.error('Search products error:', error);
     res.status(500).json({ message: 'Server error' });

@@ -98,7 +98,11 @@ function toApiProduct(row, categoryMap = null) {
     updated_at: row.updated_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    imageUrl: row.image_url || null
+    imageUrl: row.image_url || null,
+    // Storefront legacy aliases
+    title: row.name,
+    price: parseFloat(row.selling_price) || 0,
+    stock: parseFloat(row.stock_quantity) || 0
   };
 }
 
@@ -213,7 +217,8 @@ class ProductServicePostgres {
               reservedStock: reserved,
               reorderPoint: reorder,
               minStock: reorder
-            }
+            },
+            stock: cur
           };
         }
         return p;
@@ -266,7 +271,8 @@ class ProductServicePostgres {
           reservedStock: reserved,
           reorderPoint: reorder,
           minStock: reorder
-        }
+        },
+        stock: cur
       };
     }
     const invMap = await productRepository.findInvestorsByProductIds([id]);
@@ -546,11 +552,16 @@ class ProductServicePostgres {
     return { message: 'Product deleted successfully' };
   }
 
-  async searchProducts(query, limit = 10) {
-    const rows = await productRepository.search(query, { limit });
+  async searchProducts(query, limit = 10, page = 1) {
+    const result = await productRepository.search(query, { limit, page });
+    const rows = result.products;
     const categoryIds = [...new Set(rows.map(p => p.category_id).filter(Boolean))];
     const categoryMap = await getCategoryMap(categoryIds);
-    return rows.map(p => toApiProduct(p, categoryMap));
+    const products = rows.map(p => toApiProduct(p, categoryMap));
+    return {
+      products,
+      pagination: result.pagination
+    };
   }
 
   async productExistsByName(name) {

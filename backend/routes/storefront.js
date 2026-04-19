@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const productService = require('../services/productServicePostgres');
 const salesOrderRepository = require('../repositories/postgres/SalesOrderRepository');
 const customerRepository = require('../repositories/postgres/CustomerRepository');
+const categoryRepository = require('../repositories/postgres/CategoryRepository');
 
 const router = express.Router();
 
@@ -73,7 +74,7 @@ router.get('/products', async (req, res) => {
   try {
     const queryParams = { ...req.query, status: 'active' };
     const result = await productService.getProducts(queryParams);
-    res.json(result);
+    res.json({ data: result.products, pagination: result.pagination });
   } catch (error) {
     console.error('Storefront get products error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -86,7 +87,7 @@ router.get('/products/:id', async (req, res) => {
   try {
     const product = await productService.getProductById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json({ data: product });
+    res.json({ product });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -96,8 +97,10 @@ router.get('/products/:id', async (req, res) => {
 router.get('/search', async (req, res) => {
   try {
     const query = req.query.q || '';
-    const products = await productService.searchProducts(query, 50);
-    res.json({ products });
+    const limit = parseInt(req.query.limit) || 24;
+    const page = parseInt(req.query.page) || 1;
+    const result = await productService.searchProducts(query, limit, page);
+    res.json({ data: result.products, pagination: result.pagination, query });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -108,9 +111,28 @@ router.get('/search-suggestions', async (req, res) => {
   try {
     const query = req.query.q || '';
     const limit = parseInt(req.query.limit) || 8;
-    const products = await productService.searchProducts(query, limit);
-    res.json({ suggestions: products });
+    const result = await productService.searchProducts(query, limit);
+    res.json({ data: { products: result.products }, query });
   } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/storefront/categories
+// @desc    Get all active categories
+router.get('/categories', async (req, res) => {
+  try {
+    const search = req.query.search || '';
+    const categories = await categoryRepository.findAll({ search, isActive: true });
+    const mappedCategories = categories.map(cat => ({
+      ...cat,
+      _id: cat.id,
+      slug: (cat.name || '').toLowerCase().trim().replace(/\s+/g, '-'),
+      isActive: cat.is_active
+    }));
+    res.json({ success: true, data: mappedCategories });
+  } catch (error) {
+    console.error('Storefront get categories error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -131,7 +153,7 @@ router.get('/orders', storefrontAuth, async (req, res) => {
 router.post('/orders', storefrontAuth, async (req, res) => {
   try {
     const { products, address, phone, amount } = req.body;
-    
+
     if (!products || !products.length) {
       return res.status(400).json({ message: 'Order must contain items' });
     }

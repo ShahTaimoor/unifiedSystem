@@ -313,8 +313,8 @@ class ProductRepository {
     return result.rows;
   }
 
-  async search(term, options = { limit: 50 }) {
-    return this.findAll({ search: term }, options);
+  async search(term, options = { limit: 50, page: 1 }) {
+    return this.findWithPagination({ search: term }, options);
   }
 
   async findWithPagination(filters = {}, options = {}) {
@@ -390,8 +390,10 @@ class ProductRepository {
       return {
         products: pageRows,
         pagination: {
-          current: null,
-          pages: null,
+          current: page, // For backward compatibility
+          page,          // Preferred key
+          pages: null,   // For backward compatibility
+          totalPages: null, // Preferred key
           total,
           limit,
           mode: 'keyset',
@@ -405,8 +407,10 @@ class ProductRepository {
     return {
       products,
       pagination: {
-        current: page,
-        pages: Math.ceil(total / limit) || 1,
+        current: page,    // For backward compatibility
+        page,             // Preferred key
+        pages: Math.ceil(total / limit) || 1,      // For backward compatibility
+        totalPages: Math.ceil(total / limit) || 1, // Preferred key
         total,
         limit,
         mode: 'offset',
