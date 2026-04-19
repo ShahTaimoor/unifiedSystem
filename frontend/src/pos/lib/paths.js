@@ -1,5 +1,5 @@
 /** Base path for POS admin when served from the unified Vite app */
-export const POS_BASE = '/pos';
+export const POS_BASE = '';
 
 /** Turn an app-internal path like `/dashboard` into `/pos/dashboard`. `/` maps to dashboard. */
 export function posPath(internalPath) {

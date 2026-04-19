@@ -12,7 +12,7 @@ export const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   if (isAuthenticated) {
-    return <Navigate to="/pos/dashboard" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const onSubmit = async (data) => {

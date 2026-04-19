@@ -16,7 +16,7 @@ export const useAuth = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, token, isAuthenticated, status, error } = useAppSelector((s) => s.auth);
-  const isLoginPage = location.pathname === '/pos/login' || location.pathname === '/login';
+  const isLoginPage = location.pathname === '/login' || location.pathname === '/pos/login';
 
   const {
     isLoading: currentUserLoading,
@@ -59,7 +59,7 @@ export const useAuth = () => {
     }
     dispatch(logoutAction());
     toast.success('Logged out successfully');
-    navigate('/pos/login', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   const updateUser = (userData) => {

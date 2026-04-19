@@ -1,8 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@source "./**/*.{js,jsx}";
+
+@theme {
+  --color-primary-50: color-mix(in srgb, var(--color-blue-500), white 90%);
+  --color-primary-100: color-mix(in srgb, var(--color-blue-500), white 80%);
+  --color-primary-500: var(--color-blue-500);
+  --color-primary-600: var(--color-blue-600);
+  --color-primary-700: var(--color-blue-700);
+  --color-primary-800: var(--color-blue-800);
+
+  --color-success-100: color-mix(in srgb, var(--color-green-500), white 80%);
+  --color-success-600: var(--color-green-600);
+  --color-success-700: var(--color-green-700);
+  --color-success-800: var(--color-green-800);
+
+  --color-danger-100: color-mix(in srgb, var(--color-red-500), white 80%);
+  --color-danger-600: var(--color-red-600);
+  --color-danger-700: var(--color-red-700);
+  --color-danger-800: var(--color-red-800);
+
+  --color-warning-100: color-mix(in srgb, var(--color-amber-500), white 80%);
+  --color-warning-800: var(--color-amber-800);
+
+  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+
 
 @layer base {
   * {

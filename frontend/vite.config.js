@@ -79,6 +79,17 @@ export default defineConfig({
         type: 'module',
       },
     }),
+    {
+      name: 'rewrite-pos',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url.startsWith('/pos') && !req.url.includes('.')) {
+            req.url = '/pos.html';
+          }
+          next();
+        });
+      },
+    },
   ],
   resolve: {
     alias: {
@@ -92,6 +103,12 @@ export default defineConfig({
     assetsDir: 'assets',
     manifest: true,
     sourcemap: false,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        pos: path.resolve(__dirname, 'pos.html'),
+      },
+    },
   },
   server: {
     port: 5173,
