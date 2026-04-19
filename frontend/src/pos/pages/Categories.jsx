@@ -292,6 +292,7 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
 
 export const Categories = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebouncedValue(searchTerm, 350);
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
