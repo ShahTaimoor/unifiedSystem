@@ -66,7 +66,7 @@ axiosInstance.interceptors.response.use(
         storeRef.dispatch(setTokenExpired());
       }
       try {
-        await axiosInstance.post('/auth/store/logout', null, { withCredentials: true });
+        await axiosInstance.post('/storefront/logout', null, { withCredentials: true });
       } catch {
         /* ignore */
       }

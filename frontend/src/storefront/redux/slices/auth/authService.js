@@ -68,7 +68,7 @@ const storefrontLogin = async (userData) => {
 };
 
 const getCurrentUser = async () => {
-  const response = await axiosInstance.get('/auth/me', {
+  const response = await axiosInstance.get('/storefront/me', {
     withCredentials: true,
   });
   const d = response.data;
@@ -77,7 +77,7 @@ const getCurrentUser = async () => {
 };
 
 const logout = async () => {
-  await axiosInstance.post('/auth/store/logout', null, {
+  await axiosInstance.post('/storefront/logout', null, {
     withCredentials: true,
     headers: { 'Content-Type': 'application/json' },
   });

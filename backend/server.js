@@ -145,6 +145,7 @@ app.use('/api/auth/users', require('./routes/users'));
 
 
 app.use('/api/products', require('./routes/products'));
+app.use('/api/storefront', require('./routes/storefront'));
 app.use('/api/product-variants', require('./routes/productVariants'));
 app.use('/api/product-transformations', require('./routes/productTransformations'));
 app.use('/api/customers', require('./routes/customers'));
