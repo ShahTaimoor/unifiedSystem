@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Calendar,
   Search,
@@ -52,7 +52,7 @@ import {
   OrderCheckoutActions,
 } from '../components/order/OrderCheckoutLayout';
 import { useGetCustomerQuery } from '../store/services/customersApi';
-import { useDebouncedCustomerSearch } from '@/hooks/useDebouncedCustomerSearch';
+import { useDebouncedCustomerSearch } from '../hooks/useDebouncedCustomerSearch';
 import { productsApi, useLazyGetLastPurchasePriceQuery } from '../store/services/productsApi';
 import { productVariantsApi } from '../store/services/productVariantsApi';
 import { useGetSalesQuery, useLazyGetLastPricesQuery } from '../store/services/salesApi';

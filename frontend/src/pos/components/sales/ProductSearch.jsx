@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { Plus, Camera, X } from 'lucide-react';
-import { productsApi, useLazyGetLastPurchasePriceQuery } from '@/store/services/productsApi';
-import { productVariantsApi } from '@/store/services/productVariantsApi';
-import { useDebouncedPosProductSearch } from '@/hooks/useDebouncedPosProductSearch';
-import { SearchableDropdown } from '@/components/SearchableDropdown';
-import { DualUnitQuantityInput } from '@/components/DualUnitQuantityInput';
-import { hasDualUnit, getPiecesPerBox, piecesToBoxesAndPieces, formatStockDualLabel } from '@/utils/dualUnitUtils';
-import { handleApiError } from '@/utils/errorHandler';
+import { productsApi, useLazyGetLastPurchasePriceQuery } from '@pos/store/services/productsApi';
+import { productVariantsApi } from '@pos/store/services/productVariantsApi';
+import { useDebouncedPosProductSearch } from '@pos/hooks/useDebouncedPosProductSearch';
+import { SearchableDropdown } from '@pos/components/SearchableDropdown';
+import { DualUnitQuantityInput } from '@pos/components/DualUnitQuantityInput';
+import { hasDualUnit, getPiecesPerBox, piecesToBoxesAndPieces, formatStockDualLabel } from '@pos/utils/dualUnitUtils';
+import { handleApiError } from '@pos/utils/errorHandler';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
-import { LoadingButton } from '@/components/LoadingSpinner';
-import BarcodeScanner from '@/components/BarcodeScanner';
-import BaseModal from '@/components/BaseModal';
-import { compressImageFileToDataUrl } from '@/utils/imageCompress';
+import { LoadingButton } from '@pos/components/LoadingSpinner';
+import BarcodeScanner from '@pos/components/BarcodeScanner';
+import BaseModal from '@pos/components/BaseModal';
+import { compressImageFileToDataUrl } from '@pos/utils/imageCompress';
 
 /** Max rows shown in dropdown (server search caps higher; we slice in hook). */
 const PRODUCT_DROPDOWN_LIMIT = 50;

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { auth, requireRole } = require('../middleware/auth');
 const settingsService = require('../services/settingsService');
+const cloudinaryService = require('../services/cloudinaryService');
 
 // @route   GET /api/settings/company
 // @desc    Get company settings
@@ -44,7 +45,8 @@ router.put('/company', auth, requireRole(['admin']), async (req, res) => {
       defaultTaxRate
     } = req.body;
 
-    const settings = await settingsService.updateCompanySettings(req.body);
+    const payload = await cloudinaryService.processImagesInPayload(req.body);
+    const settings = await settingsService.updateCompanySettings(payload);
 
     res.json({
       success: true,

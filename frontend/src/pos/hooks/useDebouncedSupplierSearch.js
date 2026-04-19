@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useLazyGetSuppliersQuery } from '@/store/services/suppliersApi';
+import { useLazyGetSuppliersQuery } from '@pos/store/services/suppliersApi';
 
 const DEBOUNCE_MS = 280;
 const DEFAULT_LIMIT = 120;

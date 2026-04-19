@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useLazyGetProductsQuery } from '@/store/services/productsApi';
-import { useLazyGetVariantsQuery } from '@/store/services/productVariantsApi';
+import { useLazyGetProductsQuery } from '@pos/store/services/productsApi';
+import { useLazyGetVariantsQuery } from '@pos/store/services/productVariantsApi';
 
 const SEARCH_DEBOUNCE_MS = 280;
 const MIN_SEARCH_CHARS = 2;

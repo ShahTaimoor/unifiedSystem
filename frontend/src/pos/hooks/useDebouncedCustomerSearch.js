@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useLazyGetCustomersQuery } from '@/store/services/customersApi';
+import { useLazyGetCustomersQuery } from '@pos/store/services/customersApi';
 
 const DEBOUNCE_MS = 280;
 const DEFAULT_LIMIT = 120;

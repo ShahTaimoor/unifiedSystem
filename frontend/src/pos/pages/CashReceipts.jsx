@@ -16,7 +16,7 @@ import {
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DetailRow } from '@/components/ui/detail-row';
+import { DetailRow } from '@pos/components/ui/detail-row';
 import BaseModal from '../components/BaseModal';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDate, formatCurrency } from '../utils/formatters';

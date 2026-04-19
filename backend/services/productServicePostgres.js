@@ -4,6 +4,7 @@ const categoryRepository = require('../repositories/postgres/CategoryRepository'
 const inventoryRepository = require('../repositories/postgres/InventoryRepository');
 const investorRepository = require('../repositories/postgres/InvestorRepository');
 const AccountingService = require('./accountingService');
+const cloudinaryService = require('./cloudinaryService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -272,7 +273,8 @@ class ProductServicePostgres {
     return attachInvestorsToApiProduct(product, invMap.get(String(id)) || []);
   }
 
-  async createProduct(productData, userId, req = null) {
+  async createProduct(productDataRaw, userId, req = null) {
+    const productData = await cloudinaryService.processImagesInPayload(productDataRaw);
     const pricing = productData.pricing || {};
     const cost = pricing.cost !== undefined && pricing.cost !== null ? Number(pricing.cost) : 0;
     const retail = pricing.retail !== undefined && pricing.retail !== null ? Number(pricing.retail) : 0;
@@ -350,9 +352,11 @@ class ProductServicePostgres {
     };
   }
 
-  async updateProduct(id, updateData, userId, req = null) {
+  async updateProduct(id, updateDataRaw, userId, req = null) {
     const current = await productRepository.findById(id);
     if (!current) throw new Error('Product not found');
+
+    const updateData = await cloudinaryService.processImagesInPayload(updateDataRaw);
 
     if (updateData.name) {
       const nameExists = await productRepository.nameExists(updateData.name, id);
