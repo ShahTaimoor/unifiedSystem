@@ -39,3 +39,4 @@ export const useCompanyInfo = (options = {}) => {
     settingsQuery,
   };
 };
+

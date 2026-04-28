@@ -19,9 +19,10 @@ import { handleApiError } from '../utils/errorHandler';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan, getDateDaysAgo, formatDateForInput } from '../utils/dateUtils';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { cn } from '@pos/lib/utils';
+import { Button } from '@pos/components/ui/button';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import PageShell from '../components/PageShell';
 
 /** Initial rows when opening customer/supplier dropdown (no search yet) */
 const ENTITY_DROPDOWN_INITIAL_LIMIT = 20;
@@ -250,7 +251,7 @@ export const StockLedger = () => {
   const pagination = ledgerData?.data?.pagination || { current: 1, pages: 1, total: 0 };
 
   return (
-    <div className="min-h-screen bg-slate-50/90 print:bg-white">
+    <PageShell className="bg-slate-50/90 print:bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 print:px-4 print:py-4">
         {/* Page header — hidden when printing */}
         <header className="mb-8 print:hidden">
@@ -754,8 +755,9 @@ export const StockLedger = () => {
           </section>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 };
 
 export default StockLedger;
+

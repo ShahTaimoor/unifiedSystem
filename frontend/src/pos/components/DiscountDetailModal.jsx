@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import BaseModal from './BaseModal';
 import { 
   Tag, 
@@ -357,3 +357,4 @@ const DiscountDetailModal = ({
 };
 
 export default DiscountDetailModal;
+

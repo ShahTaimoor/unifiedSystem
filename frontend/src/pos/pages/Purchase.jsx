@@ -27,6 +27,7 @@ import {
 
 } from '../store/services/purchaseInvoicesApi';
 import { SearchableDropdown } from '../components/SearchableDropdown';
+import { useGetUnifiedBalanceQuery } from '../store/services/accountingApi';
 import { toast } from 'sonner';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage, LoadingInline } from '../components/LoadingSpinner';
 import PrintModal, { DirectPrintInvoice } from '../components/PrintModal';
@@ -34,14 +35,14 @@ import BarcodeLabelPrinter from '../components/BarcodeLabelPrinter';
 import { buildReceiptLabelProductsFromLineItems } from '../utils/receiptLabelUtils';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../components/ComponentRegistry';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@pos/components/ui/dropdown-menu';
 import {
   OrderCheckoutCard,
   OrderDetailsSection,
@@ -101,7 +102,7 @@ const PurchaseItem = ({
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0 flex items-center gap-2">
             {product?.imageUrl && showProductImages && (
-              <div 
+              <div
                 className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200 cursor-pointer hover:border-primary-500 transition-colors group relative"
                 onClick={() => setPreviewImageProduct(product)}
                 title="Click to view full size"
@@ -118,19 +119,19 @@ const PurchaseItem = ({
                 {isLowStock && <span className="text-yellow-600 text-xs">⚠️ Low Stock</span>}
               </div>
               <p className="font-medium text-sm truncate">{displayName}</p>
-            {product.isVariant && (
-              <p className="text-xs text-gray-500 mt-0.5">
-                {product.variantType}: {product.variantValue}
-              </p>
-            )}
-            {(() => {
-              const b = (product.barcode ?? '').toString().trim();
-              if (b) return <p className="text-xs text-gray-600 font-mono mt-0.5">Barcode: {b}</p>;
-              const s = (product.sku ?? '').toString().trim();
-              if (s) return <p className="text-xs text-gray-600 font-mono mt-0.5">SKU: {s}</p>;
-              return null;
-            })()}
-          </div>
+              {product.isVariant && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {product.variantType}: {product.variantValue}
+                </p>
+              )}
+              {(() => {
+                const b = (product.barcode ?? '').toString().trim();
+                if (b) return <p className="text-xs text-gray-600 font-mono mt-0.5">Barcode: {b}</p>;
+                const s = (product.sku ?? '').toString().trim();
+                if (s) return <p className="text-xs text-gray-600 font-mono mt-0.5">SKU: {s}</p>;
+                return null;
+              })()}
+            </div>
           </div>
           <Button
             onClick={() => onRemove(item.product?._id)}
@@ -208,19 +209,17 @@ const PurchaseItem = ({
       {/* Desktop Table Row — same column model as Sales (Box + Qty split when dual-unit) */}
       <div className={`hidden md:block py-1 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
         <div
-          className={`grid gap-x-1 items-center ${
-            dualUnitShowBoxInputEnabled
+          className={`grid gap-x-1 items-center ${dualUnitShowBoxInputEnabled
               ? 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
               : 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-          }`}
+            }`}
         >
           <div className="min-w-0 flex justify-start">
             <span
-              className={`text-sm font-medium px-0.5 py-1 rounded border block w-8 text-center h-8 flex items-center justify-center transition-colors duration-300 ${
-                highlightSerial
+              className={`text-sm font-medium px-0.5 py-1 rounded border block w-8 text-center h-8 flex items-center justify-center transition-colors duration-300 ${highlightSerial
                   ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
                   : 'text-gray-700 bg-gray-50 border-gray-200'
-              }`}
+                }`}
             >
               {index + 1}
             </span>
@@ -228,7 +227,7 @@ const PurchaseItem = ({
 
           <div className="min-w-0 flex items-center h-8 gap-2">
             {product?.imageUrl && showProductImages && (
-              <div 
+              <div
                 className="h-8 w-8 flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200 cursor-pointer hover:border-primary-500 transition-colors group relative"
                 onClick={() => setPreviewImageProduct(product)}
                 title="Click to view full size"
@@ -277,13 +276,12 @@ const PurchaseItem = ({
                       value={item.quantity === 0 ? '' : boxVal}
                       onChange={(e) => onUpdateCartBoxCount(item.product?._id, e.target.value)}
                       onFocus={(e) => e.target.select()}
-                      className={`text-sm font-semibold w-full min-w-0 rounded border px-2 py-1 text-center h-8 focus:outline-none focus:ring-2 focus:ring-primary-500/35 ${
-                        (product.inventory?.currentStock || 0) === 0
+                      className={`text-sm font-semibold w-full min-w-0 rounded border px-2 py-1 text-center h-8 focus:outline-none focus:ring-2 focus:ring-primary-500/35 ${(product.inventory?.currentStock || 0) === 0
                           ? 'text-red-700 bg-red-50 border-red-200'
                           : (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
                             ? 'text-yellow-800 bg-yellow-50 border-yellow-200'
                             : 'text-gray-700 bg-gray-100 border-gray-200'
-                      }`}
+                        }`}
                       title="Full boxes"
                     />
                   );
@@ -301,13 +299,12 @@ const PurchaseItem = ({
 
           <div className="min-w-0">
             <span
-              className={`text-sm font-semibold px-2 py-1 rounded border block text-center h-8 flex items-center justify-center ${
-                (product.inventory?.currentStock || 0) === 0
+              className={`text-sm font-semibold px-2 py-1 rounded border block text-center h-8 flex items-center justify-center ${(product.inventory?.currentStock || 0) === 0
                   ? 'text-red-700 bg-red-50 border-red-200'
                   : (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
                     ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
                     : 'text-gray-700 bg-gray-100 border-gray-200'
-              }`}
+                }`}
             >
               {hasDualUnit(product) ? formatStockDualLabel(currentStock, product) : currentStock}
             </span>
@@ -435,7 +432,6 @@ export const Purchase = ({ tabId, editData }) => {
   const [expectedDelivery, setExpectedDelivery] = useState(new Date().toISOString().split('T')[0]);
   const [billDate, setBillDate] = useState(getLocalDateString()); // Bill Date for backdating (same as Sale page)
   const [notes, setNotes] = useState('');
-  const [taxExempt, setTaxExempt] = useState(true);
   const [showPurchaseDetailsFields, setShowPurchaseDetailsFields] = useState(false);
   const [showProductImages, setShowProductImages] = useState(localStorage.getItem('showProductImagesUI') !== 'false');
 
@@ -452,6 +448,8 @@ export const Purchase = ({ tabId, editData }) => {
   const { isMobile } = useResponsive();
   const { companyInfo: companySettings } = useCompanyInfo();
   const dualUnitShowBoxInputEnabledPage = companySettings.orderSettings?.dualUnitShowBoxInput !== false;
+  const taxSystemEnabled = companySettings.taxEnabled === true;
+  const globalTaxPct = Math.min(100, Math.max(0, Number(companySettings.defaultTaxRate ?? 0)));
 
   // Ref for supplier selection field to focus on page load
   const supplierSearchRef = useRef(null);
@@ -583,6 +581,15 @@ export const Purchase = ({ tabId, editData }) => {
       setSelectedSupplier(s);
     }
   }, [completeSupplierData]);
+
+  // Use centralized unified balance instead of entity-specific balance
+  const supplierIdForBalance = selectedSupplier?._id || selectedSupplier?.id;
+  const { data: unifiedBalanceData } = useGetUnifiedBalanceQuery({
+    type: 'supplier',
+    id: supplierIdForBalance
+  }, {
+    skip: !supplierIdForBalance
+  });
 
   // Trigger search when supplier search term changes
   useEffect(() => {
@@ -837,43 +844,11 @@ export const Purchase = ({ tabId, editData }) => {
     }
   };
 
-  // Calculate tax based on supplier and business rules
   const calculateTax = () => {
-    // If tax exempt is enabled, return 0
-    if (taxExempt) return 0;
-
+    if (!taxSystemEnabled) return 0;
     if (!selectedSupplier) return 0;
-
-    const subtotal = purchaseItems.reduce((sum, item) => sum + (item.costPerUnit * item.quantity), 0);
-
-    // Tax rules based on supplier type and business type
-    let taxRate = 0;
-
-    // Different tax rates for different supplier types
-    switch (selectedSupplier.businessType) {
-      case 'manufacturer':
-        taxRate = 0.06; // 6% for manufacturers
-        break;
-      case 'distributor':
-        taxRate = 0.07; // 7% for distributors
-        break;
-      case 'wholesaler':
-        taxRate = 0.08; // 8% for wholesalers
-        break;
-      case 'dropshipper':
-        taxRate = 0.05; // 5% for dropshippers
-        break;
-      default:
-        taxRate = 0.08; // Default 8%
-    }
-
-    // Check if supplier has tax-exempt status (could be added to supplier model)
-    // For now, we'll use a simple rule based on supplier rating
-    if (selectedSupplier.rating >= 5 && selectedSupplier.reliability === 'excellent') {
-      taxRate *= 0.5; // 50% tax reduction for excellent suppliers
-    }
-
-    return subtotal * taxRate;
+    const sub = purchaseItems.reduce((sum, item) => sum + (item.costPerUnit * item.quantity), 0);
+    return sub * (globalTaxPct / 100);
   };
 
   const subtotal = purchaseItems.reduce((sum, item) => sum + (item.costPerUnit * item.quantity), 0);
@@ -885,8 +860,10 @@ export const Purchase = ({ tabId, editData }) => {
     : directDiscount.value;
 
   const total = subtotal + tax - directDiscountAmount;
-  const supplierOutstanding =
-    Number(selectedSupplier?.pendingBalance ?? selectedSupplier?.outstandingBalance ?? 0) || 0;
+  // Use centralized ledger balance if available, fallback to entity balance
+  const supplierOutstanding = unifiedBalanceData?.balance ?? (
+    Number(selectedSupplier?.pendingBalance ?? selectedSupplier?.outstandingBalance ?? 0) || 0
+  );
   const totalPayables = total + supplierOutstanding;
 
   const addToPurchase = (newItem) => {
@@ -1091,7 +1068,7 @@ export const Purchase = ({ tabId, editData }) => {
         subtotal: subtotal,
         discountAmount: 0,
         taxAmount: tax,
-        isTaxExempt: taxExempt,
+        isTaxExempt: !taxSystemEnabled,
         total: total
       },
       payment: {
@@ -1119,7 +1096,7 @@ export const Purchase = ({ tabId, editData }) => {
     } else {
       handleCreatePurchaseInvoice(invoiceData);
     }
-  }, [purchaseItems, selectedSupplier, invoiceNumber, autoGenerateInvoice, expectedDelivery, billDate, notes, taxExempt, subtotal, tax, total, directDiscountAmount, paymentMethod, amountPaid, editData, handleCreatePurchaseInvoice, handleUpdatePurchaseInvoice, printBarcodeLabelsAfterInvoice]);
+  }, [purchaseItems, selectedSupplier, invoiceNumber, autoGenerateInvoice, expectedDelivery, billDate, notes, taxSystemEnabled, subtotal, tax, total, directDiscountAmount, paymentMethod, amountPaid, editData, handleCreatePurchaseInvoice, handleUpdatePurchaseInvoice, printBarcodeLabelsAfterInvoice]);
 
 
   return (
@@ -1159,7 +1136,7 @@ export const Purchase = ({ tabId, editData }) => {
         {/* Supplier Selection and Information Row */}
         <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-start space-x-12'}`}>
           {/* Supplier Selection */}
-          <div className={`${isMobile ? 'w-full' : 'w-[750px] flex-shrink-0'}`}>
+          <div className={`${isMobile ? 'w-full' : 'w-full max-w-3xl flex-shrink-0'}`}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -1317,11 +1294,10 @@ export const Purchase = ({ tabId, editData }) => {
           <CartItemsTableSection
             desktopHeader={(
               <CartTableHeader
-                className={`hidden md:grid gap-x-1 items-center pb-2 border-b border-gray-300 mb-2 ${
-                  dualUnitShowBoxInputEnabledPage
+                className={`hidden md:grid gap-x-1 items-center pb-2 border-b border-gray-300 mb-2 ${dualUnitShowBoxInputEnabledPage
                     ? 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
                     : 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-                }`}
+                  }`}
                 columns={[
                   { key: 'sno', label: 'S.NO', labelClassName: 'text-xs font-semibold text-gray-600 uppercase text-left' },
                   { key: 'product', label: 'Product' },
@@ -1343,27 +1319,27 @@ export const Purchase = ({ tabId, editData }) => {
                   : 'overflow-visible -mx-1 px-1'
               }
             >
-            {purchaseItems.map((item, index) => (
-              <div
-                key={item.product?._id ?? index}
-                ref={(node) => {
-                  if (node) purchaseCartLineElRefs.current.set(index, node);
-                  else purchaseCartLineElRefs.current.delete(index);
-                }}
-              >
-              <PurchaseItem
-                item={item}
-                index={index}
-                onUpdateQuantity={updateQuantity}
-                onUpdateCost={updateCost}
-                onRemove={removeFromPurchase}
-                onUpdateCartBoxCount={updateCartBoxCount}
-                showProductImages={showProductImages}
-                setPreviewImageProduct={setPreviewImageProduct}
-                highlightSerial={highlightedPurchaseLineIndex === index}
-              />
-              </div>
-            ))}
+              {purchaseItems.map((item, index) => (
+                <div
+                  key={item.product?._id ?? index}
+                  ref={(node) => {
+                    if (node) purchaseCartLineElRefs.current.set(index, node);
+                    else purchaseCartLineElRefs.current.delete(index);
+                  }}
+                >
+                  <PurchaseItem
+                    item={item}
+                    index={index}
+                    onUpdateQuantity={updateQuantity}
+                    onUpdateCost={updateCost}
+                    onRemove={removeFromPurchase}
+                    onUpdateCartBoxCount={updateCartBoxCount}
+                    showProductImages={showProductImages}
+                    setPreviewImageProduct={setPreviewImageProduct}
+                    highlightSerial={highlightedPurchaseLineIndex === index}
+                  />
+                </div>
+              ))}
             </div>
           </CartItemsTableSection>
         </ProductSelectionCartSection>
@@ -1371,14 +1347,12 @@ export const Purchase = ({ tabId, editData }) => {
         {/* Purchase Details + Order Summary — same two-column pattern as Sales */}
         {purchaseItems.length > 0 && (
           <div
-            className={`mt-4 grid w-full min-w-0 grid-cols-1 gap-4 lg:gap-5 lg:items-start ${
-              showPurchaseDetailsFields ? 'lg:grid-cols-2' : 'lg:grid-cols-1'
-            }`}
+            className={`mt-4 grid w-full min-w-0 grid-cols-1 gap-4 lg:gap-5 lg:items-start ${showPurchaseDetailsFields ? 'lg:grid-cols-2' : 'lg:grid-cols-1'
+              }`}
           >
             <OrderCheckoutCard
-              className={`mt-0 ml-0 max-w-none min-w-0 w-full border-slate-200 bg-none bg-slate-50 shadow-sm ring-0 ${
-                showPurchaseDetailsFields ? 'order-1' : 'order-2'
-              }`}
+              className={`mt-0 ml-0 max-w-none min-w-0 w-full border-slate-200 bg-none bg-slate-50 shadow-sm ring-0 ${showPurchaseDetailsFields ? 'order-1' : 'order-2'
+                }`}
             >
               <OrderDetailsSection
                 detailsTitle="Purchase Details"
@@ -1458,24 +1432,6 @@ export const Purchase = ({ tabId, editData }) => {
                           className="h-10 text-sm w-full"
                           max={getLocalDateString()}
                         />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Tax Status</label>
-                        <div className="flex items-center space-x-2 px-3 py-2 border border-gray-200 rounded h-10">
-                          <Input
-                            type="checkbox"
-                            id="taxExemptPurchaseMobile"
-                            checked={taxExempt}
-                            onChange={(e) => setTaxExempt(e.target.checked)}
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                          />
-                          <div className="flex-1">
-                            <label htmlFor="taxExemptPurchaseMobile" className="text-sm font-medium text-gray-700 cursor-pointer">
-                              Tax Exempt
-                            </label>
-                          </div>
-                          {taxExempt && <div className="text-green-600 text-sm font-medium">✓</div>}
-                        </div>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
@@ -1561,24 +1517,6 @@ export const Purchase = ({ tabId, editData }) => {
                           max={getLocalDateString()}
                         />
                       </div>
-                      <div className="flex flex-col w-40">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Tax Status</label>
-                        <div className="flex items-center space-x-1 px-2 py-1 border border-gray-200 rounded h-8">
-                          <Input
-                            type="checkbox"
-                            id="taxExemptPurchase"
-                            checked={taxExempt}
-                            onChange={(e) => setTaxExempt(e.target.checked)}
-                            className="h-3 w-3 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                          />
-                          <div className="flex-1">
-                            <label htmlFor="taxExemptPurchase" className="text-xs font-medium text-gray-700 cursor-pointer">
-                              Tax Exempt
-                            </label>
-                          </div>
-                          {taxExempt && <div className="text-green-600 text-xs font-medium">✓</div>}
-                        </div>
-                      </div>
                       <div className="flex min-w-0 flex-1 flex-col basis-[min(100%,20rem)]">
                         <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>
                         <Input
@@ -1597,9 +1535,8 @@ export const Purchase = ({ tabId, editData }) => {
             </OrderCheckoutCard>
 
             <OrderCheckoutCard
-              className={`mt-0 ml-0 max-w-none min-w-0 w-full border-slate-200 bg-none bg-slate-50 shadow-sm ring-0 ${
-                showPurchaseDetailsFields ? 'order-2' : 'order-1'
-              }`}
+              className={`mt-0 ml-0 max-w-none min-w-0 w-full border-slate-200 bg-none bg-slate-50 shadow-sm ring-0 ${showPurchaseDetailsFields ? 'order-2' : 'order-1'
+                }`}
             >
               <OrderSummaryContent className="bg-none bg-slate-50">
                 <div className="space-y-2">
@@ -1611,9 +1548,9 @@ export const Purchase = ({ tabId, editData }) => {
                       </span>
                     </div>
                   )}
-                  {!taxExempt && (
+                  {taxSystemEnabled && tax > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">Tax:</span>
+                      <span className="text-sm font-medium text-muted-foreground">Tax ({globalTaxPct}%):</span>
                       <span className="text-xl font-semibold tabular-nums text-foreground">{tax.toFixed(2)}</span>
                     </div>
                   )}
@@ -1630,9 +1567,8 @@ export const Purchase = ({ tabId, editData }) => {
                       <div className="flex items-center justify-between md:block">
                         <span className="text-sm font-medium text-muted-foreground">Previous Outstanding:</span>
                         <div
-                          className={`text-2xl font-semibold tabular-nums md:mt-1 ${
-                            supplierOutstanding > 0 ? 'text-red-600' : 'text-green-600'
-                          }`}
+                          className={`text-2xl font-semibold tabular-nums md:mt-1 ${supplierOutstanding > 0 ? 'text-red-600' : 'text-green-600'
+                            }`}
                         >
                           {supplierOutstanding.toFixed(2)}
                         </div>
@@ -1724,7 +1660,6 @@ export const Purchase = ({ tabId, editData }) => {
                         setHighlightedPurchaseLineIndex(null);
                         setSelectedSupplier(null);
                         setSupplierSearchTerm('');
-                        setTaxExempt(true);
                         setDirectDiscount({ type: 'amount', value: 0 });
                         setAmountPaid(0);
                         setPaymentMethod('cash');
@@ -1800,7 +1735,7 @@ export const Purchase = ({ tabId, editData }) => {
                                 subtotal: subtotal,
                                 discountAmount: directDiscountAmount,
                                 taxAmount: tax,
-                                isTaxExempt: taxExempt,
+                                isTaxExempt: !taxSystemEnabled,
                                 total: total
                               },
                               payment: {
@@ -1873,7 +1808,7 @@ export const Purchase = ({ tabId, editData }) => {
                                 subtotal: subtotal,
                                 discountAmount: directDiscountAmount,
                                 taxAmount: tax,
-                                isTaxExempt: taxExempt,
+                                isTaxExempt: !taxSystemEnabled,
                                 total: total
                               },
                               payment: {
@@ -1908,20 +1843,20 @@ export const Purchase = ({ tabId, editData }) => {
                       />
                       <span>Print labels after purchase</span>
                     </label>
-                )}
-                <LoadingButton
-                  onClick={handleProcessPurchase}
-                  isLoading={false}
-                  variant="default"
-                  size="lg"
-                  className="flex-2"
-                >
-                  <Truck className="h-4 w-4 mr-2" />
-                  {editData?.isEditMode ? 'Update Purchase Invoice' : 'Complete Purchase & Update Inventory'}
-                </LoadingButton>
-              </OrderCheckoutActions>
-            </OrderSummaryContent>
-          </OrderCheckoutCard>
+                  )}
+                  <LoadingButton
+                    onClick={handleProcessPurchase}
+                    isLoading={false}
+                    variant="default"
+                    size="lg"
+                    className="flex-2"
+                  >
+                    <Truck className="h-4 w-4 mr-2" />
+                    {editData?.isEditMode ? 'Update Purchase Invoice' : 'Complete Purchase & Update Inventory'}
+                  </LoadingButton>
+                </OrderCheckoutActions>
+              </OrderSummaryContent>
+            </OrderCheckoutCard>
           </div>
         )}
 
@@ -1965,9 +1900,9 @@ export const Purchase = ({ tabId, editData }) => {
         >
           <div className="flex justify-center items-center bg-gray-50 rounded-lg overflow-hidden min-h-[300px] p-4">
             {previewImageProduct?.imageUrl ? (
-              <img 
-                src={previewImageProduct.imageUrl} 
-                alt="Product Preview" 
+              <img
+                src={previewImageProduct.imageUrl}
+                alt="Product Preview"
                 className="max-w-full max-h-[70vh] object-contain"
               />
             ) : (
@@ -1980,3 +1915,4 @@ export const Purchase = ({ tabId, editData }) => {
     </AsyncErrorBoundary>
   );
 };
+

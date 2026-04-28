@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@pos/lib/utils';
 
 /** Stacked label + value for read-only detail blocks (e.g. view modals). */
 export function DetailRow({ label, children, className }) {
@@ -10,3 +10,4 @@ export function DetailRow({ label, children, className }) {
     </div>
   );
 }
+

@@ -9,8 +9,8 @@ import {
   useBulkCreateCustomersMutation,
 } from '../store/services/customersApi';
 import { LoadingPage } from '../components/LoadingSpinner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
 import ExcelExportButton from '../components/ExcelExportButton';
 import PdfExportButton from '../components/PdfExportButton';
 import ExcelImportButton from '../components/ExcelImportButton';
@@ -94,17 +94,24 @@ export const Customers = () => {
       { header: 'Contact Person', key: 'contactPersonName', width: 25 },
       { header: 'Email', key: 'email', width: 30 },
       { header: 'Phone', key: 'phone', width: 20 },
+      { header: 'Address', key: 'fullAddress', width: 40 },
       { header: 'City', key: 'city', width: 15 },
       { header: 'Balance', key: 'currentBalance', width: 15, type: 'currency' }
     ],
-    data: customers.map(c => ({
-      ...c,
-      businessName: c.businessName || c.business_name || c.name || '',
-      contactPersonName: c.contactPerson?.name || c.contact_person || c.name || '',
-      city: c.city || (Array.isArray(c.address) ? (c.address[0]?.city || '') : (c.address?.city || '')),
-      currentBalance: c.currentBalance ?? c.balance ?? 0,
-      phone: c.phone || c.contact_phone || ''
-    }))
+    data: customers.map(c => {
+      const addr = Array.isArray(c.address) ? (c.address[0] || {}) : (c.address || {});
+      const street = addr.street || '';
+      const city = addr.city || c.city || '';
+      return {
+        ...c,
+        businessName: c.businessName || c.business_name || c.name || '',
+        contactPersonName: c.contactPerson?.name || c.contact_person || c.name || '',
+        city,
+        fullAddress: [street, city].filter(Boolean).join(', '),
+        currentBalance: c.currentBalance ?? c.balance ?? 0,
+        phone: c.phone || c.contact_phone || ''
+      };
+    })
   });
 
   const handleDownloadTemplate = () => {
@@ -116,6 +123,7 @@ export const Customers = () => {
         { header: 'Contact Person', key: 'contactPerson', width: 25 },
         { header: 'Email', key: 'email', width: 30 },
         { header: 'Phone', key: 'phone', width: 20 },
+        { header: 'Address', key: 'address', width: 35 },
         { header: 'City', key: 'city', width: 15 },
         { header: 'Opening Balance', key: 'balance', width: 15, type: 'currency' }
       ]
@@ -163,12 +171,12 @@ export const Customers = () => {
 
   return (
     <div className="space-y-6 w-full ">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Customers</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">Manage your customer database</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Customers</h1>
+          <p className="hidden sm:block text-sm sm:text-base text-gray-600 mt-1">Manage your customer database</p>
         </div>
-        <div className="flex-shrink-0 flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex-shrink-0 flex items-center gap-2 overflow-x-auto">
           <Button
             onClick={() => customerOps.handleAdd()}
             variant="default"
@@ -325,3 +333,4 @@ export const Customers = () => {
     </div>
   );
 };
+

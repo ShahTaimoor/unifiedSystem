@@ -31,3 +31,4 @@ export const getPrintLayout = (format = 'a4') => {
 };
 
 export default { PrintLayoutA4, PrintLayoutThermal, getPrintLayout };
+

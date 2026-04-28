@@ -73,8 +73,21 @@ const MIGRATIONS = [
   '051_purchases_payment_status_index.sql',
   '052_sales_cash_dashboard_partial_indexes.sql',
   '053_list_filters_composite_indexes.sql',
-  '054_add_city_to_customers.sql',
-  '055_sales_orders_created_by_nullable.sql',
+  '054_journal_vouchers.sql',
+  '055_add_notes_to_journal_vouchers.sql',
+  '056_make_entries_optional_journal_vouchers.sql',
+  '057_journal_vouchers_missing_columns.sql',
+  '058_jv_entries_party_linking.sql',
+  '059_increase_jv_account_code_length.sql',
+  '060_enable_direct_posting_party_accounts.sql',
+  '061_uppercase_account_codes.sql',
+  '062_add_bank_id_support.sql',
+  '063_add_allowed_network_to_users.sql',
+  '064_add_client_side_id_to_transactions.sql',
+  '065_search_uniqueness_and_ledger_indexes.sql',
+  '066_cleanup_soft_deleted_duplicates_for_unique_indexes.sql',
+  '067_add_user_preferences_and_two_factor_auth.sql',
+  '068_settings_tax_enabled.sql'
 ];
 
 async function ensureMigrationsTable() {

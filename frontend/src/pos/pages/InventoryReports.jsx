@@ -686,3 +686,4 @@ const InventoryReports = () => {
 };
 
 export default InventoryReports;
+

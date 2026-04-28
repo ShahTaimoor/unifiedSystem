@@ -35,3 +35,4 @@ export const PWAInstallButton = ({ className = '' }) => {
 
 export default PWAInstallButton;
 
+

@@ -24,9 +24,9 @@ import {
   useUpdateWarehouseMutation,
   useDeleteWarehouseMutation,
 } from '../store/services/warehousesApi';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
 import {
   LoadingPage,
   LoadingCard,
@@ -695,4 +695,5 @@ const Warehouses = () => {
 };
 
 export default Warehouses;
+
 

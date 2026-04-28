@@ -424,3 +424,4 @@ export const {
   useToggleFavoriteReportMutation,
 } = inventoryApi;
 
+

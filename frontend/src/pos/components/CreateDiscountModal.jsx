@@ -23,7 +23,7 @@ import { useGetCategoriesQuery } from '../store/services/categoriesApi';
 import { useGetCustomersQuery } from '../store/services/customersApi';
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Input } from '@/components/ui/input';
+import { Input } from '@pos/components/ui/input';
 
 const CreateDiscountModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -1318,3 +1318,4 @@ const CreateDiscountModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 export default CreateDiscountModal;
+

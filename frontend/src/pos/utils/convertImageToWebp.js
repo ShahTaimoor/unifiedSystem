@@ -81,3 +81,4 @@ export async function fileToWebpFile(file, options = {}) {
     img.src = url;
   });
 }
+

@@ -113,3 +113,4 @@ export const PWAUpdateNotification = () => {
 
 export default PWAUpdateNotification;
 
+

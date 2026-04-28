@@ -110,3 +110,4 @@ export const generateProductsPdf = async (products, onProgress) => {
   onProgress?.(100);
   doc.save(`Products_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
 };
+

@@ -8,6 +8,10 @@ import './index.css';
 import './components/print/printStyles.css';
 import App from './App';
 import { store } from './store/store';
+import { registerServiceWorker } from './registerSW';
+
+// Register PWA service worker
+registerServiceWorker();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,7 +19,7 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: import.meta.env.DEV ? 0 : 5 * 60 * 1000, // No cache in dev, 5 minutes in production
-      gcTime: import.meta.env.DEV ? 0 : 5 * 60 * 1000, // No cache in dev
+      cacheTime: import.meta.env.DEV ? 0 : 5 * 60 * 1000, // No cache in dev
     },
   },
 });
@@ -26,7 +30,6 @@ root.render(
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter
-          basename="/pos"
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true,
@@ -50,3 +53,4 @@ root.render(
     </Provider>
   </React.StrictMode>
 );
+

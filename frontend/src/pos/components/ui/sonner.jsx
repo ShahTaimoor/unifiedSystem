@@ -1,5 +1,5 @@
 import { Toaster as Sonner } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn } from "@pos/lib/utils";
 
 const Toaster = ({ className, toastOptions, ...props }) => {
   return (
@@ -24,3 +24,4 @@ const Toaster = ({ className, toastOptions, ...props }) => {
 };
 
 export { Toaster };
+

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { Input } from '@pos/components/ui/input';
 import { 
   Filter, 
   X, 
@@ -213,3 +213,4 @@ const SupplierFilters = ({ filters, onFiltersChange, onClearFilters }) => {
 };
 
 export default SupplierFilters;
+

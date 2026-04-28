@@ -11,8 +11,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage } from '../components/LoadingSpinner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 
@@ -26,6 +26,7 @@ import {
 import PaginationControls from '../components/PaginationControls';
 import { flattenCategoryApiTree } from '../utils/categoryTree';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import PageShell from '../components/PageShell';
 
 const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, categories = [], categoryType = 'parent' }) => {
   const [formData, setFormData] = useState({
@@ -100,7 +101,7 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-start sm:items-center justify-center min-h-screen pt-4 px-4 pb-6 sm:pb-20 text-center">
+      <PageShell contentClassName="flex items-start sm:items-center justify-center pt-4 px-4 pb-6 sm:pb-20 text-center">
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
 
         <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg sm:my-8 max-h-[90vh] flex flex-col">
@@ -285,14 +286,13 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
             </div>
           </form>
         </div>
-      </div>
+      </PageShell>
     </div>
   );
 };
 
 export const Categories = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebouncedValue(searchTerm, 350);
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -309,6 +309,8 @@ export const Categories = () => {
       window.history.replaceState({}, '', url);
     }
   }, [searchParams]);
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 350);
 
   useEffect(() => {
     setPage(1);
@@ -649,3 +651,4 @@ export const Categories = () => {
 };
 
 export default Categories;
+

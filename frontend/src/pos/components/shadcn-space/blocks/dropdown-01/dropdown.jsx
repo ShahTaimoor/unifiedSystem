@@ -1,5 +1,5 @@
 "use client";;
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@pos/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@pos/components/ui/dropdown-menu";
 import { CircleUserRound, CreditCard, ReceiptText, Settings, LogOut } from "lucide-react";
 
 const PROFILE_ITEMS = [
@@ -106,3 +106,4 @@ const Dropdown = ({
 };
 
 export default Dropdown;
+

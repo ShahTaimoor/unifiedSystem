@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import {
   CreditCard,
   Smartphone,
@@ -459,3 +459,4 @@ const PaymentModal = ({
 };
 
 export default PaymentModal;
+

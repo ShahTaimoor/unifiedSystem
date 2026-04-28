@@ -25,3 +25,4 @@ export function getVirtualTablePadding(vItems, totalH) {
   const padBottom = vItems.length ? totalH - vItems[vItems.length - 1].end : 0;
   return { padTop, padBottom };
 }
+

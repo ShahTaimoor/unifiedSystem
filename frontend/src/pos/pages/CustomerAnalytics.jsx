@@ -19,8 +19,8 @@ import {
 import { useGetSummaryQuery, useGetAnalyticsQuery } from '../store/services/customerAnalyticsApi';
 import { formatCurrency } from '../utils/formatters';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
 import { showErrorToast, handleApiError } from '../utils/errorHandler';
 
 const CustomerAnalytics = () => {
@@ -399,4 +399,5 @@ const CustomerAnalytics = () => {
 };
 
 export default CustomerAnalytics;
+
 

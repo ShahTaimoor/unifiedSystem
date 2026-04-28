@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@pos/components/ui/button';
+import { cn } from '@pos/lib/utils';
 import SpinningText from './SpinningText';
 
 export const LoadingSpinner = ({ size = 'md', className = '', inline = false }) => {
@@ -134,3 +134,4 @@ export const LoadingInline = ({ message = 'Loading...' }) => (
     <span className="text-gray-600">{message}</span>
   </span>
 );
+

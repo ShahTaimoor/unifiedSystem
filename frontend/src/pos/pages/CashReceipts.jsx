@@ -14,11 +14,11 @@ import {
   Save
 } from 'lucide-react';
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
 import { DetailRow } from '@pos/components/ui/detail-row';
 import BaseModal from '../components/BaseModal';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from '@pos/components/ui/textarea';
 import { formatDate, formatCurrency } from '../utils/formatters';
 import { useLazyGetCustomerQuery, customersApi } from '../store/services/customersApi';
 import {
@@ -644,18 +644,18 @@ const CashReceipts = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Cash Receipts</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">Manage and view all cash receipt transactions</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Cash Receipts</h1>
+          <p className="hidden sm:block text-sm sm:text-base text-gray-600 mt-1">Manage and view all cash receipt transactions</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-2 flex-shrink-0 overflow-x-auto">
 
           <Button
             onClick={resetForm}
             variant="default"
             size="default"
-            className="flex items-center justify-center gap-2 w-full sm:w-auto"
+            className="flex items-center justify-center gap-2"
           >
             <Plus className="h-4 w-4" />
             <span>New Receipt</span>
@@ -677,8 +677,8 @@ const CashReceipts = () => {
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Receipt Type
                 </label>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <label className="flex items-center">
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="radio"
                       value="customer"
@@ -689,11 +689,11 @@ const CashReceipts = () => {
                         setSupplierSearchTerm('');
                         setFormData(prev => ({ ...prev, supplier: '' }));
                       }}
-                      className="mr-2"
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
                     />
-                    <span className="text-xs sm:text-sm text-gray-700">Customer</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Customer</span>
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="radio"
                       value="supplier"
@@ -704,9 +704,9 @@ const CashReceipts = () => {
                         setCustomerSearchTerm('');
                         setFormData(prev => ({ ...prev, customer: '' }));
                       }}
-                      className="mr-2"
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
                     />
-                    <span className="text-xs sm:text-sm text-gray-700">Supplier</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">Supplier</span>
                   </label>
                 </div>
               </div>
@@ -1079,17 +1079,23 @@ const CashReceipts = () => {
       {/* Results */}
       <div className="card">
         <div className="card-header">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">
-              Cash Receipts From: {formatDate(filters.fromDate)} To: {formatDate(filters.toDate)}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 leading-tight">
+              Cash Receipts
+              <span className="block sm:inline sm:ml-2 text-xs sm:text-sm font-normal text-gray-500 mt-1 sm:mt-0">
+                From: {formatDate(filters.fromDate)} To: {formatDate(filters.toDate)}
+              </span>
             </h3>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-500">
-                {paginationInfo.totalItems || 0} records
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                <span className="font-semibold text-gray-700">
+                  {paginationInfo.totalItems || 0}
+                </span>{' '}
+                records
               </span>
               <button
                 onClick={() => refetch()}
-                className="p-2 text-gray-400 hover:text-gray-600"
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -1418,3 +1424,4 @@ const CashReceipts = () => {
 };
 
 export default CashReceipts;
+

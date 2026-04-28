@@ -28,9 +28,9 @@ import {
   useReverseStockMovementMutation,
 } from '../store/services/inventoryApi';
 import { useGetProductsQuery } from '../store/services/productsApi';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
 import { handleApiError } from '../utils/errorHandler';
 import { toast } from 'sonner';
@@ -311,10 +311,6 @@ export const StockMovements = () => {
     return d.toLocaleString();
   };
 
-  if (isLoading && !movementsData) {
-    return <LoadingSpinner />;
-  }
-
   const movements = movementsData?.data?.movements || [];
   const rawPagination = movementsData?.data?.pagination || {};
   const pagination = getUiPagination(rawPagination, 20);
@@ -325,6 +321,10 @@ export const StockMovements = () => {
   useEffect(() => {
     updateFromPagination(rawPagination);
   }, [rawPagination, updateFromPagination]);
+
+  if (isLoading && !movementsData) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="space-y-6">
@@ -911,3 +911,4 @@ export const StockMovements = () => {
     </div>
   );
 };
+

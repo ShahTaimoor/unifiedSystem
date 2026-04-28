@@ -10,9 +10,9 @@ import { useGetProductsQuery } from '../store/services/productsApi';
 import { useCreateStockAdjustmentMutation } from '../store/services/inventoryApi';
 import { SearchableDropdown } from './SearchableDropdown';
 import { formatCurrency } from '../utils/formatters';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
 
 const StockAdjustmentModal = ({ isOpen, onClose, onSuccess }) => {
   const [adjustmentType, setAdjustmentType] = useState('physical_count');
@@ -579,3 +579,4 @@ const StockAdjustmentModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 export default StockAdjustmentModal;
+

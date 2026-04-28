@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import BaseModal from './BaseModal';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import { useForm } from 'react-hook-form';
 import { Building, Mail, Phone } from 'lucide-react';
 import {
@@ -699,4 +699,5 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
     </BaseModal>
   );
 };
+
 

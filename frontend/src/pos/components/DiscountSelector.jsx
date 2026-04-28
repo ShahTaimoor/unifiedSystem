@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Tag, Percent, TrendingUp, CheckCircle, AlertCircle, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import { useCheckApplicableDiscountsMutation } from '../store/services/discountsApi';
 import { showSuccessToast, showErrorToast } from '../utils/errorHandler';
 
@@ -256,3 +256,4 @@ const DiscountSelector = ({
 };
 
 export default DiscountSelector;
+

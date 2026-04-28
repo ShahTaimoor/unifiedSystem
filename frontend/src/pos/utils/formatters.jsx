@@ -208,3 +208,4 @@ export const formatCustomerTier = (tier) => {
   
   return tierMap[tier] || capitalizeFirst(tier);
 };
+

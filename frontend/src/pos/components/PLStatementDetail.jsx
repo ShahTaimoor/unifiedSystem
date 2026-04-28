@@ -828,3 +828,4 @@ const PLStatementDetail = ({ statement, onExport, onShare }) => {
 };
 
 export default PLStatementDetail;
+

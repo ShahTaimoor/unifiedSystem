@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 
 /**
  * BaseModal - Reusable modal overlay and container
@@ -88,7 +88,7 @@ const BaseModal = ({
 
   const wrapperClasses =
     variant === 'centered'
-      ? 'flex items-center justify-center p-4 min-h-screen'
+      ? 'flex items-center justify-center p-4 min-h-[100dvh]'
       : 'overflow-y-auto h-full w-full p-4';
 
   const modalContent = (
@@ -155,3 +155,4 @@ const BaseModal = ({
 };
 
 export default BaseModal;
+

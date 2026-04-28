@@ -14,7 +14,7 @@ import {
   X,
   Undo2
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 
 export const BulkOperationsBar = ({
   selectedCount,
@@ -187,4 +187,5 @@ export const BulkOperationsBar = ({
 };
 
 export default BulkOperationsBar;
+
 

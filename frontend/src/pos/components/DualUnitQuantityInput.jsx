@@ -1,6 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn } from '@pos/lib/utils';
 import {
   computeTotalPieces,
   piecesToBoxesAndPieces,
@@ -325,3 +325,4 @@ export function DualUnitQuantityInput({
     </div>
   );
 }
+

@@ -6,7 +6,7 @@ import { useIssueRefundMutation } from '../store/services/saleReturnsApi';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { PrintModal, ReturnPrintContent } from './print';
 import { showSuccessToast, showErrorToast } from '../utils/errorHandler';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 
 const ReturnDetailModal = ({
   return: returnData,
@@ -356,3 +356,4 @@ const ReturnDetailModal = ({
 };
 
 export default ReturnDetailModal;
+

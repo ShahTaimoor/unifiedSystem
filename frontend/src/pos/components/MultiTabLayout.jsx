@@ -43,6 +43,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { PERMISSIONS } from '../config/rbacConfig';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../utils/componentUtils';
 import TabBar from './TabBar';
@@ -50,9 +51,10 @@ import TabContent from './TabContent';
 import { toast } from 'sonner';
 import ErrorBoundary from './ErrorBoundary';
 import MobileNavigation from './MobileNavigation';
+import MobileBottomNav from './MobileBottomNav';
 import { useResponsive } from './ResponsiveContainer';
 import { useGetAlertSummaryQuery } from '../store/services/inventoryAlertsApi';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 
 // Helper for Database icon
 function DatabaseIcon(props) {
@@ -77,26 +79,28 @@ function DatabaseIcon(props) {
 }
 
 export const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, permission: null, allowMultiple: true },
+  { name: 'Dashboard', href: '/pos/dashboard', icon: LayoutDashboard, permission: 'view_dashboard', allowMultiple: true },
 
   {
     name: 'Sales',
     icon: ShoppingCart,
+    permission: 'view_sales',
     children: [
-      { name: 'Sales Orders', href: '/sales-orders', icon: FileText, permission: 'view_sales_orders' },
-      { name: 'Sales', href: '/sales', icon: CreditCard, permission: 'view_sales_orders' },
-      { name: 'Sales Invoices', href: '/sales-invoices', icon: Search, permission: 'view_sales_invoices' },
+      { name: 'Sales Orders', href: '/pos/sales-orders', icon: FileText, permission: 'view_sales_orders' },
+      { name: 'Sales', href: '/pos/sales', icon: CreditCard, permission: 'manage_sales' },
+      { name: 'Sales Invoices', href: '/pos/sales-invoices', icon: Search, permission: 'view_sales_invoices' },
     ]
   },
 
   {
     name: 'Purchase',
     icon: Truck,
+    permission: 'view_purchase_orders',
     children: [
-      { name: 'Purchase Orders', href: '/purchase-orders', icon: FileText, permission: 'view_purchase_orders' },
-      { name: 'Purchase', href: '/purchase', icon: Truck, permission: 'view_purchase_orders' },
-      { name: 'Purchase Invoices', href: '/purchase-invoices', icon: Search, permission: 'view_purchase_invoices' },
-      { name: 'Products by Supplier', href: '/purchase-by-supplier', icon: BarChart3, permission: 'view_reports' },
+      { name: 'Purchase Orders', href: '/pos/purchase-orders', icon: FileText, permission: 'view_purchase_orders' },
+      { name: 'Purchase', href: '/pos/purchase', icon: Truck, permission: 'view_purchase_orders' },
+      { name: 'Purchase Invoices', href: '/pos/purchase-invoices', icon: Search, permission: 'view_purchase_invoices' },
+      { name: 'Products by Supplier', href: '/pos/purchase-by-supplier', icon: BarChart3, permission: 'view_reports' },
     ]
   },
 
@@ -104,22 +108,24 @@ export const navigation = [
     name: 'Operations',
     icon: Layers,
     children: [
-      { name: 'Sale Returns', href: '/sale-returns', icon: RotateCcw, permission: 'view_returns' },
-      { name: 'Purchase Returns', href: '/purchase-returns', icon: RotateCcw, permission: 'view_returns' },
-      { name: 'Discounts', href: '/discounts', icon: Tag, permission: 'view_discounts' },
-      { name: 'CCTV Access', href: '/cctv-access', icon: Camera, permission: 'view_sales_invoices', allowMultiple: true },
+      { name: 'Sale Returns', href: '/pos/sale-returns', icon: RotateCcw, permission: 'view_returns' },
+      { name: 'Purchase Returns', href: '/pos/purchase-returns', icon: RotateCcw, permission: 'view_returns' },
+      { name: 'Discounts', href: '/pos/discounts', icon: Tag, permission: 'view_discounts' },
+      { name: 'CCTV Access', href: '/pos/cctv-access', icon: Camera, permission: 'view_sales_invoices', allowMultiple: true },
     ]
   },
 
   {
     name: 'Financials',
     icon: Wallet,
+    permission: 'view_reports',
     children: [
-      { name: 'Cash Receipts', href: '/cash-receipts', icon: Receipt, permission: 'view_reports' },
-      { name: 'Cash Payments', href: '/cash-payments', icon: CreditCard, permission: 'view_reports' },
-      { name: 'Bank Receipts', href: '/bank-receipts', icon: Building, permission: 'view_reports' },
-      { name: 'Bank Payments', href: '/bank-payments', icon: ArrowUpDown, permission: 'view_reports' },
-      { name: 'Record Expense', href: '/expenses', icon: Wallet, permission: null },
+      { name: 'Cash Receiving', href: '/pos/cash-receiving', icon: Receipt, permission: 'view_accounting' },
+      { name: 'Cash Receipts', href: '/pos/cash-receipts', icon: Receipt, permission: 'view_reports' },
+      { name: 'Cash Payments', href: '/pos/cash-payments', icon: CreditCard, permission: 'view_reports' },
+      { name: 'Bank Receipts', href: '/pos/bank-receipts', icon: Building, permission: 'view_reports' },
+      { name: 'Bank Payments', href: '/pos/bank-payments', icon: ArrowUpDown, permission: 'view_reports' },
+      { name: 'Record Expense', href: '/pos/expenses', icon: Wallet, permission: 'view_reports' },
     ]
   },
 
@@ -127,53 +133,56 @@ export const navigation = [
     name: 'Master Data',
     icon: DatabaseIcon,
     children: [
-      { name: 'Products', href: '/products', icon: Package, permission: 'view_products' },
-      { name: 'Product Variants', href: '/product-variants', icon: Tag, permission: 'view_products' },
-      { name: 'Product Transformations', href: '/product-transformations', icon: ArrowRight, permission: 'update_inventory' },
-      { name: 'Categories', href: '/categories', icon: Tag, permission: 'view_products' },
-      { name: 'Customers', href: '/customers', icon: Users, permission: 'view_customers' },
-      { name: 'Customer Analytics', href: '/customer-analytics', icon: BarChart3, permission: 'view_customer_analytics' },
-      { name: 'Suppliers', href: '/suppliers', icon: Building, permission: 'view_suppliers' },
-      { name: 'Bank & cash opening', href: '/banks', icon: Building2, permission: null },
-      { name: 'Investors', href: '/investors', icon: TrendingUp, permission: 'view_investors' },
-      { name: 'Drop Shipping', href: '/drop-shipping', icon: ArrowRight, permission: 'create_drop_shipping' },
-      { name: 'Cities', href: '/cities', icon: MapPin, permission: 'manage_users' },
+      { name: 'Products', href: '/pos/products', icon: Package, permission: 'view_products' },
+      { name: 'Product Variants', href: '/pos/product-variants', icon: Tag, permission: 'view_products' },
+      { name: 'Product Transformations', href: '/pos/product-transformations', icon: ArrowRight, permission: 'update_inventory' },
+      { name: 'Categories', href: '/pos/categories', icon: Tag, permission: 'view_products' },
+      { name: 'Customers', href: '/pos/customers', icon: Users, permission: 'view_customers' },
+      { name: 'Customer Analytics', href: '/pos/customer-analytics', icon: BarChart3, permission: 'view_customer_analytics' },
+      { name: 'Suppliers', href: '/pos/suppliers', icon: Building, permission: 'view_suppliers' },
+      { name: 'Bank & cash opening', href: '/pos/banks', icon: Building2, permission: 'manage_settings' },
+      { name: 'Investors', href: '/pos/investors', icon: TrendingUp, permission: 'view_investors' },
+      { name: 'Drop Shipping', href: '/pos/drop-shipping', icon: ArrowRight, permission: 'create_drop_shipping' },
+      { name: 'Cities', href: '/pos/cities', icon: MapPin, permission: 'manage_users' },
     ]
   },
 
   {
     name: 'Inventory',
     icon: Warehouse,
+    permission: 'view_inventory',
     children: [
-      { name: 'Inventory', href: '/inventory', icon: Warehouse, permission: 'view_inventory' },
-      { name: 'Inventory Alerts', href: '/inventory-alerts', icon: AlertTriangle, permission: 'view_inventory', allowMultiple: true },
-      { name: 'Warehouses', href: '/warehouses', icon: Warehouse, permission: 'view_inventory' },
-      { name: 'Stock Movements', href: '/stock-movements', icon: ArrowUpDown, permission: 'view_stock_movements' },
-      { name: 'Stock Ledger', href: '/stock-ledger', icon: FileText, permission: 'view_reports' },
+      { name: 'Inventory', href: '/pos/inventory', icon: Warehouse, permission: 'view_inventory' },
+      { name: 'Inventory Alerts', href: '/pos/inventory-alerts', icon: AlertTriangle, permission: 'view_inventory', allowMultiple: true },
+      { name: 'Warehouses', href: '/pos/warehouses', icon: Warehouse, permission: 'view_inventory' },
+      { name: 'Stock Movements', href: '/pos/stock-movements', icon: ArrowUpDown, permission: 'view_stock_movements' },
+      { name: 'Stock Ledger', href: '/pos/stock-ledger', icon: FileText, permission: 'view_reports' },
     ]
   },
 
   {
     name: 'Accounting',
     icon: ClipboardList,
+    permission: 'view_chart_of_accounts',
     children: [
-      { name: 'Chart of Accounts', href: '/chart-of-accounts', icon: FolderTree, permission: 'view_chart_of_accounts' },
-      { name: 'Journal Vouchers', href: '/journal-vouchers', icon: FileText, permission: 'view_reports', allowMultiple: true },
-      { name: 'Account Ledger Summary', href: '/account-ledger', icon: FileText, permission: 'view_reports', allowMultiple: true },
+      { name: 'Chart of Accounts', href: '/pos/chart-of-accounts', icon: FolderTree, permission: 'view_chart_of_accounts' },
+      { name: 'Journal Vouchers', href: '/pos/journal-vouchers', icon: FileText, permission: 'view_reports', allowMultiple: true },
+      { name: 'Account Ledger Summary', href: '/pos/account-ledger', icon: FileText, permission: 'view_reports', allowMultiple: true },
     ]
   },
 
   {
     name: 'Analytics',
     icon: BarChart3,
+    permission: 'view_reports',
     children: [
-      { name: 'P&L Statements', href: '/pl-statements', icon: BarChart3, permission: 'view_pl_statements' },
-      { name: 'Balance Sheet', href: '/balance-sheet-statement', icon: FileText, permission: 'view_balance_sheets' },
-      { name: 'Sales Performance', href: '/sales-performance', icon: TrendingUp, permission: 'view_sales_performance' },
-      { name: 'Inventory Reports', href: '/inventory-reports', icon: Warehouse, permission: 'view_inventory_reports' },
-      { name: 'Anomaly Detection', href: '/anomaly-detection', icon: AlertTriangle, permission: 'view_anomaly_detection' },
-      { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'view_general_reports' },
-      { name: 'Backdate Report', href: '/backdate-report', icon: Clock, permission: 'view_backdate_report' },
+      { name: 'P&L Statements', href: '/pos/pl-statements', icon: BarChart3, permission: 'view_pl_statements' },
+      { name: 'Balance Sheet', href: '/pos/balance-sheet-statement', icon: FileText, permission: 'view_balance_sheets' },
+      { name: 'Sales Performance', href: '/pos/sales-performance', icon: TrendingUp, permission: 'view_sales_performance' },
+      { name: 'Inventory Reports', href: '/pos/inventory-reports', icon: Warehouse, permission: 'view_inventory_reports' },
+      { name: 'Anomaly Detection', href: '/pos/anomaly-detection', icon: AlertTriangle, permission: 'view_anomaly_detection' },
+      { name: 'Reports', href: '/pos/reports', icon: BarChart3, permission: 'view_general_reports' },
+      { name: 'Backdate Report', href: '/pos/backdate-report', icon: Clock, permission: 'view_backdate_report' },
     ]
   },
 
@@ -181,8 +190,8 @@ export const navigation = [
     name: 'HR/Admin',
     icon: Users,
     children: [
-      { name: 'Employees', href: '/employees', icon: Users, permission: 'manage_users', allowMultiple: true },
-      { name: 'Attendance', href: '/attendance', icon: Clock, permission: 'view_own_attendance' },
+      { name: 'Employees', href: '/pos/employees', icon: Users, permission: 'manage_users', allowMultiple: true },
+      { name: 'Attendance', href: '/pos/attendance', icon: Clock, permission: 'view_own_attendance' },
     ]
   },
 
@@ -190,8 +199,8 @@ export const navigation = [
     name: 'System',
     icon: Settings,
     children: [
-      { name: 'Settings', href: '/settings2', icon: Settings, permission: 'manage_users' },
-      { name: 'Help', href: '/help', icon: HelpCircle, permission: null },
+      { name: 'Settings', href: '/pos/settings2', icon: Settings, permission: 'manage_users' },
+      { name: 'Help', href: '/pos/help', icon: HelpCircle, permission: null },
     ]
   }
 ];
@@ -225,6 +234,26 @@ export function loadSidebarConfig() {
     return migrated;
   } catch {
     return {};
+  }
+}
+
+export function loadBottomNavConfig() {
+  const saved = localStorage.getItem('bottomNavConfig');
+  if (!saved) return [
+    { name: 'Cash Receipts', href: '/cash-receipts', icon: 'Receipt' },
+    { name: 'Bank Receipts', href: '/bank-receipts', icon: 'Receipt' },
+    { name: 'Cash Payments', href: '/cash-payments', icon: 'CreditCard' },
+    { name: 'Bank Payments', href: '/bank-payments', icon: 'CreditCard' }
+  ];
+  try {
+    return JSON.parse(saved);
+  } catch {
+    return [
+      { name: 'Cash Receipts', href: '/cash-receipts', icon: 'Receipt' },
+      { name: 'Bank Receipts', href: '/bank-receipts', icon: 'Receipt' },
+      { name: 'Cash Payments', href: '/cash-payments', icon: 'CreditCard' },
+      { name: 'Bank Payments', href: '/bank-payments', icon: 'CreditCard' }
+    ];
   }
 }
 
@@ -344,7 +373,7 @@ const InventoryAlertsBadge = ({ onNavigate }) => {
 
   return (
     <button
-      onClick={() => onNavigate({ href: '/inventory-alerts', name: 'Inventory Alerts' })}
+      onClick={() => onNavigate({ href: '/pos/inventory-alerts', name: 'Inventory Alerts' })}
       className="relative flex items-center justify-center px-2 py-2 rounded-md bg-gray-50 hover:bg-gray-100 text-gray-900 transition-colors border border-gray-200 shadow-sm"
       title={`${criticalCount} critical alert(s), ${outOfStockCount} out of stock`}
     >
@@ -384,15 +413,27 @@ export const MultiTabLayout = ({ children }) => {
 
   // Sidebar visibility state
   const [sidebarConfig, setSidebarConfig] = useState(() => loadSidebarConfig());
+  const [showTopBar, setShowTopBar] = useState(() => {
+    const saved = localStorage.getItem('showTopBarUI');
+    return saved === null ? true : saved === 'true';
+  });
 
   // Listener for sidebar configuration changes
   useEffect(() => {
     const handleSidebarChange = () => {
       setSidebarConfig(loadSidebarConfig());
     };
+    const handleTopBarVisibilityChange = () => {
+      const saved = localStorage.getItem('showTopBarUI');
+      setShowTopBar(saved === null ? true : saved === 'true');
+    };
 
     window.addEventListener('sidebarConfigChanged', handleSidebarChange);
-    return () => window.removeEventListener('sidebarConfigChanged', handleSidebarChange);
+    window.addEventListener('topBarVisibilityChanged', handleTopBarVisibilityChange);
+    return () => {
+      window.removeEventListener('sidebarConfigChanged', handleSidebarChange);
+      window.removeEventListener('topBarVisibilityChanged', handleTopBarVisibilityChange);
+    };
   }, []);
 
   // Get alert summary for mobile bottom navbar
@@ -428,7 +469,7 @@ export const MultiTabLayout = ({ children }) => {
     const currentPath = location.pathname;
 
     // Don't redirect if we are on settings, login, or any other critical page
-    if (currentPath === '/settings' || currentPath === '/settings2' || currentPath === '/login' || currentPath === '/profile') {
+    if (currentPath === '/settings' || currentPath === '/settings2' || currentPath === '/pos/login' || currentPath === '/login' || currentPath === '/profile') {
       return;
     }
 
@@ -467,12 +508,12 @@ export const MultiTabLayout = ({ children }) => {
   };
 
   const reuseNavigationPaths = new Set([
-    '/sales-invoices',
-    '/sales-invoices/',
-    '/orders',
-    '/purchase-invoices',
-    '/settings',
-    '/settings2'
+    '/pos/sales-invoices',
+    '/pos/sales-invoices/',
+    '/pos/orders',
+    '/pos/purchase-invoices',
+    '/pos/settings',
+    '/pos/settings2'
   ]);
 
   const handleNavigationClick = (item) => {
@@ -542,12 +583,12 @@ export const MultiTabLayout = ({ children }) => {
   }, [userMenuOpen]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-[100dvh] bg-gray-50">
       {/* Mobile Navigation */}
       <MobileNavigation user={user} onLogout={handleLogout} />
 
       {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
+      <div className={`fixed inset-0 z-[60] lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl">
           <div className="flex h-16 items-center justify-between px-4 border-b border-gray-100">
@@ -559,7 +600,7 @@ export const MultiTabLayout = ({ children }) => {
               <X className="h-6 w-6" />
             </button>
           </div>
-          <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto max-h-[calc(100vh-4rem)] scrollbar-thin scrollbar-thumb-gray-200">
+          <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto max-h-[calc(100dvh-4rem)] scrollbar-thin scrollbar-thumb-gray-200">
             {navigation.map((item) => (
               <SidebarItem
                 key={item.name}
@@ -584,7 +625,7 @@ export const MultiTabLayout = ({ children }) => {
           <div className="flex h-16 items-center px-6 border-b border-gray-100">
             <h1 className="text-xl font-bold text-gray-900">POS System</h1>
           </div>
-          <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto max-h-[calc(100vh-4rem)] scrollbar-thin scrollbar-thumb-gray-200">
+          <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto max-h-[calc(100dvh-4rem)] scrollbar-thin scrollbar-thumb-gray-200">
             {navigation.map((item) => (
               <SidebarItem
                 key={item.name}
@@ -603,7 +644,8 @@ export const MultiTabLayout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar - Professional Design with Solid White Background */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-3 sm:px-4 lg:px-6 shadow-sm overflow-visible">
+        {showTopBar && (
+          <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-3 sm:px-4 lg:px-6 shadow-sm overflow-visible">
           {/* Mobile Menu Button */}
           <button
             type="button"
@@ -619,7 +661,7 @@ export const MultiTabLayout = ({ children }) => {
             <div className="flex-shrink-0 lg:hidden flex items-center gap-2">
               {sidebarConfig['Cash Receipts'] !== false && (
                 <button
-                  onClick={() => handleNavigationClick({ href: '/cash-receipts', name: 'Cash Receipts' })}
+                  onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
                   className="bg-green-600 hover:bg-green-700 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
                 >
                   <Receipt className="h-3.5 w-3.5 flex-shrink-0" />
@@ -628,7 +670,7 @@ export const MultiTabLayout = ({ children }) => {
               )}
               {sidebarConfig['Record Expense'] !== false && (
                 <button
-                  onClick={() => handleNavigationClick({ href: '/expenses', name: 'Record Expense' })}
+                  onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
                   className="bg-red-500 hover:bg-red-600 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
                 >
                   <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
@@ -639,18 +681,20 @@ export const MultiTabLayout = ({ children }) => {
 
             {/* Action Buttons - Shrink when zoom/screen percentage increases (responsive) */}
             <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
-              <button
-                onClick={() => handleNavigationClick({ href: '/cash-receiving', name: 'Cash Receiving' })}
-                className="bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0"
-              >
-                <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-teal-200/60 flex-shrink-0">
-                  <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-teal-700" />
-                </span>
-                <span>Multiple Cash Receipt</span>
-              </button>
+              {sidebarConfig['Cash Receiving'] !== false && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/pos/cash-receiving', name: 'Cash Receiving' })}
+                  className="bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-teal-200/60 flex-shrink-0">
+                    <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-teal-700" />
+                  </span>
+                  <span>Multiple Cash Receipt</span>
+                </button>
+              )}
               {sidebarConfig['Cash Receipts'] !== false && (
                 <button
-                  onClick={() => handleNavigationClick({ href: '/cash-receipts', name: 'Cash Receipts' })}
+                  onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
                   className="bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0"
                 >
                   <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-green-200/60 flex-shrink-0">
@@ -662,7 +706,7 @@ export const MultiTabLayout = ({ children }) => {
               )}
               {sidebarConfig['Bank Receipts'] !== false && (
                 <button
-                  onClick={() => handleNavigationClick({ href: '/bank-receipts', name: 'Bank Receipts' })}
+                  onClick={() => handleNavigationClick({ href: '/pos/bank-receipts', name: 'Bank Receipts' })}
                   className="bg-cyan-50 text-cyan-700 border border-cyan-200 hover:bg-cyan-100 px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0"
                 >
                   <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-cyan-200/60 flex-shrink-0">
@@ -674,7 +718,7 @@ export const MultiTabLayout = ({ children }) => {
               )}
               {sidebarConfig['Cash Payments'] !== false && (
                 <button
-                  onClick={() => handleNavigationClick({ href: '/cash-payments', name: 'Cash Payments' })}
+                  onClick={() => handleNavigationClick({ href: '/pos/cash-payments', name: 'Cash Payments' })}
                   className="bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0"
                 >
                   <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-indigo-200/60 flex-shrink-0">
@@ -686,7 +730,7 @@ export const MultiTabLayout = ({ children }) => {
               )}
               {sidebarConfig['Bank Payments'] !== false && (
                 <button
-                  onClick={() => handleNavigationClick({ href: '/bank-payments', name: 'Bank Payments' })}
+                  onClick={() => handleNavigationClick({ href: '/pos/bank-payments', name: 'Bank Payments' })}
                   className="bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0"
                 >
                   <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-violet-200/60 flex-shrink-0">
@@ -698,7 +742,7 @@ export const MultiTabLayout = ({ children }) => {
               )}
               {sidebarConfig['Record Expense'] !== false && (
                 <button
-                  onClick={() => handleNavigationClick({ href: '/expenses', name: 'Record Expense' })}
+                  onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
                   className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0"
                 >
                   <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-red-200/60 flex-shrink-0">
@@ -749,7 +793,7 @@ export const MultiTabLayout = ({ children }) => {
                     <button
                       type="button"
                       onClick={() => {
-                        handleNavigationClick({ href: '/settings2', name: 'Settings' });
+                        handleNavigationClick({ href: '/pos/settings2', name: 'Settings' });
                         setUserMenuOpen(false);
                       }}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
@@ -773,7 +817,8 @@ export const MultiTabLayout = ({ children }) => {
               )}
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Tab Bar */}
         <TabBar />
@@ -794,61 +839,10 @@ export const MultiTabLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar - Card-style, matches desktop emerald/blue colors */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-100/95 border-t border-gray-200 backdrop-blur-sm">
-        <div className="flex items-stretch gap-2 px-3 py-3 max-w-screen-sm mx-auto">
-          {/* Receipts - same as desktop: emerald-50/emerald-700 */}
-          {sidebarConfig['Cash Receipts'] !== false && (
-            <button
-              onClick={() => handleNavigationClick({ href: '/cash-receipts', name: 'Cash Receipts' })}
-              className={`flex-1 min-w-0 flex items-center justify-center py-3 px-3 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] border ${isActivePath('/cash-receipts')
-                ? 'bg-emerald-100 text-emerald-700 border-emerald-200 ring-2 ring-emerald-400/60'
-                : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                }`}
-              title="Cash Receipt"
-            >
-              Cash R.
-            </button>
-          )}
-          {sidebarConfig['Bank Receipts'] !== false && (
-            <button
-              onClick={() => handleNavigationClick({ href: '/bank-receipts', name: 'Bank Receipts' })}
-              className={`flex-1 min-w-0 flex items-center justify-center py-3 px-3 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] border ${isActivePath('/bank-receipts')
-                ? 'bg-emerald-100 text-emerald-700 border-emerald-200 ring-2 ring-emerald-400/60'
-                : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                }`}
-              title="Bank Receipt"
-            >
-              Bank R.
-            </button>
-          )}
-          {/* Payments - same as desktop: blue-50/blue-700 */}
-          {sidebarConfig['Cash Payments'] !== false && (
-            <button
-              onClick={() => handleNavigationClick({ href: '/cash-payments', name: 'Cash Payments' })}
-              className={`flex-1 min-w-0 flex items-center justify-center py-3 px-3 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] border ${isActivePath('/cash-payments')
-                ? 'bg-blue-100 text-blue-700 border-blue-200 ring-2 ring-blue-400/60'
-                : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                }`}
-              title="Cash Payment"
-            >
-              Cash P.
-            </button>
-          )}
-          {sidebarConfig['Bank Payments'] !== false && (
-            <button
-              onClick={() => handleNavigationClick({ href: '/bank-payments', name: 'Bank Payments' })}
-              className={`flex-1 min-w-0 flex items-center justify-center py-3 px-3 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] border ${isActivePath('/bank-payments')
-                ? 'bg-blue-100 text-blue-700 border-blue-200 ring-2 ring-blue-400/60'
-                : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                }`}
-              title="Bank Payment"
-            >
-              Bank P.
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Mobile Bottom Navigation Bar - Dynamic based on configuration */}
+      <MobileBottomNav />
     </div>
   );
 };
+
+

@@ -307,3 +307,4 @@ export const quickSearch = (items, searchTerm, fields = ['name', 'description'])
   });
 };
 
+

@@ -276,10 +276,14 @@ export const componentRegistry = {
 
 // Helper function to get component info by path
 export const getComponentInfo = (path) => {
-  return componentRegistry[path] || null;
+  if (!path) return null;
+  // Strip /pos prefix if it exists to match registry keys
+  const normalizedPath = path.startsWith('/pos') ? path.substring(4) : path;
+  return componentRegistry[normalizedPath] || null;
 };
 
 // Helper function to get all available routes
 export const getAllRoutes = () => {
   return Object.keys(componentRegistry);
 };
+

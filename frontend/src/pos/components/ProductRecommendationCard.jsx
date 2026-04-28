@@ -3,7 +3,7 @@ import { Package, TrendingUp, Heart, ShoppingCart, Star, AlertTriangle } from 'l
 import { useResponsive } from './ResponsiveContainer';
 import { useTrackInteractionMutation } from '../store/services/recommendationsApi';
 import { handleApiError } from '../utils/errorHandler';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import { OptimizedImage } from './OptimizedImage';
 
 const ProductRecommendationCard = ({ 
@@ -225,3 +225,4 @@ const ProductRecommendationCard = ({
 };
 
 export default ProductRecommendationCard;
+

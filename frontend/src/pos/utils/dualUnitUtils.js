@@ -151,3 +151,4 @@ export function formatQuantityDisplay(quantity, product = null, piecesPerBox = n
   if (pieces > 0) parts.push(`${pieces} pcs`);
   return parts.length ? parts.join(', ') : `${qty} pcs`;
 }
+

@@ -5,3 +5,4 @@ export const getId = (entity) => {
   if (!entity) return null;
   return entity.id ?? entity._id ?? null;
 };
+

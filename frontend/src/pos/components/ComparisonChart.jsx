@@ -20,3 +20,4 @@ export const ComparisonChart = (props) => (
 );
 
 export default ComparisonChart;
+

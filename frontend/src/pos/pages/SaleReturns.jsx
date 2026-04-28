@@ -37,8 +37,8 @@ import DateFilter from '../components/DateFilter';
 import { ClearConfirmationDialog } from '../components/ConfirmationDialog';
 import { useClearConfirmation } from '../hooks/useConfirmation';
 import { getCurrentDatePakistan } from '../utils/dateUtils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
 
 const SaleReturns = () => {
   const today = getCurrentDatePakistan();
@@ -242,10 +242,10 @@ const SaleReturns = () => {
     setSelectedCustomer(customer);
     setCustomerSearchTerm(
       customer?.businessName ||
-        customer?.business_name ||
-        customer?.displayName ||
-        customer?.name ||
-        ''
+      customer?.business_name ||
+      customer?.displayName ||
+      customer?.name ||
+      ''
     );
     setStep('product-search');
     setProductSearchTerm('');
@@ -620,7 +620,7 @@ const SaleReturns = () => {
 
       {/* Customer Selection - same layout as Sales page */}
       <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-start space-x-12'}`}>
-        <div className={`${isMobile ? 'w-full' : 'w-[750px] flex-shrink-0'}`}>
+        <div className={`${isMobile ? 'w-full' : 'w-full max-w-3xl flex-shrink-0'}`}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -1115,3 +1115,4 @@ const SaleReturns = () => {
 };
 
 export default SaleReturns;
+

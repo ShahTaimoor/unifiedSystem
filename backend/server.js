@@ -36,9 +36,85 @@ process.on('uncaughtException', (error) => {
 
 
 const app = express();
+app.set('trust proxy', true);
+
+const initializeScheduledJobs = () => {
+  try {
+    // Data integrity validation (daily at 2 AM)
+    const dataIntegrityService = require('./services/dataIntegrityService');
+    const cron = require('node-cron');
+    cron.schedule('0 2 * * *', async () => {
+      try {
+        logger.info('Running scheduled data integrity validation...');
+        const results = await dataIntegrityService.runAllValidations();
+        if (results.hasIssues) {
+          logger.warn(`Data integrity issues detected: ${results.totalIssues} total issues`);
+        } else {
+          logger.info('Data integrity validation passed');
+        }
+      } catch (error) {
+        logger.error('Error in scheduled data integrity validation:', error);
+      }
+    });
+
+    // Financial validation (hourly) - stub, original removed with MongoDB migration
+    const financialValidationService = require('./services/financialValidationService');
+    financialValidationService.scheduleValidation();
+    logger.info('Financial validation scheduler started');
+
+    // Performance monitoring
+    const performanceMonitoringService = require('./services/performanceMonitoringService');
+    performanceMonitoringService.scheduleMonitoring();
+    logger.info('Performance monitoring scheduler started');
+
+    // Reconciliation jobs (if exists)
+    try {
+      const reconciliationJobs = require('./jobs/reconciliationJobs');
+      if (reconciliationJobs) {
+        if (typeof reconciliationJobs.start === 'function') {
+          reconciliationJobs.start();
+          logger.info('Reconciliation jobs started');
+        } else if (typeof reconciliationJobs.startReconciliationJobs === 'function') {
+          reconciliationJobs.startReconciliationJobs();
+          logger.info('Reconciliation jobs started');
+        }
+      }
+    } catch (error) {
+      logger.warn('Reconciliation jobs not available:', error.message);
+    }
+
+    // Maintenance jobs (if exists)
+    try {
+      const maintenanceJobs = require('./jobs/maintenanceJobs');
+      if (maintenanceJobs && typeof maintenanceJobs.start === 'function') {
+        maintenanceJobs.start();
+        logger.info('Maintenance jobs started');
+      }
+    } catch (error) {
+      logger.warn('Maintenance jobs not available:', error.message);
+    }
+  } catch (error) {
+    logger.error('Error initializing scheduled jobs:', error);
+  }
+};
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://*.cloudinary.com", "https://cdn.pixabay.com"],
+      connectSrc: ["'self'", "http://localhost:5000", "https://res.cloudinary.com"],
+      fontSrc: ["'self'", "https:", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'self'"],
+    },
+  },
+}));
 
 // Compression middleware (compress responses)
 app.use(compression());
@@ -90,7 +166,7 @@ const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 app.use(cors({
   origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key', 'Idempotency-Key', 'idempotency-key', 'X-Client', 'x-client', 'x-request-id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key', 'Idempotency-Key', 'idempotency-key', 'X-Client'],
   credentials: true
 }));
 
@@ -136,8 +212,6 @@ app.get('/health', (req, res) => {
 const path = require('path');
 app.use('/exports', express.static(path.join(__dirname, 'exports')));
 
-// Serve optimized images
-app.use('/api/images', express.static(path.join(__dirname, 'uploads/images/optimized')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -145,10 +219,10 @@ app.use('/api/auth/users', require('./routes/users'));
 
 
 app.use('/api/products', require('./routes/products'));
-app.use('/api/storefront', require('./routes/storefront'));
 app.use('/api/product-variants', require('./routes/productVariants'));
 app.use('/api/product-transformations', require('./routes/productTransformations'));
 app.use('/api/customers', require('./routes/customers'));
+app.use('/api/accounting', require('./routes/accounting'));
 app.use('/api/customer-transactions', require('./routes/customerTransactions'));
 app.use('/api/customer-merges', require('./routes/customerMerges'));
 app.use('/api/reconciliation', require('./routes/reconciliation'));
@@ -204,7 +278,7 @@ app.use('/api/investors', require('./routes/investors'));
 app.use('/api/drop-shipping', require('./routes/dropShipping'));
 app.use('/api/customer-balances', require('./routes/customerBalances'));
 app.use('/api/supplier-balances', require('./routes/supplierBalances'));
-app.use('/api/pl-statements', require('./routes/plStatements'));
+app.use('/api/storefront', require('./routes/storefront'));
 
 // Health check endpoint (API version) - PostgreSQL only
 app.get('/api/health', (req, res) => {
@@ -244,62 +318,7 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   const server = app.listen(PORT, () => {
     logger.info(`POS Server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-
-    // Initialize scheduled jobs
-    try {
-      // Data integrity validation (daily at 2 AM)
-      const dataIntegrityService = require('./services/dataIntegrityService');
-      const cron = require('node-cron');
-      cron.schedule('0 2 * * *', async () => {
-        try {
-          logger.info('Running scheduled data integrity validation...');
-          const results = await dataIntegrityService.runAllValidations();
-          if (results.hasIssues) {
-            logger.warn(`Data integrity issues detected: ${results.totalIssues} total issues`);
-          } else {
-            logger.info('Data integrity validation passed');
-          }
-        } catch (error) {
-          logger.error('Error in scheduled data integrity validation:', error);
-        }
-      });
-
-      // Financial validation (hourly) - stub, original removed with MongoDB migration
-      const financialValidationService = require('./services/financialValidationService');
-      financialValidationService.scheduleValidation();
-      logger.info('Financial validation scheduler started');
-
-
-
-      // Performance monitoring
-      const perfMonitoringService = require('./services/performanceMonitoringService');
-      perfMonitoringService.scheduleMonitoring();
-      logger.info('Performance monitoring scheduler started');
-
-      // Reconciliation jobs (if exists)
-      try {
-        const reconciliationJobs = require('./jobs/reconciliationJobs');
-        if (reconciliationJobs && typeof reconciliationJobs.start === 'function') {
-          reconciliationJobs.start();
-          logger.info('Reconciliation jobs started');
-        }
-      } catch (error) {
-        logger.warn('Reconciliation jobs not available:', error.message);
-      }
-
-      // Maintenance jobs (if exists)
-      try {
-        const maintenanceJobs = require('./jobs/maintenanceJobs');
-        if (maintenanceJobs && typeof maintenanceJobs.start === 'function') {
-          maintenanceJobs.start();
-          logger.info('Maintenance jobs started');
-        }
-      } catch (error) {
-        logger.warn('Maintenance jobs not available:', error.message);
-      }
-    } catch (error) {
-      logger.error('Error initializing scheduled jobs:', error);
-    }
+    initializeScheduledJobs();
   });
 
   // Handle port already in use error
@@ -339,44 +358,4 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
 
 
 
-  // Start reconciliation jobs
-  const { startReconciliationJobs } = require('./jobs/reconciliationJobs');
-  startReconciliationJobs();
-
-  // Ledger automation jobs removed (file no longer exists - using PostgreSQL)
-  // Balance rebuild jobs removed (file no longer exists - using PostgreSQL)
-
-  // Initialize production critical features scheduled jobs
-  try {
-    // Data integrity validation (daily at 2 AM)
-    const dataIntegrityService = require('./services/dataIntegrityService');
-    const cron = require('node-cron');
-    cron.schedule('0 2 * * *', async () => {
-      try {
-        logger.info('Running scheduled data integrity validation...');
-        const results = await dataIntegrityService.runAllValidations();
-        if (results.hasIssues) {
-          logger.warn(`Data integrity issues detected: ${results.totalIssues} total issues`);
-        } else {
-          logger.info('Data integrity validation passed');
-        }
-      } catch (error) {
-        logger.error('Error in scheduled data integrity validation:', error);
-      }
-    });
-
-    // Financial validation (hourly) - stub, original removed with MongoDB migration
-    const financialValidationService = require('./services/financialValidationService');
-    financialValidationService.scheduleValidation();
-    logger.info('Financial validation scheduler started');
-
-
-
-    // Performance monitoring
-    const performanceMonitoringService = require('./services/performanceMonitoringService');
-    performanceMonitoringService.scheduleMonitoring();
-    logger.info('Performance monitoring scheduler started');
-  } catch (error) {
-    logger.error('Error initializing production critical features:', error);
-  }
 }

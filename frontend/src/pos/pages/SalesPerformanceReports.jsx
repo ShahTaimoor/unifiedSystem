@@ -42,7 +42,7 @@ import { useResponsive, ResponsiveContainer, ResponsiveGrid } from '../component
 import CreateSalesPerformanceReportModal from '../components/CreateSalesPerformanceReportModal';
 import SalesPerformanceDetailModal from '../components/SalesPerformanceDetailModal';
 import SalesPerformanceFilters from '../components/SalesPerformanceFilters';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 
 const SalesPerformanceReports = () => {
   const [filters, setFilters] = useState({
@@ -749,3 +749,4 @@ const SalesPerformanceReports = () => {
 };
 
 export default SalesPerformanceReports;
+

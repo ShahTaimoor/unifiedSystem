@@ -50,3 +50,4 @@ export const PRINT_PAGE_STYLE = `
     -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
   }
 `;
+

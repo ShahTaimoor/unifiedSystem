@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import BaseModal from '../BaseModal';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import PrintWrapper from './PrintWrapper';
 import PrintTrigger from './PrintTrigger';
 import { PRINT_PAGE_STYLE } from './printPageStyle';
@@ -27,7 +27,8 @@ const PrintModal = ({
   hasData = true,
   autoPrint = false,
   zIndex = 50,
-  getPdfData
+  getPdfData,
+  onAfterPrint
 }) => {
   const printRef = useRef(null);
 
@@ -77,7 +78,12 @@ const PrintModal = ({
       footer={footer}
       zIndex={zIndex}
     >
-      <PrintWrapper ref={printRef} documentTitle={documentTitle} pageStyle={PRINT_PAGE_STYLE}>
+      <PrintWrapper
+        ref={printRef}
+        documentTitle={documentTitle}
+        pageStyle={PRINT_PAGE_STYLE}
+        onAfterPrint={onAfterPrint}
+      >
         {hasData ? (
           <div className="print-preview-scale print-modal-preview max-w-full overflow-auto flex justify-center">
             {children}
@@ -93,3 +99,4 @@ const PrintModal = ({
 };
 
 export default PrintModal;
+

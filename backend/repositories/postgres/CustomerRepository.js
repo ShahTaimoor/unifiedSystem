@@ -121,10 +121,10 @@ class CustomerRepository {
     const addressData = customerData.addresses || (customerData.address ? [customerData.address] : null);
     const result = await query(
       `INSERT INTO customers (
-        name, business_name, email, phone, address,
+        name, business_name, email, phone, address, city,
         opening_balance, credit_limit, payment_terms, tax_id, notes,
         business_type, customer_tier, is_active, created_by, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         customerData.name || null,
@@ -132,6 +132,7 @@ class CustomerRepository {
         customerData.email || null,
         customerData.phone || null,
         addressData ? JSON.stringify(addressData) : null,
+        customerData.city || null,
         customerData.openingBalance || 0,
         customerData.creditLimit || 0,
         customerData.paymentTerms || null,
@@ -173,16 +174,16 @@ class CustomerRepository {
       updates.push(`phone = $${paramCount++}`);
       params.push(customerData.phone);
     }
-    if (customerData.city !== undefined) {
-      updates.push(`city = $${paramCount++}`);
-      params.push(customerData.city);
-    }
     if (customerData.addresses !== undefined || customerData.address !== undefined) {
       const addressData = customerData.addresses || (customerData.address ? [customerData.address] : undefined);
       if (addressData !== undefined) {
         updates.push(`address = $${paramCount++}`);
         params.push(JSON.stringify(addressData));
       }
+    }
+    if (customerData.city !== undefined) {
+      updates.push(`city = $${paramCount++}`);
+      params.push(customerData.city);
     }
     if (customerData.openingBalance !== undefined) {
       updates.push(`opening_balance = $${paramCount++}`);
@@ -199,18 +200,6 @@ class CustomerRepository {
     if (customerData.customerTier !== undefined) {
       updates.push(`customer_tier = $${paramCount++}`);
       params.push(customerData.customerTier);
-    }
-    if (customerData.currentBalance !== undefined) {
-      updates.push(`current_balance = $${paramCount++}`);
-      params.push(customerData.currentBalance);
-    }
-    if (customerData.pendingBalance !== undefined) {
-      updates.push(`pending_balance = $${paramCount++}`);
-      params.push(customerData.pendingBalance);
-    }
-    if (customerData.advanceBalance !== undefined) {
-      updates.push(`advance_balance = $${paramCount++}`);
-      params.push(customerData.advanceBalance);
     }
     if (customerData.isActive !== undefined) {
       updates.push(`is_active = $${paramCount++}`);

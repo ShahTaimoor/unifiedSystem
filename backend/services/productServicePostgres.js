@@ -4,7 +4,6 @@ const categoryRepository = require('../repositories/postgres/CategoryRepository'
 const inventoryRepository = require('../repositories/postgres/InventoryRepository');
 const investorRepository = require('../repositories/postgres/InvestorRepository');
 const AccountingService = require('./accountingService');
-const cloudinaryService = require('./cloudinaryService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -99,11 +98,11 @@ function toApiProduct(row, categoryMap = null) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     imageUrl: row.image_url || null,
-    image: row.image_url || null,
-    // Storefront legacy aliases
+    // Storefront compatibility fields
     title: row.name,
     price: parseFloat(row.selling_price) || 0,
-    stock: parseFloat(row.stock_quantity) || 0
+    stock: parseFloat(row.stock_quantity) || 0,
+    image: row.image_url || null
   };
 }
 
@@ -165,6 +164,8 @@ class ProductServicePostgres {
     else if (queryParams.status === 'inactive') filters.isActive = false;
     if (queryParams.lowStock === 'true' || queryParams.lowStock === true) filters.lowStock = true;
     if (queryParams.stockStatus) filters.stockStatus = queryParams.stockStatus;
+    if (queryParams.sortBy) filters.sortBy = queryParams.sortBy;
+    if (queryParams.sortOrder) filters.sortOrder = queryParams.sortOrder;
     return filters;
   }
 
@@ -219,7 +220,8 @@ class ProductServicePostgres {
               reorderPoint: reorder,
               minStock: reorder
             },
-            stock: cur
+            // Update stock for storefront compatibility
+            stock: available
           };
         }
         return p;
@@ -233,7 +235,17 @@ class ProductServicePostgres {
 
     return {
       products,
-      pagination: result.pagination
+      pagination: {
+        page,
+        current: page,
+        totalPages: Math.ceil(result.pagination.total / limit) || 1,
+        pages: Math.ceil(result.pagination.total / limit) || 1,
+        total: result.pagination.total,
+        limit,
+        mode: 'offset',
+        nextCursor: result.pagination.nextCursor,
+        hasMore: result.pagination.hasMore
+      }
     };
   }
 
@@ -273,15 +285,15 @@ class ProductServicePostgres {
           reorderPoint: reorder,
           minStock: reorder
         },
-        stock: cur
+        // Update stock for storefront compatibility
+        stock: available
       };
     }
     const invMap = await productRepository.findInvestorsByProductIds([id]);
     return attachInvestorsToApiProduct(product, invMap.get(String(id)) || []);
   }
 
-  async createProduct(productDataRaw, userId, req = null) {
-    const productData = await cloudinaryService.processImagesInPayload(productDataRaw);
+  async createProduct(productData, userId, req = null) {
     const pricing = productData.pricing || {};
     const cost = pricing.cost !== undefined && pricing.cost !== null ? Number(pricing.cost) : 0;
     const retail = pricing.retail !== undefined && pricing.retail !== null ? Number(pricing.retail) : 0;
@@ -359,11 +371,9 @@ class ProductServicePostgres {
     };
   }
 
-  async updateProduct(id, updateDataRaw, userId, req = null) {
+  async updateProduct(id, updateData, userId, req = null) {
     const current = await productRepository.findById(id);
     if (!current) throw new Error('Product not found');
-
-    const updateData = await cloudinaryService.processImagesInPayload(updateDataRaw);
 
     if (updateData.name) {
       const nameExists = await productRepository.nameExists(updateData.name, id);
@@ -554,14 +564,23 @@ class ProductServicePostgres {
   }
 
   async searchProducts(query, limit = 10, page = 1) {
-    const result = await productRepository.search(query, { limit, page });
-    const rows = result.products;
-    const categoryIds = [...new Set(rows.map(p => p.category_id).filter(Boolean))];
+    const result = await productRepository.findWithPagination({ search: query }, { limit, page });
+    const categoryIds = [...new Set(result.products.map(p => p.category_id).filter(Boolean))];
     const categoryMap = await getCategoryMap(categoryIds);
-    const products = rows.map(p => toApiProduct(p, categoryMap));
+    const products = result.products.map(p => toApiProduct(p, categoryMap));
+    
     return {
       products,
-      pagination: result.pagination
+      pagination: {
+        page,
+        current: page,
+        totalPages: result.pagination.pages || 1,
+        pages: result.pagination.pages || 1,
+        total: result.pagination.total,
+        limit,
+        mode: 'offset',
+        hasMore: result.pagination.hasMore
+      }
     };
   }
 

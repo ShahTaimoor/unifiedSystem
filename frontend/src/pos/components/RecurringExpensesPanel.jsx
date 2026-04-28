@@ -20,9 +20,9 @@ import {
 } from '../store/services/expensesApi';
 import { useGetBanksQuery } from '../store/services/banksApi';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
 
 const defaultFormState = {
@@ -583,5 +583,6 @@ const RecurringExpensesPanel = ({ expenseAccounts = [], onPaymentRecorded }) => 
 };
 
 export default RecurringExpensesPanel;
+
 
 

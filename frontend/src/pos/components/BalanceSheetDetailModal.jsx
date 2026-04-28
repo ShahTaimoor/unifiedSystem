@@ -654,3 +654,4 @@ const BalanceSheetDetailModal = ({
 
 export default BalanceSheetDetailModal;
 
+

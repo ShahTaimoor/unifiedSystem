@@ -148,3 +148,4 @@ export const useBulkDeleteConfirmation = () => {
 };
 
 export default useConfirmation;
+

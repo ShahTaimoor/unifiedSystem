@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
   useLoginMutation,
+  useRequestTwoFactorCodeMutation,
+  useVerifyTwoFactorMutation,
   useCurrentUserQuery,
   useLogoutMutation,
 } from '../store/services/authApi';
@@ -16,7 +18,7 @@ export const useAuth = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, token, isAuthenticated, status, error } = useAppSelector((s) => s.auth);
-  const isLoginPage = location.pathname === '/login' || location.pathname === '/pos/login';
+  const isLoginPage = location.pathname === '/pos/login' || location.pathname === '/login';
 
   const {
     isLoading: currentUserLoading,
@@ -37,6 +39,8 @@ export const useAuth = () => {
   });
 
   const [loginMutation, { isLoading: loginLoading }] = useLoginMutation();
+  const [requestTwoFactorMutation, { isLoading: requestTwoFactorLoading }] = useRequestTwoFactorCodeMutation();
+  const [verifyTwoFactorMutation, { isLoading: verifyTwoFactorLoading }] = useVerifyTwoFactorMutation();
   const [logoutMutation] = useLogoutMutation();
 
   const login = async (email, password) => {
@@ -51,6 +55,38 @@ export const useAuth = () => {
     }
   };
 
+  const requestTwoFactorCode = async ({ channel = 'email', email, phone }) => {
+    try {
+      const response = await requestTwoFactorMutation({ channel, email, phone }).unwrap();
+      toast.info(
+        channel === 'sms'
+          ? 'Verification code sent to your mobile number.'
+          : 'Verification code sent to your email.'
+      );
+      return {
+        success: true,
+        twoFactorRequired: true,
+        tempToken: response.tempToken,
+      };
+    } catch (error) {
+      const message = error?.data?.message || error?.message || 'Could not send verification code';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  };
+
+  const verifyTwoFactor = async (tempToken, code) => {
+    try {
+      await verifyTwoFactorMutation({ tempToken, code }).unwrap();
+      toast.success('Login successful!');
+      return { success: true };
+    } catch (error) {
+      const message = error?.data?.message || error?.message || '2FA verification failed';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  };
+
   const logout = async () => {
     try {
       await logoutMutation().unwrap();
@@ -59,7 +95,7 @@ export const useAuth = () => {
     }
     dispatch(logoutAction());
     toast.success('Logged out successfully');
-    navigate('/login', { replace: true });
+    navigate('/pos/login', { replace: true });
   };
 
   const updateUser = (userData) => {
@@ -78,8 +114,11 @@ export const useAuth = () => {
   // - Only show loading during initial auth check or login process
   // - Once we have an error (401), stop showing loading
   const loading = isLoginPage
-    ? loginLoading
-    : (status === 'loading' || (currentUserLoading && !currentUserError)) || loginLoading;
+    ? (loginLoading || verifyTwoFactorLoading || requestTwoFactorLoading)
+    : (status === 'loading' || (currentUserLoading && !currentUserError)) ||
+      loginLoading ||
+      verifyTwoFactorLoading ||
+      requestTwoFactorLoading;
 
   return {
     user,
@@ -88,9 +127,12 @@ export const useAuth = () => {
     loading,
     error: error || (currentUserError ? currentUserErrorData : null),
     login,
+    requestTwoFactorCode,
+    verifyTwoFactor,
     logout,
     updateUser,
     hasPermission,
     refetchCurrentUser,
   };
 };
+

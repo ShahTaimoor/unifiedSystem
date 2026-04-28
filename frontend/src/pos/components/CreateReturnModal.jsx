@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Plus, Minus, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
 import BaseModal from './BaseModal';
 import { 
   useGetEligibleItemsQuery,
@@ -568,3 +568,4 @@ const CreateReturnModal = ({ isOpen, onClose, onSuccess, defaultReturnType = 'sa
 };
 
 export default CreateReturnModal;
+

@@ -35,3 +35,4 @@ export async function uploadImageAsWebp(file) {
   }
   return optimized;
 }
+

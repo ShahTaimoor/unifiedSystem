@@ -59,12 +59,19 @@ class AccountLedgerService {
           : (entry.referenceType || entry.source) === 'bank_payment'
             ? bankNameByPaymentId.get(entry.referenceId)
             : null;
-      if (!bankName) return entry;
+
+      const sourceLabel = (entry.referenceType || entry.source || 'Ledger')
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      if (!bankName) return { ...entry, source: sourceLabel };
       const suffix = ` (Bank: ${bankName})`;
       const particular = entry.particular || entry.description || '';
       const description = entry.description || '';
       return {
         ...entry,
+        source: sourceLabel,
         particular: particular.includes(suffix) ? particular : `${particular}${suffix}`,
         description: description ? (description.includes(suffix) ? description : `${description}${suffix}`) : description
       };
@@ -205,12 +212,17 @@ class AccountLedgerService {
     if (queryParams.accountCode) {
       accountInfo = await chartOfAccountsRepository.findByAccountCode(queryParams.accountCode);
     }
-
     // Calculate running balance only when specific account is selected
     let runningBalance = accountInfo ? accountInfo.openingBalance || 0 : null;
+    
+    // Fetch banks once to enrich entries that don't have explicit bank info (like JVs)
+    const bankResult = await query('SELECT id, bank_name as "bankName" FROM banks WHERE is_active = true');
+    const allBanks = bankResult.rows;
+
     let ledgerEntries = result.transactions.map(transaction => {
       const debit = transaction.debitAmount || 0;
       const credit = transaction.creditAmount || 0;
+      const accountCode = transaction.accountCode || accountInfo?.accountCode;
 
       if (accountInfo && runningBalance !== null) {
         if (accountInfo.normalBalance === 'debit') {
@@ -220,14 +232,38 @@ class AccountLedgerService {
         }
       }
 
+      const sourceLabel = (transaction.referenceType || 'Transaction')
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      // SPECIAL CASE: For manual JVs hitting the bank account (1001), ensure label is clear
+      let finalSourceLabel = sourceLabel;
+      if (accountCode === '1001' && (sourceLabel === 'Journal Voucher' || sourceLabel === 'Journal' || sourceLabel === 'Transaction')) {
+        finalSourceLabel = 'Bank Adjustment (Journal)';
+      }
+
+      // If it's a bank account (1001 or matching account_number) and has no bank info, assign the only bank if applicable
+      let bankName = transaction.bankName;
+      let bankId = transaction.bankId;
+      if (!bankName && allBanks.length === 1) {
+        // Any account 1001 OR an account that exactly matches our only bank's account number
+        if (accountCode === '1001' || accountCode === String(allBanks[0].accountNumber)) {
+          bankName = allBanks[0].bankName;
+          bankId = allBanks[0].id;
+        }
+      }
+
       return {
         ...transaction,
-        accountCode: transaction.accountCode || accountInfo?.accountCode,
+        accountCode,
         accountName: accountInfo?.accountName || '',
         debitAmount: debit,
         creditAmount: credit,
         balance: accountInfo && runningBalance !== null ? runningBalance : undefined,
-        source: 'Transaction'
+        source: finalSourceLabel,
+        bankName,
+        bankId
       };
     });
 
@@ -440,7 +476,7 @@ class AccountLedgerService {
                 customerId,
                 transactionDate: { $lt: start },
                 status: 'completed',
-                accountCode: '1100'
+                accountCode: { $in: ['1100', `CUST-${customerId.toUpperCase()}`] }
               }, { lean: true });
 
               const openingExcludingOb = openingLedgerEntries.filter((e) => !isCustomerOpeningEntry(e));
@@ -458,7 +494,7 @@ class AccountLedgerService {
             const periodLedgerFilter = {
               customerId,
               status: 'completed',
-              accountCode: '1100'
+              accountCode: { $in: ['1100', `CUST-${customerId.toUpperCase()}`] }
             };
             if (start) periodLedgerFilter.transactionDate = { $gte: start };
             if (end) {
@@ -586,7 +622,7 @@ class AccountLedgerService {
             if (start) {
               const openingLedgerEntries = await transactionRepository.findAll({
                 supplierId,
-                accountCode: '2000', // Only AP account entries
+                accountCode: { $in: ['2000', `SUPP-${supplierId.toUpperCase()}`] }, // Only AP and dedicated supplier entries
                 transactionDate: { $lt: start },
                 status: 'completed'
               }, { lean: true });
@@ -604,7 +640,7 @@ class AccountLedgerService {
             // Filter by AP account code (2000) to show only Accounts Payable entries
             const periodLedgerFilter = {
               supplierId,
-              accountCode: '2000', // Only AP account entries
+              accountCode: { $in: ['2000', `SUPP-${supplierId.toUpperCase()}`] }, // Only AP and dedicated supplier entries
               status: 'completed'
             };
             if (start) periodLedgerFilter.transactionDate = { $gte: start };
@@ -780,6 +816,83 @@ class AccountLedgerService {
           summary: filteredSupplierSummaries,
           totals: supplierTotals,
           count: filteredSupplierSummaries.length
+        }
+      };
+
+      // Process banks (calculate period-specific opening balance)
+      const bankResults = await query('SELECT id, bank_name as "bankName", opening_balance as "openingBalance" FROM banks WHERE deleted_at IS NULL');
+      const allBanks = bankResults.rows;
+      
+      const bankSummaries = await Promise.all(
+        allBanks.map(async (bank) => {
+          try {
+            const bankId = bank.id;
+            const initialOpening = parseFloat(bank.openingBalance || 0);
+            let openingBalance = initialOpening;
+
+            // Calculate period opening balance (before startDate)
+            if (start) {
+              const prePeriodEntries = await query(
+                `SELECT COALESCE(SUM(debit_amount - credit_amount), 0) as balance
+                 FROM account_ledger
+                 WHERE account_code = '1001'
+                   AND bank_id = $1
+                   AND status = 'completed'
+                   AND reversed_at IS NULL
+                   AND reference_type != 'bank_opening_balance'
+                   AND transaction_date < $2`,
+                [bankId, start]
+              );
+              openingBalance += parseFloat(prePeriodEntries.rows[0].balance || 0);
+            }
+
+            // Get period transactions totals
+            const periodTotals = await query(
+              `SELECT COALESCE(SUM(debit_amount), 0) as "totalDebits",
+                      COALESCE(SUM(credit_amount), 0) as "totalCredits"
+               FROM account_ledger
+               WHERE account_code = '1001'
+                 AND bank_id = $1
+                 AND status = 'completed'
+                 AND reversed_at IS NULL
+                 AND reference_type != 'bank_opening_balance'
+                 AND transaction_date BETWEEN $2 AND $3`,
+              [bankId, start || new Date(0), end || new Date()]
+            );
+
+            const totalDebits = parseFloat(periodTotals.rows[0].totalDebits || 0);
+            const totalCredits = parseFloat(periodTotals.rows[0].totalCredits || 0);
+            const closingBalance = openingBalance + totalDebits - totalCredits;
+
+            return {
+              id: bankId,
+              name: bank.bankName,
+              openingBalance,
+              totalDebits,
+              totalCredits,
+              closingBalance
+            };
+          } catch (err) {
+            console.error(`Error processing bank summary for ${bank.bankName}:`, err);
+            return {
+              id: bank.id,
+              name: bank.bankName,
+              openingBalance: parseFloat(bank.openingBalance || 0),
+              totalDebits: 0,
+              totalCredits: 0,
+              closingBalance: parseFloat(bank.openingBalance || 0)
+            };
+          }
+        })
+      );
+
+      data.banks = {
+        summary: bankSummaries,
+        totals: {
+          openingBalance: bankSummaries.reduce((sum, b) => sum + b.openingBalance, 0),
+          totalDebits: bankSummaries.reduce((sum, b) => sum + b.totalDebits, 0),
+          totalCredits: bankSummaries.reduce((sum, b) => sum + b.totalCredits, 0),
+          closingBalance: bankSummaries.reduce((sum, b) => sum + b.closingBalance, 0)
         }
       };
 

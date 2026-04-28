@@ -74,3 +74,4 @@ export function resolveMediaUrl(url) {
   const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   return `${origin}${path}`;
 }
+

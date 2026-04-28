@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, ChevronDown, Check } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Input } from '@pos/components/ui/input';
 
 const EMPTY_ARRAY = [];
 
@@ -564,3 +564,4 @@ export const SearchableDropdown = forwardRef(({
 });
 
 SearchableDropdown.displayName = 'SearchableDropdown';
+

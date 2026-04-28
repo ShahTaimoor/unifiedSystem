@@ -13,6 +13,7 @@ const profitDistributionService = require('./profitDistributionService');
 const discountService = require('./discountService');
 const paymentRepository = require('../repositories/postgres/PaymentRepository');
 const settingsService = require('./settingsService');
+const { getEffectiveGlobalTaxRate } = require('../utils/globalTax');
 const purchaseInvoiceRepository = require('../repositories/postgres/PurchaseInvoiceRepository');
 const { withBusinessTransaction } = require('./withBusinessTransaction');
 
@@ -527,12 +528,19 @@ class SalesService {
    */
   async createSale(data, user, options = {}) {
     const { skipInventoryUpdate = false } = options;
-    const { customer, items, orderType, payment, notes, isTaxExempt, billDate, billStartTime, salesOrderId, appliedDiscounts: payloadDiscounts, discountAmount: payloadDiscountAmount, subtotal: payloadSubtotal, total: payloadTotal, tax: payloadTax } = data;
+    const { clientSideId, customer, items, orderType, payment, notes, isTaxExempt, billDate, billStartTime, salesOrderId, appliedDiscounts: payloadDiscounts, discountAmount: payloadDiscountAmount, subtotal: payloadSubtotal, total: payloadTotal, tax: payloadTax } = data;
+
+    // Check for idempotency if clientSideId is provided
+    if (clientSideId) {
+      const existing = await salesRepository.findByClientSideId(clientSideId);
+      if (existing) return existing;
+    }
 
     // Generate order number if not provided
     const settings = await settingsService.getCompanySettings();
     const orderSettings = settings?.orderSettings || {};
     const allowSaleWithoutProduct = orderSettings.allowSaleWithoutProduct === true;
+    const globalTax = getEffectiveGlobalTaxRate(settings, !!isTaxExempt);
 
     // Validate customer if provided
     let customerData = null;
@@ -598,13 +606,8 @@ class SalesService {
       const itemSubtotal = item.quantity * unitPrice;
       const itemDiscount = itemSubtotal * (itemDiscountPercent / 100);
       const itemTaxable = itemSubtotal - itemDiscount;
-      const taxRate =
-        isManual || !product
-          ? 0
-          : isVariant
-            ? (product.baseProduct?.taxSettings?.taxRate ?? 0)
-            : (product.tax_settings?.tax_rate ?? product.taxSettings?.taxRate ?? 0);
-      const itemTax = isTaxExempt ? 0 : itemTaxable * taxRate;
+      const taxRate = globalTax.rateDecimal;
+      const itemTax = itemTaxable * taxRate;
 
       let unitCost = 0;
       let productId = null;
@@ -657,7 +660,8 @@ class SalesService {
     // even when no discount code is selected.
     if (payloadDiscountAmount != null || payloadTax != null || payloadTotal != null) {
       if (payloadDiscountAmount != null) finalDiscount = Number(payloadDiscountAmount);
-      if (payloadTax != null) finalTax = Number(payloadTax);
+      if (!globalTax.enabled) finalTax = 0;
+      else if (payloadTax != null) finalTax = Number(payloadTax);
       if (payloadTotal != null) orderTotal = Number(payloadTotal);
       else orderTotal = subtotal - finalDiscount + finalTax;
     }
@@ -719,7 +723,8 @@ class SalesService {
       notes,
       createdBy: user.id || user._id?.toString(),
       appliedDiscounts: appliedDiscountsForSale,
-      orderType: orderType || 'retail'
+      orderType: orderType || 'retail',
+      clientSideId: clientSideId || null
     };
 
     const order = await withBusinessTransaction(async ({ client, addPostCommit }) => {
@@ -735,7 +740,7 @@ class SalesService {
             reference: 'Sales Invoice',
             performedBy: user._id,
             notes: 'Stock reduced due to sales invoice creation'
-          }, { client });
+          }, { client, skipAccountingEntry: true });
         }
       }
 

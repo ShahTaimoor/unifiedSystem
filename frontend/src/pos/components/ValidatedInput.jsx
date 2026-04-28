@@ -488,3 +488,4 @@ export const ValidatedSelect = forwardRef(({
 ValidatedSelect.displayName = 'ValidatedSelect';
 
 export default ValidatedInput;
+

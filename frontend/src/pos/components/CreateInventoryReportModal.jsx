@@ -18,7 +18,7 @@ import { useGetCategoriesQuery } from '../store/services/categoriesApi';
 import { useGetSuppliersQuery } from '../store/services/suppliersApi';
 import { handleApiError } from '../utils/errorHandler';
 import BaseModal from './BaseModal';
-import { Input } from '@/components/ui/input';
+import { Input } from '@pos/components/ui/input';
 
 const CreateInventoryReportModal = ({ onClose, onSuccess }) => {
   const [activeTab, setActiveTab] = useState('basic');
@@ -587,3 +587,4 @@ const CreateInventoryReportModal = ({ onClose, onSuccess }) => {
 };
 
 export default CreateInventoryReportModal;
+

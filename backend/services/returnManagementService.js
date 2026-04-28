@@ -41,6 +41,31 @@ class ReturnManagementService {
     ];
   }
 
+  /**
+   * Extract cost basis from order item with consistent fallback logic.
+   * Uses only cost fields, NOT selling price, to ensure accurate valuation.
+   * Fallback hierarchy:
+   *   1. unit_cost (snake_case from DB)
+   *   2. unitCost (camelCase from JS)
+   *   3. cost_price (product field)
+   *   4. costPrice (product field camelCase)
+   *   5. 0 (if nothing found)
+   * 
+   * IMPORTANT: Does NOT fallback to unitPrice/unit_price as those are selling prices, not costs.
+   */
+  extractCostBasis(orderItem, product = null) {
+    const cost = 
+      orderItem?.unit_cost ?? 
+      orderItem?.unitCost ?? 
+      product?.cost_price ?? 
+      product?.costPrice ?? 
+      0;
+    
+    const numCost = Number(cost) || 0;
+    if (numCost < 0) return 0;
+    return numCost;
+  }
+
   /** Fetch order from Postgres and normalize to shape expected by return logic (customer, supplier, items with _id and product). */
   async fetchAndNormalizeOrder(orderId, isPurchaseReturn) {
     let row = null;
@@ -596,7 +621,13 @@ class ReturnManagementService {
         String(oi._id || oi.id) === String(item.originalOrderItem)
       );
 
-      const unitCost = originalItem?.unit_cost || originalItem?.unitCost || originalItem?.costPerUnit || originalItem?.unitPrice || originalItem?.unit_price || 0;
+      // Fetch product to use as fallback for cost basis extraction
+      const product = originalItem?.product && (originalItem.product.id || originalItem.product._id)
+        ? await ProductRepository.findById(originalItem.product.id || originalItem.product._id)
+        : null;
+
+      // Extract cost basis using consistent logic (avoids falling back to selling price)
+      const unitCost = this.extractCostBasis(originalItem, product);
       const returnCost = unitCost * item.quantity;
       const currentStock = Number(inventory.current_stock ?? inventory.currentStock ?? 0);
 
@@ -1057,7 +1088,13 @@ class ReturnManagementService {
       );
 
       if (originalItem) {
-        const unitCost = originalItem.unitCost || 0;
+        // Fetch product to use as fallback for cost basis extraction
+        const product = originalItem?.product && (originalItem.product.id || originalItem.product._id)
+          ? await ProductRepository.findById(originalItem.product.id || originalItem.product._id)
+          : null;
+
+        // Extract cost basis using consistent logic (avoids falling back to selling price)
+        const unitCost = this.extractCostBasis(originalItem, product);
         totalCOGS += unitCost * returnItem.quantity;
       }
     }
@@ -1075,7 +1112,13 @@ class ReturnManagementService {
       );
 
       if (originalItem) {
-        const unitCost = originalItem.unitCost || 0;
+        // Fetch product to use as fallback for cost basis extraction
+        const product = originalItem?.product && (originalItem.product.id || originalItem.product._id)
+          ? await ProductRepository.findById(originalItem.product.id || originalItem.product._id)
+          : null;
+
+        // Extract cost basis using consistent logic (avoids falling back to selling price)
+        const unitCost = this.extractCostBasis(originalItem, product);
         totalCOGS += unitCost * returnItem.quantity;
       }
     }
@@ -1085,22 +1128,9 @@ class ReturnManagementService {
 
   // Update supplier balance
   async updateSupplierBalance(supplierId, amount, originalInvoiceId) {
-    try {
-      const SupplierBalanceService = require('../services/supplierBalanceService');
-      if (SupplierBalanceService && SupplierBalanceService.recordReturn) {
-        await SupplierBalanceService.recordReturn(supplierId, amount, originalInvoiceId);
-      } else {
-        const supplier = await SupplierRepository.findById(supplierId);
-        if (supplier) {
-          const currentBalance = Number(supplier.current_balance ?? supplier.currentBalance ?? 0);
-          const { query } = require('../config/postgres');
-          await query('UPDATE suppliers SET current_balance = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [currentBalance - amount, supplierId]);
-        }
-      }
-    } catch (error) {
-      console.error('Error updating supplier balance:', error);
-      // Don't throw - accounting entries are more critical
-    }
+    // Note: Manual balance updates removed. 
+    // Ledger is the SSoT; return refunds already post ledger entries in processPurchaseReturnRefund.
+    return;
   }
 
   // Process exchange (pass client when inside return transaction so exchange order commits with return)

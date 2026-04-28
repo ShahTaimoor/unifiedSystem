@@ -59,9 +59,9 @@ import { DualUnitQuantityInput } from '../components/DualUnitQuantityInput';
 import { hasDualUnit, getPiecesPerBox, piecesToBoxesAndPieces, formatStockDualLabel } from '../utils/dualUnitUtils';
 import { toast } from 'sonner';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage, LoadingInline } from '../components/LoadingSpinner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
 import {
   OrderCheckoutCard,
   OrderDetailsSection,
@@ -298,6 +298,8 @@ export const PurchaseOrders = ({ tabId }) => {
   const dualUnitShowPiecesInputEnabled = companySettings.orderSettings?.dualUnitShowPiecesInput !== false;
   const resolvedCompanyAddress = companySettings.address || companySettings.billingAddress || '';
   const resolvedCompanyPhone = companySettings.contactNumber || '';
+  const taxSystemEnabled = companySettings.taxEnabled === true;
+  const effectiveGlobalTaxPct = Math.min(100, Math.max(0, Number(companySettings.defaultTaxRate ?? 0)));
 
   // Calculate default date range (14 days ago to today)
   const today = getCurrentDatePakistan();
@@ -364,8 +366,7 @@ export const PurchaseOrders = ({ tabId }) => {
     invoiceNumber: '',
     expectedDelivery: new Date().toISOString().split('T')[0],
     notes: '',
-    terms: '',
-    isTaxExempt: true
+    terms: ''
   });
 
   // Product selection state
@@ -580,8 +581,7 @@ export const PurchaseOrders = ({ tabId }) => {
       invoiceNumber: '',
       expectedDelivery: new Date().toISOString().split('T')[0],
       notes: '',
-      terms: '',
-      isTaxExempt: true
+      terms: ''
     });
     setSelectedSupplier(null);
     setSupplierSearchTerm('');
@@ -822,7 +822,8 @@ export const PurchaseOrders = ({ tabId }) => {
 
   const calculateTotals = () => {
     const subtotal = formData.items.reduce((sum, item) => sum + item.totalCost, 0);
-    const tax = formData.isTaxExempt ? 0 : subtotal * 0.08; // 8% tax if not exempt
+    const tax =
+      !taxSystemEnabled ? 0 : subtotal * (effectiveGlobalTaxPct / 100);
     const total = subtotal + tax;
     const supplierOutstanding =
       Number(selectedSupplier?.pendingBalance ?? selectedSupplier?.outstandingBalance ?? 0) || 0;
@@ -857,6 +858,7 @@ export const PurchaseOrders = ({ tabId }) => {
     const { subtotal, tax, total } = calculateTotals();
     const orderData = {
       ...formData,
+      isTaxExempt: !taxSystemEnabled,
       subtotal,
       tax,
       total
@@ -895,6 +897,7 @@ export const PurchaseOrders = ({ tabId }) => {
     // Clean the form data before sending to backend
     const cleanedData = {
       ...formData,
+      isTaxExempt: !taxSystemEnabled,
       items: formData.items.map(item => {
         const base = {
           product: item.product,
@@ -1075,8 +1078,7 @@ export const PurchaseOrders = ({ tabId }) => {
       items: processedItems,
       expectedDelivery: order.expectedDelivery ? new Date(order.expectedDelivery).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       notes: order.notes || '',
-      terms: order.terms || '',
-      isTaxExempt: order.isTaxExempt !== undefined ? order.isTaxExempt : true
+      terms: order.terms || ''
     };
 
     setFormData(newFormData);
@@ -1262,18 +1264,18 @@ export const PurchaseOrders = ({ tabId }) => {
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Purchase Orders</h1>
-          <p className="text-sm sm:text-base text-gray-600">Process purchase order transactions</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Purchase Orders</h1>
+          <p className="hidden sm:block text-sm sm:text-base text-gray-600">Process purchase order transactions</p>
         </div>
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
+        <div className="flex items-center space-x-2 flex-shrink-0">
 
           <Button
             onClick={resetForm}
             variant="default"
             size="default"
-            className="flex-1 sm:flex-initial"
+            className="px-3 sm:px-4"
           >
             <Plus className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">New Purchase Order</span>
@@ -1285,7 +1287,7 @@ export const PurchaseOrders = ({ tabId }) => {
       {/* Supplier Selection and Information Row */}
       <div className="flex flex-col md:flex-row items-start space-y-4 md:space-y-0 md:space-x-12">
         {/* Supplier Selection */}
-        <div className="w-full md:w-[750px] flex-shrink-0">
+        <div className="w-full max-w-3xl flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <label className="block text-sm font-medium text-gray-700">
               Select Supplier
@@ -1641,101 +1643,229 @@ export const PurchaseOrders = ({ tabId }) => {
                     : 'overflow-visible -mx-1 px-1'
                 }
               >
-              {formData.items.map((item, index) => {
-                const product = item.productData || item.product; // Use stored product/variant data or fallback to product
-                const displayName = product?.isVariant
-                  ? (product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
-                  : (product?.name || 'Unknown Product');
-                const totalPrice = item.costPerUnit * item.quantity;
-                const isLowStock = product?.inventory?.currentStock <= (product?.inventory?.reorderPoint || 0);
-                const serialHighlight = highlightedPoLineIndex === index;
+                {formData.items.map((item, index) => {
+                  const product = item.productData || item.product; // Use stored product/variant data or fallback to product
+                  const displayName = product?.isVariant
+                    ? (product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
+                    : (product?.name || 'Unknown Product');
+                  const totalPrice = item.costPerUnit * item.quantity;
+                  const isLowStock = product?.inventory?.currentStock <= (product?.inventory?.reorderPoint || 0);
+                  const serialHighlight = highlightedPoLineIndex === index;
 
-                return (
-                  <div
-                    key={index}
-                    ref={(node) => {
-                      if (node) poCartLineElRefs.current.set(index, node);
-                      else poCartLineElRefs.current.delete(index);
-                    }}
-                  >
-                    {/* Mobile Card View */}
-                    <div className="md:hidden mb-4 p-3 border border-gray-200 rounded-lg bg-white shadow-sm">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0 flex items-center gap-2">
-                          {product?.imageUrl && showProductImages && (
-                            <div 
-                              className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200 cursor-pointer hover:border-primary-500 transition-colors group relative"
-                              onClick={() => setPreviewImageProduct(product)}
-                              title="Click to view full size"
-                            >
-                              <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
-                                <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  return (
+                    <div
+                      key={index}
+                      ref={(node) => {
+                        if (node) poCartLineElRefs.current.set(index, node);
+                        else poCartLineElRefs.current.delete(index);
+                      }}
+                    >
+                      {/* Mobile Card View */}
+                      <div className="md:hidden mb-4 p-3 border border-gray-200 rounded-lg bg-white shadow-sm">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1 min-w-0 flex items-center gap-2">
+                            {product?.imageUrl && showProductImages && (
+                              <div
+                                className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200 cursor-pointer hover:border-primary-500 transition-colors group relative"
+                                onClick={() => setPreviewImageProduct(product)}
+                                title="Click to view full size"
+                              >
+                                <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
+                                  <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span
+                                  className={`text-xs font-semibold px-2 py-0.5 rounded transition-colors duration-300 ${serialHighlight
+                                      ? 'bg-green-100 text-green-800 border border-green-400 ring-2 ring-green-300/80'
+                                      : 'text-gray-500 bg-gray-100'
+                                    }`}
+                                >
+                                  #{index + 1}
+                                </span>
+                                <span className="font-medium text-sm truncate">
+                                  {product?.isVariant
+                                    ? safeRender(product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
+                                    : safeRender(product?.name || 'Unknown Product')}
+                                </span>
+                              </div>
+                              {product?.isVariant && (
+                                <span className="text-xs text-gray-500 block">
+                                  {product.variantType}: {product.variantValue}
+                                </span>
+                              )}
+                              {(() => {
+                                const b = (product?.barcode ?? '').toString().trim();
+                                if (b) return <span className="text-xs text-gray-600 font-mono block mt-0.5">Barcode: {b}</span>;
+                                const s = (product?.sku ?? '').toString().trim();
+                                if (s) return <span className="text-xs text-gray-600 font-mono block mt-0.5">SKU: {s}</span>;
+                                return null;
+                              })()}
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
+                                {isLowStock && <span className="text-yellow-600 text-xs">⚠️ Low</span>}
                               </div>
                             </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span
-                                className={`text-xs font-semibold px-2 py-0.5 rounded transition-colors duration-300 ${
-                                  serialHighlight
-                                    ? 'bg-green-100 text-green-800 border border-green-400 ring-2 ring-green-300/80'
-                                    : 'text-gray-500 bg-gray-100'
+                          </div>
+                          <Button
+                            onClick={() => handleRemoveItem(index)}
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 w-8 p-0 flex-shrink-0 ml-2"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Stock</label>
+                            <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center leading-tight">
+                              {hasDualUnit(product)
+                                ? formatStockDualLabel(product?.inventory?.currentStock || 0, product)
+                                : (product?.inventory?.currentStock || 0)}
+                            </span>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Total</label>
+                            <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center">
+                              {Math.round(totalPrice)}
+                            </span>
+                          </div>
+                          <div className={hasDualUnit(product) ? 'col-span-2' : ''}>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
+                            {hasDualUnit(product) ? (
+                              <DualUnitQuantityInput
+                                product={product}
+                                quantity={item.quantity}
+                                showBoxInput={dualUnitShowBoxInputEnabled}
+                                showPiecesInput={dualUnitShowPiecesInputEnabled}
+                                onChange={(newQuantity, dual) => {
+                                  if (newQuantity <= 0) {
+                                    handleRemoveItem(index);
+                                    return;
+                                  }
+                                  const ppb = getPiecesPerBox(product);
+                                  const { boxes, pieces } = ppb && dual ? dual : (ppb ? piecesToBoxesAndPieces(newQuantity, ppb) : {});
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    items: prev.items.map((itm, i) =>
+                                      i === index ? {
+                                        ...itm,
+                                        quantity: newQuantity,
+                                        ...(ppb && { boxes, pieces }),
+                                        totalCost: newQuantity * itm.costPerUnit
+                                      } : itm
+                                    )
+                                  }));
+                                }}
+                                min={1}
+                                inputClassName="text-center h-8 w-full border border-gray-300 rounded px-2"
+                                compact={hasDualUnit(product)}
+                              />
+                            ) : (
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newQuantity = parseInt(e.target.value) || 1;
+                                  if (newQuantity <= 0) {
+                                    handleRemoveItem(index);
+                                    return;
+                                  }
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    items: prev.items.map((itm, i) =>
+                                      i === index ? { ...itm, quantity: newQuantity, totalCost: newQuantity * itm.costPerUnit } : itm
+                                    )
+                                  }));
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                className="text-center h-8 w-full"
+                                min="1"
+                              />
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Cost</label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={item.costPerUnit}
+                              onChange={(e) => {
+                                const newCost = parseFloat(e.target.value) || 0;
+                                setFormData(prev => ({
+                                  ...prev,
+                                  items: prev.items.map((itm, i) =>
+                                    i === index ? { ...itm, costPerUnit: newCost, totalCost: itm.quantity * newCost } : itm
+                                  )
+                                }));
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="text-center h-8 w-full"
+                              min="0"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Desktop Table Row */}
+                      <div className={`hidden md:block py-1 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          {/* Serial Number - 1 column (new field) */}
+                          <div className="col-span-1 flex justify-center">
+                            <span
+                              className={`text-sm font-medium px-0.5 py-1 rounded border block text-center h-8 w-1/2 min-w-[56px] flex items-center justify-center transition-colors duration-300 ${serialHighlight
+                                  ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
+                                  : 'text-gray-700 bg-gray-50 border-gray-200'
                                 }`}
+                            >
+                              {index + 1}
+                            </span>
+                          </div>
+
+                          {/* Product Name — col-span-4 so Qty can use 3 cols for dual units */}
+                          <div className="col-span-4 flex items-center gap-2 min-h-8 min-w-0">
+                            {product?.imageUrl && showProductImages && (
+                              <div
+                                className="h-8 w-8 flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200 cursor-pointer hover:border-primary-500 transition-colors group relative"
+                                onClick={() => setPreviewImageProduct(product)}
+                                title="Click to view full size"
                               >
-                                #{index + 1}
-                              </span>
+                                <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
+                                  <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex flex-col min-w-0">
                               <span className="font-medium text-sm truncate">
                                 {product?.isVariant
-                                ? safeRender(product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
-                                : safeRender(product?.name || 'Unknown Product')}
+                                  ? safeRender(product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
+                                  : safeRender(product?.name || 'Unknown Product')}
+                                {isLowStock && <span className="text-yellow-600 text-xs ml-2">⚠️ Low</span>}
+                              </span>
+                              {product?.isVariant && (
+                                <span className="text-xs text-gray-500">
+                                  {product.variantType}: {product.variantValue}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Stock - 1 column (matches Product Selection Stock) */}
+                          <div className="col-span-1 min-w-0">
+                            <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center min-h-8 flex items-center justify-center leading-tight text-xs">
+                              {hasDualUnit(product)
+                                ? formatStockDualLabel(product?.inventory?.currentStock || 0, product)
+                                : (product?.inventory?.currentStock || 0)}
                             </span>
                           </div>
-                          {product?.isVariant && (
-                            <span className="text-xs text-gray-500 block">
-                              {product.variantType}: {product.variantValue}
-                            </span>
-                          )}
-                          {(() => {
-                            const b = (product?.barcode ?? '').toString().trim();
-                            if (b) return <span className="text-xs text-gray-600 font-mono block mt-0.5">Barcode: {b}</span>;
-                            const s = (product?.sku ?? '').toString().trim();
-                            if (s) return <span className="text-xs text-gray-600 font-mono block mt-0.5">SKU: {s}</span>;
-                            return null;
-                          })()}
-                          <div className="flex flex-wrap items-center gap-2 mt-1">
-                            {isLowStock && <span className="text-yellow-600 text-xs">⚠️ Low</span>}
-                          </div>
-                        </div>
-                        </div>
-                        <Button
-                          onClick={() => handleRemoveItem(index)}
-                          variant="destructive"
-                          size="sm"
-                          className="h-8 w-8 p-0 flex-shrink-0 ml-2"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Stock</label>
-                          <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center leading-tight">
-                            {hasDualUnit(product)
-                              ? formatStockDualLabel(product?.inventory?.currentStock || 0, product)
-                              : (product?.inventory?.currentStock || 0)}
-                          </span>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Total</label>
-                          <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center">
-                            {Math.round(totalPrice)}
-                          </span>
-                        </div>
-                        <div className={hasDualUnit(product) ? 'col-span-2' : ''}>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
-                          {hasDualUnit(product) ? (
+
+                          {/* Quantity — 3 cols so Box + Pcs + Total fit */}
+                          <div className="col-span-3 min-w-0">
                             <DualUnitQuantityInput
                               product={product}
                               quantity={item.quantity}
@@ -1761,186 +1891,56 @@ export const PurchaseOrders = ({ tabId }) => {
                                 }));
                               }}
                               min={1}
-                              inputClassName="text-center h-8 w-full border border-gray-300 rounded px-2"
+                              inputClassName="text-center h-8 border border-gray-300 rounded px-2"
                               compact={hasDualUnit(product)}
                             />
-                          ) : (
+                          </div>
+
+                          {/* Cost - 1 column (matches Product Selection Cost) */}
+                          <div className="col-span-1">
                             <Input
                               type="number"
-                              value={item.quantity}
+                              step="0.01"
+                              value={item.costPerUnit}
                               onChange={(e) => {
-                                const newQuantity = parseInt(e.target.value) || 1;
-                                if (newQuantity <= 0) {
-                                  handleRemoveItem(index);
-                                  return;
-                                }
+                                const newCost = parseFloat(e.target.value) || 0;
                                 setFormData(prev => ({
                                   ...prev,
                                   items: prev.items.map((itm, i) =>
-                                    i === index ? { ...itm, quantity: newQuantity, totalCost: newQuantity * itm.costPerUnit } : itm
+                                    i === index ? { ...itm, costPerUnit: newCost, totalCost: itm.quantity * newCost } : itm
                                   )
                                 }));
                               }}
                               onFocus={(e) => e.target.select()}
-                              className="text-center h-8 w-full"
-                              min="1"
+                              className="text-center h-8"
+                              min="0"
                             />
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Cost</label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={item.costPerUnit}
-                            onChange={(e) => {
-                              const newCost = parseFloat(e.target.value) || 0;
-                              setFormData(prev => ({
-                                ...prev,
-                                items: prev.items.map((itm, i) =>
-                                  i === index ? { ...itm, costPerUnit: newCost, totalCost: itm.quantity * newCost } : itm
-                                )
-                              }));
-                            }}
-                            onFocus={(e) => e.target.select()}
-                            className="text-center h-8 w-full"
-                            min="0"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                          </div>
 
-                    {/* Desktop Table Row */}
-                    <div className={`hidden md:block py-1 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        {/* Serial Number - 1 column (new field) */}
-                        <div className="col-span-1 flex justify-center">
-                          <span
-                            className={`text-sm font-medium px-0.5 py-1 rounded border block text-center h-8 w-1/2 min-w-[56px] flex items-center justify-center transition-colors duration-300 ${
-                              serialHighlight
-                                ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
-                                : 'text-gray-700 bg-gray-50 border-gray-200'
-                            }`}
-                          >
-                            {index + 1}
-                          </span>
-                        </div>
-
-                        {/* Product Name — col-span-4 so Qty can use 3 cols for dual units */}
-                        <div className="col-span-4 flex items-center gap-2 min-h-8 min-w-0">
-                          {product?.imageUrl && showProductImages && (
-                            <div 
-                              className="h-8 w-8 flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200 cursor-pointer hover:border-primary-500 transition-colors group relative"
-                              onClick={() => setPreviewImageProduct(product)}
-                              title="Click to view full size"
-                            >
-                              <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
-                                <Camera className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </div>
-                            </div>
-                          )}
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-medium text-sm truncate">
-                              {product?.isVariant
-                                ? safeRender(product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
-                                : safeRender(product?.name || 'Unknown Product')}
-                              {isLowStock && <span className="text-yellow-600 text-xs ml-2">⚠️ Low</span>}
+                          {/* Total - 1 column (matches Product Selection Amount) */}
+                          <div className="col-span-1">
+                            <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center h-8 flex items-center justify-center">
+                              {Math.round(totalPrice)}
                             </span>
-                            {product?.isVariant && (
-                              <span className="text-xs text-gray-500">
-                                {product.variantType}: {product.variantValue}
-                              </span>
-                            )}
+                          </div>
+
+                          {/* Delete Button - 1 column (matches Product Selection Add Button) */}
+                          <div className="col-span-1 flex justify-center">
+                            <Button
+                              onClick={() => handleRemoveItem(index)}
+                              variant="destructive"
+                              size="sm"
+                              className="h-8 w-1/2 min-w-[56px]"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-
-                        {/* Stock - 1 column (matches Product Selection Stock) */}
-                        <div className="col-span-1 min-w-0">
-                          <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center min-h-8 flex items-center justify-center leading-tight text-xs">
-                            {hasDualUnit(product)
-                              ? formatStockDualLabel(product?.inventory?.currentStock || 0, product)
-                              : (product?.inventory?.currentStock || 0)}
-                          </span>
-                        </div>
-
-                        {/* Quantity — 3 cols so Box + Pcs + Total fit */}
-                        <div className="col-span-3 min-w-0">
-                          <DualUnitQuantityInput
-                            product={product}
-                            quantity={item.quantity}
-                            showBoxInput={dualUnitShowBoxInputEnabled}
-                            showPiecesInput={dualUnitShowPiecesInputEnabled}
-                            onChange={(newQuantity, dual) => {
-                              if (newQuantity <= 0) {
-                                handleRemoveItem(index);
-                                return;
-                              }
-                              const ppb = getPiecesPerBox(product);
-                              const { boxes, pieces } = ppb && dual ? dual : (ppb ? piecesToBoxesAndPieces(newQuantity, ppb) : {});
-                              setFormData(prev => ({
-                                ...prev,
-                                items: prev.items.map((itm, i) =>
-                                  i === index ? {
-                                    ...itm,
-                                    quantity: newQuantity,
-                                    ...(ppb && { boxes, pieces }),
-                                    totalCost: newQuantity * itm.costPerUnit
-                                  } : itm
-                                )
-                              }));
-                            }}
-                            min={1}
-                            inputClassName="text-center h-8 border border-gray-300 rounded px-2"
-                            compact={hasDualUnit(product)}
-                          />
-                        </div>
-
-                        {/* Cost - 1 column (matches Product Selection Cost) */}
-                        <div className="col-span-1">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={item.costPerUnit}
-                            onChange={(e) => {
-                              const newCost = parseFloat(e.target.value) || 0;
-                              setFormData(prev => ({
-                                ...prev,
-                                items: prev.items.map((itm, i) =>
-                                  i === index ? { ...itm, costPerUnit: newCost, totalCost: itm.quantity * newCost } : itm
-                                )
-                              }));
-                            }}
-                            onFocus={(e) => e.target.select()}
-                            className="text-center h-8"
-                            min="0"
-                          />
-                        </div>
-
-                        {/* Total - 1 column (matches Product Selection Amount) */}
-                        <div className="col-span-1">
-                          <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center h-8 flex items-center justify-center">
-                            {Math.round(totalPrice)}
-                          </span>
-                        </div>
-
-                        {/* Delete Button - 1 column (matches Product Selection Add Button) */}
-                        <div className="col-span-1 flex justify-center">
-                          <Button
-                            onClick={() => handleRemoveItem(index)}
-                            variant="destructive"
-                            size="sm"
-                            className="h-8 w-1/2 min-w-[56px]"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1993,32 +1993,6 @@ export const PurchaseOrders = ({ tabId }) => {
                     </div>
                   </div>
 
-                  {/* Tax Exemption Option */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Tax Status
-                    </label>
-                    <div className="flex items-center space-x-2 px-3 py-2 border border-gray-200 rounded h-10">
-                      <input
-                        type="checkbox"
-                        id="taxExemptMobile"
-                        checked={formData.isTaxExempt}
-                        onChange={(e) => setFormData(prev => ({ ...prev, isTaxExempt: e.target.checked }))}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                      />
-                      <div className="flex-1">
-                        <label htmlFor="taxExemptMobile" className="text-sm font-medium text-gray-700 cursor-pointer">
-                          Tax Exempt
-                        </label>
-                      </div>
-                      {formData.isTaxExempt && (
-                        <div className="text-green-600 text-sm font-medium">
-                          ✓
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Notes */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -2064,32 +2038,6 @@ export const PurchaseOrders = ({ tabId }) => {
                     />
                   </div>
 
-                  {/* Tax Exemption Option */}
-                  <div className="flex flex-col w-40">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Tax Status
-                    </label>
-                    <div className="flex items-center space-x-1 px-2 py-1 border border-gray-200 rounded h-8">
-                      <input
-                        type="checkbox"
-                        id="taxExempt"
-                        checked={formData.isTaxExempt}
-                        onChange={(e) => setFormData(prev => ({ ...prev, isTaxExempt: e.target.checked }))}
-                        className="h-3 w-3 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                      />
-                      <div className="flex-1">
-                        <label htmlFor="taxExempt" className="text-xs font-medium text-gray-700 cursor-pointer">
-                          Tax Exempt
-                        </label>
-                      </div>
-                      {formData.isTaxExempt && (
-                        <div className="text-green-600 text-xs font-medium">
-                          ✓
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Notes */}
                   <div className="flex flex-col w-[28rem]">
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -2116,12 +2064,14 @@ export const PurchaseOrders = ({ tabId }) => {
                 <span className="text-gray-800 font-semibold">Subtotal:</span>
                 <span className="text-xl font-bold text-gray-900">{Math.round(subtotal)}</span>
               </div>
+              {taxSystemEnabled && tax > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-gray-800 font-semibold">
-                  {formData.isTaxExempt ? 'Tax (Exempt):' : 'Tax (8%):'}
+                  {`Tax (${effectiveGlobalTaxPct}%):`}
                 </span>
                 <span className="text-xl font-bold text-gray-900">{Math.round(tax)}</span>
               </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-gray-800 font-semibold">PO Total:</span>
                 <span className="text-xl font-bold text-gray-900">{Math.round(total)}</span>
@@ -2328,24 +2278,6 @@ export const PurchaseOrders = ({ tabId }) => {
                           />
                         </div>
 
-                        {/* Tax Exemption Option */}
-                        <div className="flex flex-col w-40">
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Tax Status
-                          </label>
-                          <div className="flex items-center space-x-1 px-2 py-1 border border-gray-200 rounded h-8">
-                            <input
-                              type="checkbox"
-                              id="taxExemptEdit"
-                              checked={formData.isTaxExempt}
-                              onChange={(e) => setFormData(prev => ({ ...prev, isTaxExempt: e.target.checked }))}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <label htmlFor="taxExemptEdit" className="text-xs text-gray-700">
-                              Tax Exempt
-                            </label>
-                          </div>
-                        </div>
                       </div>
 
                       {/* Notes and Terms Row */}
@@ -2866,23 +2798,31 @@ export const PurchaseOrders = ({ tabId }) => {
       {/* Results */}
       <div className="card">
         <div className="card-header">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">
-              Purchase Orders From: {formatDate(filters.fromDate)} To: {formatDate(filters.toDate)}
-            </h3>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-500">
-                {paginationInfo.total ?? paginationInfo.totalItems ?? purchaseOrders.length ?? 0} records
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 leading-tight">
+              Purchase Orders
+              <span className="block sm:inline sm:ml-2 text-xs sm:text-sm font-normal text-gray-500 mt-1 sm:mt-0">
+                From: {formatDate(filters.fromDate)} To: {formatDate(filters.toDate)}
               </span>
-              <ExcelExportButton getData={getExportData} label="Export" />
-              <PdfExportButton getData={getExportData} label="PDF" />
-              <button
-                onClick={() => refetch()}
-                className="p-2 text-gray-400 hover:text-gray-600"
-                title="Refresh"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                <span className="font-semibold text-gray-700">
+                  {paginationInfo.total ?? paginationInfo.totalItems ?? purchaseOrders.length ?? 0}
+                </span>{' '}
+                records
+              </span>
+              <div className="flex items-center gap-2">
+                <ExcelExportButton getData={getExportData} label="Export" />
+                <PdfExportButton getData={getExportData} label="PDF" />
+                <button
+                  onClick={() => refetch()}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2902,141 +2842,141 @@ export const PurchaseOrders = ({ tabId }) => {
             </div>
           ) : (
             <>
-            <div
-              ref={poTableScrollRef}
-              className={`overflow-x-auto ${virtualizePoRows ? 'max-h-[min(70vh,560px)] overflow-y-auto' : ''}`}
-            >
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      PO #
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Supplier
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {(() => {
-                    const vItems = poRowVirtualizer.getVirtualItems();
-                    const totalH = poRowVirtualizer.getTotalSize();
-                    const padTop = vItems.length ? vItems[0].start : 0;
-                    const padBottom = vItems.length ? totalH - vItems[vItems.length - 1].end : 0;
-                    return (
-                      <>
-                        {padTop > 0 ? (
-                          <tr aria-hidden className="pointer-events-none">
-                            <td colSpan={6} className="p-0 border-0" style={{ height: padTop }} />
-                          </tr>
-                        ) : null}
-                        {vItems.map((vr) => {
-                          const order = purchaseOrders[vr.index];
-                          const index = vr.index;
-                          return (
-                    <tr key={vr.key} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: vr.size }}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(order.purchase_date || order.order_date || order.created_at || order.createdAt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {order.purchase_order_number || order.poNumber || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {safeRender(order.supplier) || 'Unknown'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <StatusBadge status={order.status} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {Math.round(order.total || 0)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleView(order)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="View"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handlePrint(order)}
-                            className="text-gray-600 hover:text-gray-900"
-                            title="Print"
-                          >
-                            <Printer className="h-4 w-4" />
-                          </button>
-                          {(order.status === 'draft' || order.status === 'confirmed' || order.status === 'partially_received' || order.status === 'cancelled') && (
-                            <button
-                              onClick={() => handleEdit(order)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Edit"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                          )}
-                          {order.status === 'draft' && (
-                            <>
-                              <button
-                                onClick={() => handleConfirm(order)}
-                                className="text-green-600 hover:text-green-900"
-                                title="Confirm Order"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleCancel(order.id || order._id)}
-                                className="text-red-600 hover:text-red-900"
-                                title="Cancel Order"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </button>
-                            </>
-                          )}
-                          {(order.status === 'draft' || order.status === 'cancelled' || order.status === 'confirmed' || order.status === 'partially_received' || !order.supplier) && (
-                            <button
-                              onClick={() => handleDelete(order.id || order._id)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
+              <div
+                ref={poTableScrollRef}
+                className={`overflow-x-auto ${virtualizePoRows ? 'max-h-[min(70vh,560px)] overflow-y-auto' : ''}`}
+              >
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        PO #
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Supplier
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                          );
-                        })}
-                        {padBottom > 0 ? (
-                          <tr aria-hidden className="pointer-events-none">
-                            <td colSpan={6} className="p-0 border-0" style={{ height: padBottom }} />
-                          </tr>
-                        ) : null}
-                      </>
-                    );
-                  })()}
-                </tbody>
-              </table>
-            </div>
-            <PaginationControls
-              page={Number(paginationInfo.current ?? pagination.page) || 1}
-              totalPages={Math.max(1, Number(paginationInfo.pages) || 1)}
-              onPageChange={(p) => setPagination((prev) => ({ ...prev, page: p }))}
-              totalItems={paginationInfo.total}
-              limit={pagination.limit}
-            />
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {(() => {
+                      const vItems = poRowVirtualizer.getVirtualItems();
+                      const totalH = poRowVirtualizer.getTotalSize();
+                      const padTop = vItems.length ? vItems[0].start : 0;
+                      const padBottom = vItems.length ? totalH - vItems[vItems.length - 1].end : 0;
+                      return (
+                        <>
+                          {padTop > 0 ? (
+                            <tr aria-hidden className="pointer-events-none">
+                              <td colSpan={6} className="p-0 border-0" style={{ height: padTop }} />
+                            </tr>
+                          ) : null}
+                          {vItems.map((vr) => {
+                            const order = purchaseOrders[vr.index];
+                            const index = vr.index;
+                            return (
+                              <tr key={vr.key} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: vr.size }}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {formatDate(order.purchase_date || order.order_date || order.created_at || order.createdAt)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {order.purchase_order_number || order.poNumber || '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {safeRender(order.supplier) || 'Unknown'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  <StatusBadge status={order.status} />
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {Math.round(order.total || 0)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => handleView(order)}
+                                      className="text-blue-600 hover:text-blue-900"
+                                      title="View"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handlePrint(order)}
+                                      className="text-gray-600 hover:text-gray-900"
+                                      title="Print"
+                                    >
+                                      <Printer className="h-4 w-4" />
+                                    </button>
+                                    {(order.status === 'draft' || order.status === 'confirmed' || order.status === 'partially_received' || order.status === 'cancelled') && (
+                                      <button
+                                        onClick={() => handleEdit(order)}
+                                        className="text-indigo-600 hover:text-indigo-900"
+                                        title="Edit"
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                    {order.status === 'draft' && (
+                                      <>
+                                        <button
+                                          onClick={() => handleConfirm(order)}
+                                          className="text-green-600 hover:text-green-900"
+                                          title="Confirm Order"
+                                        >
+                                          <CheckCircle className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleCancel(order.id || order._id)}
+                                          className="text-red-600 hover:text-red-900"
+                                          title="Cancel Order"
+                                        >
+                                          <XCircle className="h-4 w-4" />
+                                        </button>
+                                      </>
+                                    )}
+                                    {(order.status === 'draft' || order.status === 'cancelled' || order.status === 'confirmed' || order.status === 'partially_received' || !order.supplier) && (
+                                      <button
+                                        onClick={() => handleDelete(order.id || order._id)}
+                                        className="text-red-600 hover:text-red-900"
+                                        title="Delete"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {padBottom > 0 ? (
+                            <tr aria-hidden className="pointer-events-none">
+                              <td colSpan={6} className="p-0 border-0" style={{ height: padBottom }} />
+                            </tr>
+                          ) : null}
+                        </>
+                      );
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+              <PaginationControls
+                page={Number(paginationInfo.current ?? pagination.page) || 1}
+                totalPages={Math.max(1, Number(paginationInfo.pages) || 1)}
+                onPageChange={(p) => setPagination((prev) => ({ ...prev, page: p }))}
+                totalItems={paginationInfo.total}
+                limit={pagination.limit}
+              />
             </>
           )}
         </div>
@@ -3245,7 +3185,7 @@ export const PurchaseOrders = ({ tabId }) => {
                       <span className="text-gray-600">Subtotal:</span>
                       <span className="font-medium">{Math.round(Number(viewOrder.subtotal) || 0)}</span>
                     </div>
-                    {viewOrder.tax && viewOrder.tax > 0 && (
+                    {taxSystemEnabled && viewOrder.tax && Number(viewOrder.tax) > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Tax:</span>
                         <span className="font-medium">{Math.round(Number(viewOrder.tax))}</span>
@@ -3350,9 +3290,9 @@ export const PurchaseOrders = ({ tabId }) => {
       >
         <div className="flex justify-center items-center bg-gray-50 rounded-lg overflow-hidden min-h-[300px] p-4">
           {previewImageProduct?.imageUrl ? (
-            <img 
-              src={previewImageProduct.imageUrl} 
-              alt="Product Preview" 
+            <img
+              src={previewImageProduct.imageUrl}
+              alt="Product Preview"
               className="max-w-full max-h-[70vh] object-contain"
             />
           ) : (
@@ -3364,4 +3304,5 @@ export const PurchaseOrders = ({ tabId }) => {
     </div>
   );
 };
+
 

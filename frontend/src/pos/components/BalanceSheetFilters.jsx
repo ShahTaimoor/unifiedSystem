@@ -209,3 +209,4 @@ const BalanceSheetFilters = ({ filters, onFilterChange, isLoading }) => {
 };
 
 export default BalanceSheetFilters;
+

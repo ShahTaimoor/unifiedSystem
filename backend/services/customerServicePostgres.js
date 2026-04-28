@@ -236,6 +236,8 @@ class CustomerService {
     const result = await query(
       `SELECT DISTINCT name AS city FROM cities WHERE is_active = TRUE 
        UNION
+       SELECT DISTINCT city FROM customers WHERE city IS NOT NULL AND city != ''
+       UNION
        SELECT DISTINCT (jsonb_array_elements(address)->>'city') AS city FROM customers WHERE address IS NOT NULL AND jsonb_typeof(address) = 'array'
        UNION
        SELECT DISTINCT (address->>'city') AS city FROM customers WHERE address IS NOT NULL AND jsonb_typeof(address) = 'object'
@@ -371,12 +373,16 @@ class CustomerService {
           : String(cityRaw || '').trim();
 
         // Map user-friendly Excel headers to DB fields
+        const addressVal = customer.address || customer.Address || customer.street || customer.Street || '';
         const mappedData = {
           businessName: customer.business_name || customer.businessName || customer.business_name || '',
           name: customer.name || customer.contact_person || '',
           email: customer.email || '',
           phone: customer.phone || '',
-          address: cityName ? { city: cityName } : undefined,
+          address: cityName || addressVal ? { 
+            city: cityName,
+            street: addressVal 
+          } : undefined,
           openingBalance: parseFloat(customer.opening_balance || customer.openingBalance || customer.balance || 0),
           businessType: (customer.business_type || customer.businessType || 'wholesale').toLowerCase(),
           customerTier: (customer.customer_tier || customer.customerTier || 'bronze').toLowerCase(),

@@ -18,7 +18,7 @@ import { useGetAnomaliesQuery, useGetSummaryQuery } from '../store/services/anom
 import { formatCurrency } from '../utils/formatters';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { showErrorToast, handleApiError } from '../utils/errorHandler';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 
 const AnomalyDetection = () => {
   const [filters, setFilters] = useState({
@@ -331,4 +331,5 @@ const AnomalyDetection = () => {
 };
 
 export default AnomalyDetection;
+
 

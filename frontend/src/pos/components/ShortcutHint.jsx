@@ -13,3 +13,4 @@ export const ShortcutHint = ({ shortcutId, className = '' }) => {
 
 export default ShortcutHint;
 
+

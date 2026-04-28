@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import * as Icons from 'lucide-react';
 import {
+  Smartphone,
   Building,
   Phone,
   MapPin,
@@ -25,12 +27,16 @@ import {
   TrendingUp,
   LayoutDashboard,
   AlertCircle,
-  UserPlus
+  UserPlus,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useGetCompanySettingsQuery,
   useUpdateCompanySettingsMutation,
+  useGetUserPreferencesQuery,
+  useUpdateUserPreferencesMutation,
 } from '../store/services/settingsApi';
 import { useFetchCompanyQuery } from '../store/services/companyApi';
 import {
@@ -42,7 +48,8 @@ import {
   useResetPasswordMutation,
   useUpdateRolePermissionsMutation,
 } from '../store/services/usersApi';
-import { navigation, loadSidebarConfig } from '../components/MultiTabLayout';
+import { navigation, loadSidebarConfig, loadBottomNavConfig } from '../components/MultiTabLayout';
+import { getComponentInfo } from '../utils/componentUtils';
 import { useChangePasswordMutation } from '../store/services/authApi';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
 import PrintDocument from '../components/PrintDocument';
@@ -50,11 +57,11 @@ import { CompanySettingsForm } from '../components/CompanySettingsForm';
 import { OrderItemWiseConfirmationSettings } from '../components/OrderItemWiseConfirmationSettings';
 import { handleApiError } from '../utils/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
+import { Checkbox } from '@pos/components/ui/checkbox';
+import { Label } from '@pos/components/ui/label';
 
 export const Settings2 = () => {
   const { user } = useAuth();
@@ -123,6 +130,8 @@ export const Settings2 = () => {
     showPrintPaymentStatus: true,
     showPrintPaymentMethod: true,
     showPrintPaymentAmount: true,
+    autoPrintAfterSale: true,
+    autoCompleteSaleAfterPrint: true,
     mobilePrintPreview: false,
     headerText: '',
     footerText: '',
@@ -239,7 +248,8 @@ export const Settings2 = () => {
         { key: 'create_orders', name: 'Create Orders' },
         { key: 'edit_orders', name: 'Edit Orders' },
         { key: 'cancel_orders', name: 'Cancel Orders' },
-        { key: 'view_cost_prices', name: 'View Cost Prices' },
+        { key: 'view_product_costs', name: 'View Cost Prices' },
+        { key: 'manage_sales', name: 'Manage Sales (Profit/Loss)' },
         // Purchase Operations - Granular
         {
           key: 'create_purchase_orders',
@@ -291,7 +301,7 @@ export const Settings2 = () => {
         // Inventory Operations - Granular
         { key: 'generate_purchase_orders', name: 'Generate Purchase Orders' },
         { key: 'acknowledge_inventory_alerts', name: 'Acknowledge Inventory Alerts' },
-
+        { key: 'manage_inventory', name: 'Full Inventory Control' },
         { key: 'import_inventory_data', name: 'Import Inventory Data' }
       ]
     },
@@ -348,7 +358,8 @@ export const Settings2 = () => {
             { key: 'view_sales_performance', name: 'Sales Performance' },
             { key: 'view_inventory_reports', name: 'Inventory Reports' },
             { key: 'view_general_reports', name: 'Reports' },
-            { key: 'view_backdate_report', name: 'Backdate Report' }
+            { key: 'view_backdate_report', name: 'Backdate Report' },
+            { key: 'view_financial_data', name: 'Financial Data (Cost/Profit)' }
           ]
         },
         { key: 'view_analytics', name: 'View Analytics' },
@@ -458,7 +469,8 @@ export const Settings2 = () => {
         { key: 'view_trial_balance', name: 'View Trial Balance' },
         { key: 'update_balance_sheet', name: 'Update Balance Sheet' },
         { key: 'view_chart_of_accounts', name: 'View Chart of Accounts' },
-        { key: 'view_accounting_summary', name: 'View Financial Summary' }
+        { key: 'view_accounting_summary', name: 'View Financial Summary' },
+        { key: 'manage_accounting', name: 'Manage Accounting' }
       ]
     },
     attendance: {
@@ -507,9 +519,9 @@ export const Settings2 = () => {
       // Orders
       view_orders: true, create_orders: true, edit_orders: true, cancel_orders: true,
       view_sales_orders: true, view_purchase_orders: true, view_sales_invoices: true, view_purchase_invoices: true,
-      view_cost_prices: true,
+      view_product_costs: true, manage_sales: true,
       // Inventory
-      view_inventory: true, update_inventory: true,
+      view_inventory: true, update_inventory: true, manage_inventory: true,
       view_inventory_levels: true, view_stock_movements: true, view_low_stock_alerts: true,
       update_stock_quantities: true, create_stock_adjustments: true, process_receipts: true,
       // Returns
@@ -523,7 +535,7 @@ export const Settings2 = () => {
       view_reports: true, view_analytics: true, view_recommendations: true,
       view_pl_statements: true, view_balance_sheets: true, view_sales_performance: true,
       view_inventory_reports: true, view_general_reports: true, view_backdate_report: true,
-      view_customer_analytics: true, view_anomaly_detection: true,
+      view_customer_analytics: true, view_anomaly_detection: true, view_financial_data: true,
       share_reports: true, schedule_reports: true, view_advanced_analytics: true,
       // Financial Operations
       view_cash_receipts: true, create_cash_receipts: true, edit_cash_receipts: true, delete_cash_receipts: true,
@@ -546,6 +558,7 @@ export const Settings2 = () => {
       // Accounting
       view_accounting_transactions: true, view_accounting_accounts: true, view_trial_balance: true,
       update_balance_sheet: true, view_chart_of_accounts: true, view_accounting_summary: true,
+      manage_accounting: true,
       // Attendance
       clock_attendance: true, clock_in: true, clock_out: true, manage_attendance_breaks: true,
       view_own_attendance: true, view_team_attendance: true,
@@ -573,9 +586,9 @@ export const Settings2 = () => {
       // Orders - Full access
       view_orders: true, create_orders: true, edit_orders: true, cancel_orders: true,
       view_sales_orders: true, view_purchase_orders: true, view_sales_invoices: true, view_purchase_invoices: true,
-      view_cost_prices: true,
+      view_product_costs: true, manage_sales: true,
       // Inventory - Full access
-      view_inventory: true, update_inventory: true,
+      view_inventory: true, update_inventory: true, manage_inventory: true,
       view_inventory_levels: true, view_stock_movements: true, view_low_stock_alerts: true,
       update_stock_quantities: true, create_stock_adjustments: true, process_receipts: true,
       // Returns - Full access
@@ -589,7 +602,7 @@ export const Settings2 = () => {
       view_reports: true, view_analytics: true, view_recommendations: true,
       view_pl_statements: true, view_balance_sheets: true, view_sales_performance: true,
       view_inventory_reports: true, view_general_reports: true, view_backdate_report: true,
-      view_customer_analytics: true, view_anomaly_detection: true,
+      view_customer_analytics: true, view_anomaly_detection: true, view_financial_data: true,
       share_reports: true, schedule_reports: true, view_advanced_analytics: true,
       // Financial Operations
       view_cash_receipts: true, create_cash_receipts: true, edit_cash_receipts: true, delete_cash_receipts: true,
@@ -668,15 +681,39 @@ export const Settings2 = () => {
       // Reports - Limited financial reports
       view_reports: true,
       view_pl_statements: true, view_balance_sheets: true, view_general_reports: true
+    },
+    employee: {
+      view_sales: true,
+      manage_sales: true
+    },
+    inventory: {
+      view_products: true,
+      view_product_list: true,
+      view_product_details: true,
+      view_product_categories: true,
+      view_product_inventory: true,
+      view_inventory: true,
+      update_inventory: true,
+      manage_inventory: true,
+      view_inventory_levels: true,
+      view_stock_movements: true,
+      view_low_stock_alerts: true,
+      update_stock_quantities: true,
+      create_stock_adjustments: true,
+      process_receipts: true
     }
   };
 
   // Fetch company settings
   const { data: settingsResponse, isLoading: companyLoading, refetch: refetchSettings } = useGetCompanySettingsQuery();
+  const { data: userPreferencesResponse } = useGetUserPreferencesQuery();
   const { data: companyApiResponse } = useFetchCompanyQuery();
   const [updateCompanySettings] = useUpdateCompanySettingsMutation();
+  const [updateUserPreferences, { isLoading: isSavingUserPreferences }] = useUpdateUserPreferencesMutation();
   const settings = settingsResponse?.data || settingsResponse;
+  const userPreferences = userPreferencesResponse?.data || userPreferencesResponse || {};
   const companyProfile = companyApiResponse?.data || {};
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   // Map settings data to component state
   useEffect(() => {
@@ -716,6 +753,8 @@ export const Settings2 = () => {
           showPrintPaymentStatus: settings.printSettings.showPrintPaymentStatus ?? true,
           showPrintPaymentMethod: settings.printSettings.showPrintPaymentMethod ?? true,
           showPrintPaymentAmount: settings.printSettings.showPrintPaymentAmount ?? true,
+          autoPrintAfterSale: settings.printSettings.autoPrintAfterSale ?? true,
+          autoCompleteSaleAfterPrint: settings.printSettings.autoCompleteSaleAfterPrint ?? true,
           mobilePrintPreview: settings.printSettings.mobilePrintPreview ?? false,
           headerText: settings.printSettings.headerText || '',
           footerText: settings.printSettings.footerText || '',
@@ -835,6 +874,8 @@ export const Settings2 = () => {
           showPrintPaymentStatus: ps.showPrintPaymentStatus ?? true,
           showPrintPaymentMethod: ps.showPrintPaymentMethod ?? true,
           showPrintPaymentAmount: ps.showPrintPaymentAmount ?? true,
+          autoPrintAfterSale: ps.autoPrintAfterSale ?? true,
+          autoCompleteSaleAfterPrint: ps.autoCompleteSaleAfterPrint ?? true,
           mobilePrintPreview: ps.mobilePrintPreview ?? prev.mobilePrintPreview ?? false,
           headerText: ps.headerText || prev.headerText || '',
           footerText: ps.footerText || prev.footerText || '',
@@ -892,6 +933,21 @@ export const Settings2 = () => {
       handleApiError(error, 'Company Information Update');
     } finally {
       setSavingCompanySettings(false);
+    }
+  };
+
+  useEffect(() => {
+    setTwoFactorEnabled(!!userPreferences?.twoFactorEnabled);
+  }, [userPreferences?.twoFactorEnabled]);
+
+  const handleToggleTwoFactor = async (checked) => {
+    setTwoFactorEnabled(!!checked);
+    try {
+      await updateUserPreferences({ twoFactorEnabled: !!checked }).unwrap();
+      toast.success(`Two-factor authentication ${checked ? 'enabled' : 'disabled'} successfully`);
+    } catch (error) {
+      setTwoFactorEnabled(!checked);
+      handleApiError(error, 'Update 2FA Setting');
     }
   };
 
@@ -1285,8 +1341,11 @@ export const Settings2 = () => {
     setShowActivityModal(true);
   };
 
-  // Sidebar Configuration State (per-link keys match MultiTabLayout / Layout SidebarItem)
+  // Sidebar Configuration State
   const [sidebarConfig, setSidebarConfig] = useState(() => loadSidebarConfig());
+
+  // Mobile Bottom Navigation State
+  const [bottomNavConfig, setBottomNavConfig] = useState(() => loadBottomNavConfig());
 
   // Load company settings on component mount
   useEffect(() => {
@@ -1308,12 +1367,18 @@ export const Settings2 = () => {
     return saved === null ? true : saved === 'true';
   });
 
+  const [showTopBarUI, setShowTopBarUI] = useState(() => {
+    const saved = localStorage.getItem('showTopBarUI');
+    return saved === null ? true : saved === 'true';
+  });
+
   const tabs = [
     { id: 'company', name: 'Company Information', shortName: 'Company', icon: Building },
-    { id: 'users', name: 'Users Control', shortName: 'Users', icon: Users },
+    { id: 'users', name: 'Users', shortName: 'Users', icon: Users },
     { id: 'print', name: 'Print Preview Settings', shortName: 'Print', icon: Printer },
-    { id: 'other', name: 'Other', shortName: 'Other', icon: BarChart3 },
-    { id: 'sidebar', name: 'Sidebar Configuration', shortName: 'Sidebar', icon: LayoutDashboard }
+    { id: 'sidebar', name: 'Sidebar Configuration', shortName: 'Sidebar', icon: LayoutDashboard },
+    { id: 'mobile-nav', name: 'Mobile Nav', shortName: 'Mobile Nav', icon: Smartphone },
+    { id: 'other', name: 'Advanced', shortName: 'Advanced', icon: BarChart3 },
   ];
 
   return (
@@ -1326,8 +1391,23 @@ export const Settings2 = () => {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide w-full">
-        <nav className="-mb-px flex space-x-4 md:space-x-8 w-full">
+      <div className="border-b border-gray-200 -mx-4 px-4 md:mx-0 md:px-0 w-full">
+        <div className="md:hidden pb-3">
+          <label htmlFor="settings-tab-select" className="sr-only">Select settings tab</label>
+          <select
+            id="settings-tab-select"
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {tabs.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <nav className="-mb-px hidden md:flex space-x-4 md:space-x-8 w-full overflow-x-auto scrollbar-hide">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -1692,7 +1772,9 @@ export const Settings2 = () => {
                           </p>
                         </div>
                       )}
+
                     </div>
+
                   </div>
 
                   {/* Row 2: Access Configuration container */}
@@ -1724,6 +1806,7 @@ export const Settings2 = () => {
                           }}
                         >
                           <option value="cashier">Cashier — Daily point of sale ops</option>
+                          <option value="employee">Employee — Restricted access to Sales only</option>
                           <option value="manager">Manager — Full back-office operations</option>
                           <option value="inventory">Inventory — Manage stock & ledgers</option>
                           <option value="admin">Administrator — Full uninhibited access</option>
@@ -2208,6 +2291,29 @@ export const Settings2 = () => {
                         ))}
                       </div>
                     </div>
+
+                    {/* Post-Print Behavior */}
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2 border-b border-gray-100 pb-2">
+                        <div className="p-1.5 bg-emerald-50 rounded-lg text-emerald-600"><Save className="h-4 w-4" /></div>
+                        <h4 className="text-sm font-bold text-gray-700">Post-Print Behavior</h4>
+                      </div>
+                      <div className="flex items-start space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-emerald-300 hover:shadow-md transition-all duration-200 group">
+                        <Checkbox
+                          id="autoPrintAfterSale"
+                          className="mt-0.5 w-5 h-5 rounded-md border-2 border-gray-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                          checked={printSettings.autoPrintAfterSale}
+                          onCheckedChange={(checked) => handlePrintSettingsChange({ target: { name: 'autoPrintAfterSale', type: 'checkbox', checked } })}
+                        />
+                        <Label htmlFor="autoPrintAfterSale" className="flex flex-col cursor-pointer">
+                          <span className="text-sm font-semibold text-gray-700 group-hover:text-emerald-700">Auto-print after sale</span>
+                          <span className="text-xs text-gray-500 mt-1">
+                            If checked, the print dialog opens automatically after sale completion. If unchecked, no automatic print dialog will appear.
+                          </span>
+                        </Label>
+                      </div>
+
+                    </div>
                   </div>
                 </div>
 
@@ -2222,14 +2328,10 @@ export const Settings2 = () => {
                       <span className="text-orange-600 font-medium"> Please save your company information first to see the preview.</span>
                     )}
                   </p>
-                  <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[500px] max-h-[800px] shadow-inner">
+                  <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 md:p-8 overflow-auto flex justify-center items-start min-h-[420px] max-h-[80dvh] shadow-inner">
                     <div
-                      style={
-                        printSettings.mobilePrintPreview
-                          ? { maxWidth: 420, width: '100%', transform: 'scale(0.9)', transformOrigin: 'top center', marginBottom: '-100px' }
-                          : { transform: 'scale(0.6)', transformOrigin: 'top center', marginBottom: '-400px', width: '900px' }
-                      }
-                      className="transition-transform duration-300 ease-in-out"
+                      style={printSettings.mobilePrintPreview ? { maxWidth: 420, width: '100%' } : { maxWidth: 900, width: '100%' }}
+                      className="transition-all duration-300 ease-in-out"
                     >
                       <PrintDocument
                         companySettings={{ ...companyData, logo: companyProfile.logo || companyData.logo }}
@@ -2267,14 +2369,31 @@ export const Settings2 = () => {
             <div className="card-header">
               <div className="flex items-center space-x-2">
                 <BarChart3 className="h-5 w-5 text-gray-600" />
-                <h2 className="text-lg font-semibold">Other Settings</h2>
+                <h2 className="text-lg font-semibold">Advanced Settings</h2>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                Display options and miscellaneous settings
+                Display options, financial guidance, and advanced controls
               </p>
             </div>
             <div className="card-content">
               <div className="space-y-6">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4">Financial Help</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-700">
+                    <div><strong>Sales:</strong> Total revenue from Sales Orders + Sales Invoices</div>
+                    <div><strong>Net Revenue:</strong> Sales minus discounts given</div>
+                    <div><strong>Purchase (COGS):</strong> Cost of goods purchased from suppliers</div>
+                    <div><strong>Gross Profit:</strong> Net Revenue - COGS (your margin)</div>
+                    <div><strong>Receipts:</strong> Total money received (Cash Receipts + Bank Receipts + Sales Invoice Payments)</div>
+                    <div><strong>Payments:</strong> Cash/Bank money paid (includes supplier payments + expenses)</div>
+                    <div><strong>Net Cash Flow:</strong> Total receipts minus total payments (cash position)</div>
+                  </div>
+                  <div className="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded text-sm text-gray-800">
+                    <strong>Note:</strong> Receipts/Payments may include both sales/purchases and separate cash/bank transactions.
+                    For accurate accounting, check individual transaction pages.
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Show Product Images */}
                   <div className="flex items-center space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
@@ -2332,10 +2451,47 @@ export const Settings2 = () => {
                       <span className="text-[10px] text-gray-400">Column in Ledger Summary</span>
                     </Label>
                   </div>
+
+                  {/* Show Top Bar */}
+                  <div className="flex items-center space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
+                    <Checkbox
+                      id="showTopBarUI"
+                      className="w-5 h-5 rounded-md border-2 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      checked={showTopBarUI}
+                      onCheckedChange={(checked) => {
+                        setShowTopBarUI(checked);
+                        localStorage.setItem('showTopBarUI', String(checked));
+                        toast.success(`Top bar ${checked ? 'shown' : 'hidden'} in app layout`);
+                        window.dispatchEvent(new Event('topBarVisibilityChanged'));
+                      }}
+                    />
+                    <Label htmlFor="showTopBarUI" className="flex flex-col cursor-pointer group-hover:text-blue-700">
+                      <span className="text-sm font-semibold">Show Top Bar</span>
+                      <span className="text-[10px] text-gray-400">Header visibility across pages</span>
+                    </Label>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">
                   <OrderItemWiseConfirmationSettings />
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex items-start justify-between gap-4 p-4 border border-gray-200 rounded-xl bg-white">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900">Two-Factor Authentication (2FA)</h3>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Require a one-time code after email/password login for this account.
+                      </p>
+                    </div>
+                    <Checkbox
+                      id="twoFactorEnabled"
+                      checked={twoFactorEnabled}
+                      disabled={isSavingUserPreferences}
+                      onCheckedChange={(checked) => handleToggleTwoFactor(!!checked)}
+                      className="w-5 h-5 rounded-md border-2 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -2479,6 +2635,229 @@ export const Settings2 = () => {
             </div>
           </div>
         )}
+
+        {/* Mobile Bottom Navigation Configuration Tab */}
+        {activeTab === 'mobile-nav' && (() => {
+          // Get all available leaf items from navigation
+          const allAvailableItems = [];
+          const traverse = (items) => {
+            items.forEach(item => {
+              if (item.href && item.name) {
+                allAvailableItems.push({
+                  name: item.name,
+                  href: item.href,
+                  icon: item.icon
+                });
+              }
+              if (item.children) {
+                traverse(item.children);
+              }
+            });
+          };
+          traverse(navigation);
+
+          const handleAddToNav = (item) => {
+            if (bottomNavConfig.length >= 5) {
+              toast.error('Mobile bottom navigation is limited to 5 items for best design.');
+              return;
+            }
+            if (bottomNavConfig.find(row => row.href === item.href)) {
+              toast.error('Item already in bottom navigation.');
+              return;
+            }
+            
+            // Get icon name
+            let iconName = 'Circle';
+            if (typeof item.icon === 'string') {
+                iconName = item.icon;
+            } else if (item.icon && item.icon.name) {
+                iconName = item.icon.name;
+            } else {
+                const info = getComponentInfo(item.href);
+                if (info && info.icon) iconName = info.icon;
+            }
+
+            const newConfig = [...bottomNavConfig, { 
+              name: item.name, 
+              href: item.href, 
+              icon: iconName 
+            }];
+            setBottomNavConfig(newConfig);
+          };
+
+          const handleRemoveFromNav = (index) => {
+            const newConfig = bottomNavConfig.filter((_, i) => i !== index);
+            setBottomNavConfig(newConfig);
+          };
+
+          const handleMoveUp = (index) => {
+            if (index === 0) return;
+            const newConfig = [...bottomNavConfig];
+            const temp = newConfig[index];
+            newConfig[index] = newConfig[index - 1];
+            newConfig[index - 1] = temp;
+            setBottomNavConfig(newConfig);
+          };
+
+          const handleMoveDown = (index) => {
+            if (index === bottomNavConfig.length - 1) return;
+            const newConfig = [...bottomNavConfig];
+            const temp = newConfig[index];
+            newConfig[index] = newConfig[index + 1];
+            newConfig[index + 1] = temp;
+            setBottomNavConfig(newConfig);
+          };
+
+          const handleSaveBottomNav = () => {
+            localStorage.setItem('bottomNavConfig', JSON.stringify(bottomNavConfig));
+            window.dispatchEvent(new Event('bottomNavConfigChanged'));
+            toast.success('Mobile bottom navigation updated successfully');
+          };
+
+          return (
+            <div className="card shadow-lg border-gray-100">
+              <div className="card-header border-b border-gray-50 pb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 shadow-sm">
+                    <Smartphone className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 leading-tight">Mobile Bottom Navigation</h2>
+                    <p className="text-sm text-gray-500 mt-1 font-medium">
+                      Select and arrange up to 5 items for the mobile bottom shortcut bar. (Recommended: 4 items)
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="card-content p-6 flex flex-col lg:flex-row gap-8">
+                <div className="flex-1 space-y-4">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    Current Order ({bottomNavConfig.length}/5)
+                  </h3>
+                  
+                  <div className="space-y-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 min-h-[300px]">
+                    {bottomNavConfig.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                        <Plus className="h-12 w-12 text-gray-300 mb-2" />
+                        <p className="text-gray-400 font-medium">No items added yet.<br/>Select from the right to begin.</p>
+                      </div>
+                    ) : (
+                      bottomNavConfig.map((item, index) => {
+                        const IconComponent = item.icon && Icons[item.icon] ? Icons[item.icon] : Smartphone;
+                        return (
+                          <div 
+                            key={`${item.href}-${index}`}
+                            className="flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all group"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="flex flex-col gap-1">
+                                <button 
+                                  onClick={() => handleMoveUp(index)}
+                                  disabled={index === 0}
+                                  className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
+                                >
+                                  <ChevronUp className="h-3.5 w-3.5 text-gray-500" />
+                                </button>
+                                <button 
+                                  onClick={() => handleMoveDown(index)}
+                                  disabled={index === bottomNavConfig.length - 1}
+                                  className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
+                                >
+                                  <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
+                                </button>
+                              </div>
+                              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                <IconComponent className="h-5 w-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-gray-800 truncate">{item.name}</p>
+                                <p className="text-[10px] font-medium text-gray-400 truncate">{item.href}</p>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => handleRemoveFromNav(index)}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="h-4.5 w-4.5" />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <LoadingButton 
+                      onClick={handleSaveBottomNav}
+                      className="bg-gray-900 text-white hover:bg-gray-800 rounded-xl px-10 h-11 font-bold shadow-md"
+                    >
+                      <Save className="h-4.5 w-4.5 mr-2" />
+                      Save Configuration
+                    </LoadingButton>
+                  </div>
+                </div>
+
+                <div className="lg:w-80 space-y-4">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                    Available Modules
+                  </h3>
+                  
+                  <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                    <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+                      {allAvailableItems.map((item) => {
+                        const isAdded = bottomNavConfig.some(row => row.href === item.href);
+                        const IconComp = item.icon || Smartphone;
+                        return (
+                          <div 
+                            key={item.href}
+                            className={`flex items-center justify-between p-3.5 border-b border-gray-50 last:border-0 transition-colors ${isAdded ? 'bg-gray-50/80 opacity-60' : 'hover:bg-blue-50/30'}`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`p-1.5 rounded-lg ${isAdded ? 'bg-gray-200 text-gray-500' : 'bg-gray-50 text-gray-400'}`}>
+                                {typeof IconComp === 'string' ? (Icons[IconComp] ? React.createElement(Icons[IconComp], { className: "h-4 w-4" }) : IconComp) : <IconComp className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-gray-700 truncate">{item.name}</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleAddToNav(item)}
+                              disabled={isAdded || bottomNavConfig.length >= 5}
+                              className={`p-1.5 rounded-lg transition-all ${
+                                isAdded 
+                                  ? 'text-green-500 cursor-default' 
+                                  : bottomNavConfig.length >= 5
+                                    ? 'text-gray-300 cursor-not-allowed'
+                                    : 'text-blue-600 hover:bg-blue-100 bg-blue-50'
+                              }`}
+                            >
+                              {isAdded ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl shadow-sm">
+                    <div className="flex gap-3">
+                      <Shield className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-xs font-bold text-amber-900">Permission Sync</h4>
+                        <p className="text-[10px] font-medium text-amber-800 mt-1 leading-relaxed">
+                          Items will only appear for users who have the required permissions for that specific module, even if added to the configuration.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* User Activity Modal */}
         {showActivityModal && selectedUserActivity && (
@@ -2865,3 +3244,4 @@ export const Settings2 = () => {
 };
 
 export default Settings2;
+

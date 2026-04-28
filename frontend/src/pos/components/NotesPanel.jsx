@@ -27,7 +27,7 @@ import {
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { LoadingSpinner } from './LoadingSpinner';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 
 /**
  * Notes Panel Component
@@ -689,4 +689,5 @@ const NotesPanel = ({
 
 export default NotesPanel;
 export { NotesPanel };
+
 

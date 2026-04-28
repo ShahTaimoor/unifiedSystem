@@ -3,7 +3,7 @@ import { TrendingUp, Sparkles, RefreshCw, Settings, Eye, ShoppingCart } from 'lu
 import { useGenerateRecommendationsMutation } from '../store/services/recommendationsApi';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { LoadingSpinner, LoadingButton } from './LoadingSpinner';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import ProductRecommendationCard from './ProductRecommendationCard';
 import { useResponsive, ResponsiveContainer, ResponsiveGrid } from './ResponsiveContainer';
 
@@ -280,3 +280,4 @@ const RecommendationSection = ({
 };
 
 export default RecommendationSection;
+

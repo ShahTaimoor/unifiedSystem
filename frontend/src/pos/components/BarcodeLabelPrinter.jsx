@@ -550,3 +550,4 @@ export const BarcodeLabelPrinter = ({
 
 export default BarcodeLabelPrinter;
 
+

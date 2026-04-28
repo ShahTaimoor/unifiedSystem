@@ -38,7 +38,7 @@ const ensureInventoryRecord = async (productId, client = null) => {
   return inv;
 };
 
-// Update stock levels
+// Update stock levels with Average Cost Method for incoming stock
 const updateStock = async ({ productId, type, quantity, reason, reference, referenceId, referenceModel, cost, performedBy, notes }, options = {}) => {
   const { client = null, skipAccountingEntry = false } = options;
   try {
@@ -47,11 +47,36 @@ const updateStock = async ({ productId, type, quantity, reason, reference, refer
     const isIn = ['in', 'return'].includes(type);
     const newStock = isIn ? current + quantity : current - quantity;
 
+    let finalCost = cost; // Default to provided cost
+
+    // Implement Average Cost Method for incoming stock
+    if (cost !== undefined && cost !== null && isIn && current > 0) {
+      // Get current product cost price
+      const productRow = await productRepository.findById(productId, true);
+      const currentCostPrice = parseFloat(productRow?.cost_price || productRow?.costPrice || 0);
+
+      if (currentCostPrice > 0) {
+        // Calculate new average cost using weighted average formula
+        // New Average Cost = (Old Stock Value + New Stock Value) / Total Quantity
+        const oldStockValue = current * currentCostPrice;
+        const newStockValue = quantity * cost;
+        const totalValue = oldStockValue + newStockValue;
+        const newAverageCost = Math.round((totalValue / newStock) * 100) / 100; // Round to 2 decimal places
+
+        finalCost = newAverageCost;
+
+        console.log(`Average Cost Calculation for Product ${productId}:`);
+        console.log(`  Current Stock: ${current} units @ ${currentCostPrice} = ${oldStockValue}`);
+        console.log(`  New Stock: ${quantity} units @ ${cost} = ${newStockValue}`);
+        console.log(`  Total Value: ${totalValue}, Total Quantity: ${newStock}`);
+        console.log(`  New Average Cost: ${newAverageCost}`);
+      }
+    }
+
     const updatePayload = { currentStock: newStock };
-    if (cost !== undefined && cost !== null && isIn) {
+    if (finalCost !== undefined && finalCost !== null && isIn) {
       const costObj = getCost(inv);
-      if (costObj.average !== undefined) updatePayload.cost = { ...costObj, average: cost };
-      else updatePayload.cost = { ...costObj, average: cost, lastPurchase: cost };
+      updatePayload.cost = { ...costObj, average: finalCost, lastPurchase: cost || finalCost };
     }
     const updated = await inventoryRepository.updateByProductId(productId, updatePayload, client);
 
@@ -59,25 +84,34 @@ const updateStock = async ({ productId, type, quantity, reason, reference, refer
     if (productRow) {
       await productRepository.update(productId, {
         stockQuantity: newStock,
-        ...(cost !== undefined && cost !== null && isIn ? { costPrice: cost } : {})
+        ...(finalCost !== undefined && finalCost !== null && isIn ? { costPrice: finalCost } : {})
       }, client);
 
-      // Update Accounting Ledger (optional skip for flows that post dedicated financial entries)
+      // Update Accounting Ledger (Ensure physical stock matches financial value)
       if (!skipAccountingEntry) {
         try {
           const delta = isIn ? quantity : -quantity;
           const unitCost = cost || parseFloat(productRow.cost_price || productRow.costPrice) || 0;
           const validatedUserId = isValidUuid(performedBy) ? performedBy : null;
 
-          await AccountingService.recordStockAdjustment(productId, delta, unitCost, {
-            client,
+          await AccountingService.recordInventoryValueChange({
+            productId,
+            delta,
+            unitCost,
+            reason: reason || `Inventory ${type}`,
+            referenceType: referenceModel === 'PurchaseInvoice' ? 'purchase_invoice' : (referenceModel === 'Sale' ? 'sale' : 'inventory_adjustment'),
+            referenceId,
+            referenceNumber,
             createdBy: validatedUserId,
-            reason: reason || `Inventory ${type}`
-          });
+            transactionDate: new Date()
+          }, client);
         } catch (accErr) {
           // When called inside an explicit transaction, fail fast to preserve atomicity.
-          if (client) throw accErr;
-          console.error('Failed to update ledger for inventory movement:', accErr);
+          if (client) {
+            console.error('Ledger update failed within transaction. Aborting stock update.');
+            throw accErr;
+          }
+          console.error('Failed to update ledger for inventory movement (non-critical outside transaction):', accErr);
         }
       }
     } else {

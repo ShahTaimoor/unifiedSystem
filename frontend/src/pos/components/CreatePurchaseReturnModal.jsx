@@ -3,9 +3,9 @@ import { Plus, Minus, AlertCircle } from 'lucide-react';
 import { useCreatePurchaseReturnMutation } from '../store/services/purchaseReturnsApi';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
 import BaseModal from './BaseModal';
 import FormField from './FormField';
 
@@ -389,3 +389,4 @@ const CreatePurchaseReturnModal = ({ isOpen, onClose, onSuccess, purchaseInvoice
 };
 
 export default CreatePurchaseReturnModal;
+

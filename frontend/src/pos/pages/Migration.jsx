@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import { useUpdateInvoicePrefixMutation } from '../store/services/migrationApi';
 
 const Migration = () => {
@@ -120,3 +120,4 @@ const Migration = () => {
 };
 
 export default Migration;
+

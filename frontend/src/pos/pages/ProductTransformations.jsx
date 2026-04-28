@@ -21,9 +21,9 @@ import { useGetVariantsByBaseProductQuery } from '../store/services/productVaria
 import { useGetProductsQuery } from '../store/services/productsApi';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@pos/components/ui/button';
+import { Input } from '@pos/components/ui/input';
+import { Textarea } from '@pos/components/ui/textarea';
 import ValidatedInput, { ValidatedSelect } from '../components/ValidatedInput';
 
 const ProductTransformations = () => {
@@ -514,4 +514,5 @@ const TransformationModal = ({ products, isOpen, onClose, onSuccess }) => {
 };
 
 export default ProductTransformations;
+
 

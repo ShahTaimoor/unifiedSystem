@@ -72,3 +72,4 @@ const DateRangePickerDemo = () => {
 };
 
 export default DateRangePickerDemo;
+

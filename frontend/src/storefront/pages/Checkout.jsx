@@ -89,8 +89,13 @@ const Checkout = ({ closeModal }) => {
     const normalizedPhone = normalizeField(phone);
     const normalizedCity = normalizeField(city);
 
-    if (!normalizedAddress.trim() || !normalizedPhone.trim() || !normalizedCity.trim()) {
-      toast.error('Please provide complete shipping information');
+    const missingFields = [];
+    if (!normalizedAddress.trim()) missingFields.push('Address');
+    if (!normalizedPhone.trim()) missingFields.push('Phone');
+    if (!normalizedCity.trim()) missingFields.push('City');
+
+    if (missingFields.length > 0) {
+      toast.error(`Please complete: ${missingFields.join(', ')}`);
       setShowForm(true);
       return;
     }

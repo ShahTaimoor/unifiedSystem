@@ -29,7 +29,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../components/ComponentRegistry';
 import PrintModal from '../components/PrintModal';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan, formatDateForInput } from '../utils/dateUtils';
 import ExcelExportButton from '../components/ExcelExportButton';
@@ -882,3 +882,4 @@ export const PurchaseInvoices = () => {
     </div>
   );
 };
+

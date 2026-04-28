@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Minus, Package, Calendar, DollarSign, CheckSquare, Square } from 'lucide-react';
 import BaseModal from './BaseModal';
-import { Button } from '@/components/ui/button';
+import { Button } from '@pos/components/ui/button';
 import { LoadingSpinner } from './LoadingSpinner';
 
 const ProductSelectionModal = ({ 
@@ -266,3 +266,4 @@ const ProductSelectionModal = ({
 };
 
 export default ProductSelectionModal;
+
