@@ -5,6 +5,7 @@ const productService = require('../services/productServicePostgres');
 const salesOrderRepository = require('../repositories/postgres/SalesOrderRepository');
 const customerRepository = require('../repositories/postgres/CustomerRepository');
 const categoryRepository = require('../repositories/postgres/CategoryRepository');
+const SettingsRepository = require('../repositories/postgres/SettingsRepository');
 
 const router = express.Router();
 
@@ -38,6 +39,28 @@ const flattenField = (val) => {
   }
   return String(val);
 };
+
+// @route   GET /api/storefront/settings
+// @desc    Get public storefront settings (no auth required)
+router.get('/settings', async (req, res) => {
+  try {
+    const settings = await SettingsRepository.getSettings();
+    const orderSettings = settings?.orderSettings || {};
+    const storefrontSettings = orderSettings?.storefrontSettings || {};
+    res.json({
+      success: true,
+      data: {
+        showPrices: storefrontSettings.showPrices !== false, // default true
+        heroTitle: storefrontSettings.heroTitle || 'Premium Car Accessories',
+        heroSubtitle: storefrontSettings.heroSubtitle || 'Wholesale Dealers'
+      }
+    });
+  } catch (error) {
+    console.error('Storefront settings error:', error);
+    // Return safe defaults on error
+    res.json({ success: true, data: { showPrices: true } });
+  }
+});
 
 // @route   POST /api/storefront/login
 // @desc    Storefront customer login

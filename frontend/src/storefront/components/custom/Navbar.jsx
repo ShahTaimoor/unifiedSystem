@@ -200,7 +200,9 @@ const Navbar = () => {
 
   return (
     <>
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 hidden lg:block transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-red-100' : 'bg-white/90 backdrop-blur-sm border-b border-gray-100 shadow-sm'}`}>
+      {/* Red brand accent stripe */}
+      <div className="h-0.5 bg-gradient-to-r from-red-700 via-red-500 to-red-700 w-full" />
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Left side: Logo + Brand */}
@@ -294,7 +296,7 @@ const Navbar = () => {
             {user == null ? (
               <button
                 onClick={() => openDrawer()}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 shadow-md shadow-red-900/20 transition-all duration-300 hover:scale-105 active:scale-95"
               >
                 Sign Up
               </button>

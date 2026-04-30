@@ -70,13 +70,30 @@ class SettingsRepository {
       taxEnabled: 'tax_enabled',
       defaultTaxRate: 'default_tax_rate',
       printSettings: 'print_settings',
-      orderSettings: 'order_settings'
+      orderSettings: 'order_settings',
     };
     const setClauses = [];
     const params = [];
     let paramCount = 1;
+
+    // Handle storefrontSettings as a nested key inside order_settings
+    if (updates.storefrontSettings !== undefined) {
+      const existingOrderSettings = settings.orderSettings || {};
+      const merged = {
+        ...existingOrderSettings,
+        storefrontSettings: {
+          ...(existingOrderSettings.storefrontSettings || {}),
+          ...updates.storefrontSettings,
+        },
+      };
+      setClauses.push(`order_settings = $${paramCount++}`);
+      params.push(JSON.stringify(merged));
+    }
+
     for (const [k, col] of Object.entries(map)) {
       if (updates[k] !== undefined) {
+        // Skip order_settings if storefrontSettings already handled it
+        if (col === 'order_settings' && updates.storefrontSettings !== undefined) continue;
         setClauses.push(`${col} = $${paramCount++}`);
         params.push(typeof updates[k] === 'object' ? JSON.stringify(updates[k]) : updates[k]);
       }
