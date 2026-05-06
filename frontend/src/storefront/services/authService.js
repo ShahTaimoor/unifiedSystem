@@ -1,29 +1,22 @@
-import axiosInstance from '@/redux/slices/auth/axiosInstance';
-import reduxAuthService from '@/redux/slices/auth/authService';
+import axiosInstance from '@/storefront/redux/slices/auth/axiosInstance';
 
 /**
- * Auth helpers used outside Redux (verify session, logout).
+ * Auth Service
+ * All authentication-related API calls
  */
 export const authService = {
+  /**
+   * Verify token
+   * @returns {Promise<Object>} Verification response
+   */
   verifyToken: async () => {
     try {
-      const response = await axiosInstance.get('/storefront/me', {
+      const response = await axiosInstance.get('/verify-token', {
         withCredentials: true,
       });
-      const u = response.data?.user;
-      const user = u
-        ? {
-            ...u,
-            name:
-              u.name ||
-              [u.firstName, u.lastName].filter(Boolean).join(' ').trim() ||
-              u.email ||
-              '',
-          }
-        : null;
       return {
         ok: response.status === 200,
-        data: { user },
+        data: response.data,
       };
     } catch (error) {
       return {
@@ -33,5 +26,15 @@ export const authService = {
     }
   },
 
-  logout: () => reduxAuthService.logout(),
+  /**
+   * Logout user
+   * @returns {Promise<void>}
+   */
+  logout: async () => {
+    await axiosInstance.get('/logout', {
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  },
 };
+

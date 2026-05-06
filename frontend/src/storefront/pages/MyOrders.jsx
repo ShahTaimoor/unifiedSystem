@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'sonner';
-import OneLoader from '@/components/ui/OneLoader';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Label } from '@/components/ui/label';
-import OrderData from '@/components/custom/OrderData';
-import { fetchOrders, cancelOrder } from '@/redux/slices/order/orderSlice';
-import { getPakistaniDate } from '@/utils/orderHelpers';
+import OneLoader from '@/storefront/components/ui/OneLoader';
+import { Alert, AlertDescription, AlertTitle } from '@/storefront/components/ui/alert';
+import { Label } from '@/storefront/components/ui/label';
+import OrderData from '@/storefront/components/custom/OrderData';
+import { fetchOrders, deleteOrder } from '@/storefront/redux/slices/order/orderSlice';
+import { getPakistaniDate } from '@/storefront/utils/orderHelpers';
 
 const MyOrders = () => {
   const dispatch = useDispatch();
@@ -17,24 +16,17 @@ const MyOrders = () => {
   const today = getPakistaniDate();
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
-  const [cancelingId, setCancelingId] = useState(null);
-
-  const handleCancelOrder = async (orderId) => {
-    try {
-      setCancelingId(orderId);
-      await dispatch(cancelOrder(orderId)).unwrap();
-      toast.success('Order cancelled');
-    } catch (err) {
-      toast.error(typeof err === 'string' ? err : 'Could not cancel this order.');
-      throw err;
-    } finally {
-      setCancelingId(null);
-    }
-  };
 
   useEffect(() => {
     dispatch(fetchOrders());
   }, [dispatch]);
+
+  const handleDeleteOrder = async (orderId) => {
+    try {
+      await dispatch(deleteOrder(orderId)).unwrap();
+    } catch (error) {
+    }
+  };
 
   // Filter orders by date range based on Pakistan timezone
   const filteredOrders = orders.filter(order => {
@@ -100,12 +92,7 @@ const MyOrders = () => {
           ) : (
             filteredOrders.map((order) => (
               <div key={order._id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
-                <OrderData
-                  {...order}
-                  user={user}
-                  onCancel={handleCancelOrder}
-                  cancelPending={cancelingId === order._id}
-                />
+                <OrderData {...order} user={user} onDelete={handleDeleteOrder} />
               </div>
             ))
           )}

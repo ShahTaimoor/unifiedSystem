@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { useGetReportQuery } from '../store/services/salesPerformanceApi';
 import { LoadingSpinner, LoadingCard } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
+import { Button } from '@/pos/components/ui/button';
 
 const SalesPerformanceDetailModal = ({ isOpen, onClose, report, onDelete, onExport }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -585,4 +585,3 @@ const SalesPerformanceDetailModal = ({ isOpen, onClose, report, onDelete, onExpo
 };
 
 export default SalesPerformanceDetailModal;
-

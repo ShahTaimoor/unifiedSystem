@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '@/services/authService';
-import { logout } from '@/redux/slices/auth/authSlice';
+import { authService } from '@/storefront/services/authService';
+import { logout } from '@/storefront/redux/slices/auth/authSlice';
 
 /**
  * Clear cookies helper (shared utility)
@@ -10,7 +10,7 @@ import { logout } from '@/redux/slices/auth/authSlice';
 const clearCookies = () => {
   const cookies = ['accessToken', 'refreshToken'];
   const domains = [window.location.hostname, 'localhost', '127.0.0.1'];
-  const paths = ['/', '/api'];
+  const paths = ['/', '/api', '/admin'];
 
   cookies.forEach((cookieName) => {
     domains.forEach((domain) => {

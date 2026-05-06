@@ -19,7 +19,7 @@ import {
   useGeneratePurchaseOrdersMutation,
 } from '../store/services/inventoryApi';
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
-import { Button } from '@pos/components/ui/button';
+import { Button } from '@/pos/components/ui/button';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 const LIMIT_OPTIONS = [50, 500, 1000, 5000];
@@ -524,5 +524,4 @@ const InventoryAlerts = () => {
 };
 
 export default InventoryAlerts;
-
 

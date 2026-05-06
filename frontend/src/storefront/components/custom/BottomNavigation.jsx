@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus } from "lucide-react";
+import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus, LayoutDashboard } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
@@ -193,7 +193,7 @@ const BottomNavigation = () => {
   const clearCookies = () => {
     const cookies = ['accessToken', 'refreshToken'];
     const domains = [window.location.hostname, 'localhost', '127.0.0.1'];
-    const paths = ['/', '/api'];
+    const paths = ['/', '/api', '/admin'];
     
     cookies.forEach(cookieName => {
       domains.forEach(domain => {
@@ -248,6 +248,13 @@ const BottomNavigation = () => {
       isCenter: false
     },
     {
+      path: "/admin/dashboard",
+      icon: LayoutDashboard,
+      label: "Admin",
+      show: user !== null && (user.role === 1 || user.role === 2),
+      isCenter: false
+    },
+    {
       path: "/profile",
       icon: User,
       label: "Profile",
@@ -277,6 +284,7 @@ const BottomNavigation = () => {
 
   const isActive = (path) => {
     if (path === "/" && location.pathname === "/") return true;
+    if (path === "/admin/dashboard" && location.pathname.startsWith("/admin")) return true;
     if (path !== "/" && location.pathname.startsWith(path)) return true;
     return false;
   };
@@ -285,8 +293,8 @@ const BottomNavigation = () => {
     <>
      
 
-      {/* Bottom Navigation - Premium glass design */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl rounded-t-3xl shadow-[0_-4px_24px_rgba(0,0,0,0.10)] border-t border-gray-100 lg:hidden">
+      {/* Bottom Navigation - Matching the design */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-lg lg:hidden">
         <div className="flex items-end justify-around px-2 pb-3 pt-3 relative">
         {navItems.map((item, index) => {
           if (!item.show) return null;
@@ -338,35 +346,33 @@ const BottomNavigation = () => {
               className={`flex flex-col items-center justify-center relative transition-all duration-300 flex-1`}
             >
               {item.isCenter ? (
-                // Home button
-                <div className="flex flex-col items-center justify-center gap-0.5 relative">
-                  {active && <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-primary" />}
-                  <Icon
-                    size={22}
+                // Home button - no background, same as other items
+                <div className="flex flex-col items-center justify-center gap-0.5">
+                  <Icon 
+                    size={22} 
                     className={`transition-all duration-300 ${
-                      active ? 'text-primary scale-110' : 'text-gray-400'
+                      active ? "text-primary" : "text-gray-400"
                     }`}
-                    strokeWidth={active ? 2.5 : 1.5}
+                    strokeWidth={1.5}
                     fill="none"
                   />
                   <span className={`text-[10px] font-medium transition-all duration-300 ${
-                    active ? 'text-primary font-semibold' : 'text-gray-400'
+                    active ? "text-primary" : "text-gray-400"
                   }`}>{item.label}</span>
                 </div>
               ) : (
-                // Inactive items
-                <div className="flex flex-col items-center justify-center gap-0.5 relative">
-                  {active && <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-primary" />}
-                  <Icon
-                    size={22}
+                // Inactive items - just icons, no background, light gray/silver color
+                <div className="flex flex-col items-center justify-center gap-0.5">
+                  <Icon 
+                    size={22} 
                     className={`transition-all duration-300 ${
-                      active ? 'text-primary scale-110' : 'text-gray-400'
+                      active ? "text-primary" : "text-gray-400"
                     }`}
-                    strokeWidth={active ? 2.5 : 1.5}
+                    strokeWidth={1.5}
                     fill="none"
                   />
                   <span className={`text-[10px] font-medium transition-all duration-300 ${
-                    active ? 'text-primary font-semibold' : 'text-gray-400'
+                    active ? "text-primary" : "text-gray-400"
                   }`}>{item.label}</span>
                 </div>
               )}

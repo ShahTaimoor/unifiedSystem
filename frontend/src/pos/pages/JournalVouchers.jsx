@@ -20,9 +20,9 @@ import {
 import { useLazySearchCustomersQuery } from '../store/services/customersApi';
 import { useLazySearchSuppliersQuery } from '../store/services/suppliersApi';
 import { handleApiError } from '../utils/errorHandler';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
-import { Textarea } from '@pos/components/ui/textarea';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
+import { Textarea } from '@/pos/components/ui/textarea';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan } from '../utils/dateUtils';
@@ -844,4 +844,3 @@ export const JournalVouchers = () => {
 };
 
 export default JournalVouchers;
-

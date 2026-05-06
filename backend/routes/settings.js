@@ -41,8 +41,7 @@ router.put('/company', auth, requireRole(['admin']), async (req, res) => {
       dateFormat,
       timeFormat,
       fiscalYearStart,
-      defaultTaxRate,
-      storefrontSettings
+      defaultTaxRate
     } = req.body;
 
     const settings = await settingsService.updateCompanySettings(req.body);

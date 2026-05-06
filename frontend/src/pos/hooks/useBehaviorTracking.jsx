@@ -271,4 +271,3 @@ const useBehaviorTracking = () => {
 };
 
 export default useBehaviorTracking;
-

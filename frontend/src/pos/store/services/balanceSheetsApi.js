@@ -20,4 +20,3 @@ export const balanceSheetsApi = api.injectEndpoints({
 });
 
 export const { useGetLatestBalanceSheetQuery } = balanceSheetsApi;
-

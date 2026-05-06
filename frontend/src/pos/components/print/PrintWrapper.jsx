@@ -49,4 +49,3 @@ PrintWrapper.displayName = 'PrintWrapper';
 
 export default PrintWrapper;
 export { useReactToPrint };
-

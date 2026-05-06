@@ -186,4 +186,3 @@ export const LazyImage = ({
 
 export default OptimizedImage;
 
-

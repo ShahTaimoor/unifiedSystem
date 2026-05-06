@@ -29,7 +29,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../components/ComponentRegistry';
 import PrintModal from '../components/PrintModal';
-import { Button } from '@pos/components/ui/button';
+import { Button } from '@/pos/components/ui/button';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan, formatDateForInput } from '../utils/dateUtils';
 import ExcelExportButton from '../components/ExcelExportButton';
@@ -553,7 +553,6 @@ export const PurchaseInvoices = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Purchase Invoices</h1>
-          <p className="text-sm sm:text-base text-gray-600">Track and manage supplier invoices and receipts</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto items-stretch sm:items-center">
@@ -810,18 +809,35 @@ export const PurchaseInvoices = () => {
                         <Printer className="h-4 w-4" />
                       </button>
                       <ExcelExportButton
-                        getData={() => {
-                          const payload = getInvoicePdfPayload(invoice, companySettings, 'Purchase Invoice', 'Supplier');
-                          return {
-                            ...payload,
-                            filename: `Purchase_Invoice_${invoice.invoiceNumber}.xlsx`
-                          };
+                        getData={async () => {
+                          try {
+                            const result = await getPurchaseInvoiceById(invoice.id || invoice._id).unwrap();
+                            const fullInvoice = result?.invoice || result?.data?.invoice || result?.data || result || invoice;
+                            const payload = getInvoicePdfPayload(fullInvoice, companySettings, 'Purchase Invoice', 'Supplier');
+                            return {
+                              ...payload,
+                              filename: `Purchase_Invoice_${invoice.invoiceNumber}.xlsx`
+                            };
+                          } catch (err) {
+                            return {
+                              ...getInvoicePdfPayload(invoice, companySettings, 'Purchase Invoice', 'Supplier'),
+                              filename: `Purchase_Invoice_${invoice.invoiceNumber}.xlsx`
+                            };
+                          }
                         }}
                         label=""
                         className="p-1 bg-transparent border-none shadow-none hover:bg-transparent text-green-600 hover:text-green-800 px-1 py-1"
                       />
                       <PdfExportButton
-                        getData={() => getInvoicePdfPayload(invoice, companySettings, 'Purchase Invoice', 'Supplier')}
+                        getData={async () => {
+                          try {
+                            const result = await getPurchaseInvoiceById(invoice.id || invoice._id).unwrap();
+                            const fullInvoice = result?.invoice || result?.data?.invoice || result?.data || result || invoice;
+                            return getInvoicePdfPayload(fullInvoice, companySettings, 'Purchase Invoice', 'Supplier');
+                          } catch (err) {
+                            return getInvoicePdfPayload(invoice, companySettings, 'Purchase Invoice', 'Supplier');
+                          }
+                        }}
                         label=""
                         className="p-1 bg-transparent border-none shadow-none hover:bg-transparent text-red-600 hover:text-red-800 px-1 py-1"
                       />
@@ -882,4 +898,3 @@ export const PurchaseInvoices = () => {
     </div>
   );
 };
-

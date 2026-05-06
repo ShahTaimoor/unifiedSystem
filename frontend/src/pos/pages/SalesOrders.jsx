@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from 'react-query';
 import {
   Calendar,
   Search,
   Filter,
-  Plus,
   Edit,
   Trash2,
   Eye,
@@ -19,11 +18,12 @@ import {
   User,
   TrendingUp,
   FileText,
+  FileCheck,
   CheckCircle,
   Clock,
   XCircle,
-  Phone,
   Receipt,
+  Phone,
   X,
   History,
   Info,
@@ -37,22 +37,23 @@ import {
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
 import { formatDate, formatCurrency } from '../utils/formatters';
 import { LoadingButton } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@pos/components/ui/dropdown-menu';
+} from '@/pos/components/ui/dropdown-menu';
 import {
   OrderCheckoutCard,
   OrderDetailsSection,
   OrderSummaryContent,
+  OrderSummaryBar,
   OrderCheckoutActions,
 } from '../components/order/OrderCheckoutLayout';
 import { useGetCustomerQuery } from '../store/services/customersApi';
-import { useDebouncedCustomerSearch } from '@pos/hooks/useDebouncedCustomerSearch';
+import { useDebouncedCustomerSearch } from '@/pos/hooks/useDebouncedCustomerSearch';
 import { productsApi, useLazyGetLastPurchasePriceQuery } from '../store/services/productsApi';
 import { productVariantsApi } from '../store/services/productVariantsApi';
 import { useGetSalesQuery, useLazyGetLastPricesQuery } from '../store/services/salesApi';
@@ -65,9 +66,10 @@ import {
   useUpdateSalesOrderItemsConfirmationMutation,
   useDeleteSalesOrderMutation,
   useConfirmSalesOrderMutation,
+  useCreateInvoiceFromSalesOrderMutation,
   useCancelSalesOrderMutation,
   useCloseSalesOrderMutation,
-
+  useLazyGetSalesOrderQuery,
 } from '../store/services/salesOrdersApi';
 import {
   OrderConfirmationStatusBadge,
@@ -138,6 +140,7 @@ const SalesOrders = ({ tabId }) => {
   const taxSystemEnabled = companySettings.taxEnabled === true;
   const globalTaxPct = Math.min(100, Math.max(0, Number(companySettings.defaultTaxRate ?? 0)));
   const effectiveGlobalTaxPct = taxSystemEnabled ? globalTaxPct : 0;
+  const [fetchSalesOrderById] = useLazyGetSalesOrderQuery();
 
   // Calculate default date range (14 days ago to today) using Pakistan timezone
   const today = getCurrentDatePakistan();
@@ -437,9 +440,30 @@ const SalesOrders = ({ tabId }) => {
   const [deleteSalesOrderMutation, { isLoading: deleting }] = useDeleteSalesOrderMutation();
   const [confirmSalesOrderMutation, { isLoading: confirming }] = useConfirmSalesOrderMutation();
   const [updateItemsConfirmationMutation, { isLoading: updatingItemsConfirmation }] = useUpdateSalesOrderItemsConfirmationMutation();
+  const [createInvoiceFromSOMutation, { isLoading: creatingInvoiceFromSO }] = useCreateInvoiceFromSalesOrderMutation();
   const [cancelSalesOrderMutation, { isLoading: cancelling }] = useCancelSalesOrderMutation();
   const [closeSalesOrderMutation, { isLoading: closing }] = useCloseSalesOrderMutation();
 
+  const hasPendingSalesOrderLines = (order) => {
+    const items = Array.isArray(order?.items) ? order.items : [];
+    return items.some((i) => {
+      const c = (i.confirmationStatus ?? i.confirmation_status ?? 'pending').toLowerCase();
+      return c === 'pending';
+    });
+  };
+
+  /** How to finish invoicing: confirm remaining SO lines, or post invoice when order is already fully confirmed at line level. */
+  const getSalesOrderInvoiceCompleteAction = (order) => {
+    if (!order) return null;
+    const st = order.status;
+    if (['fully_invoiced', 'cancelled', 'closed', 'draft'].includes(st)) return null;
+    if (st === 'partially_invoiced') return 'confirmAll';
+    if (st === 'confirmed') {
+      if (hasPendingSalesOrderLines(order)) return 'confirmAll';
+      return 'createInvoice';
+    }
+    return null;
+  };
 
   // Helper functions
   const resetForm = () => {
@@ -1440,6 +1464,8 @@ const SalesOrders = ({ tabId }) => {
     }
   };
 
+  const CREDIT_LIMIT_TOAST = 'Credit limit exceeded. Invoice cannot be created';
+
   const doConfirm = (id) => {
     confirmSalesOrderMutation(id)
       .unwrap()
@@ -1448,7 +1474,12 @@ const SalesOrders = ({ tabId }) => {
         setOutOfStockItems([]);
         setPendingConfirmId(null);
         if (response.invoiceError) {
-          showSuccessToast(`Sales order confirmed but failed to generate invoice: ${response.invoiceError}`);
+          const errText = String(response.invoiceError || '');
+          if (errText.includes('Credit limit') || errText.includes('credit limit')) {
+            showErrorToast(CREDIT_LIMIT_TOAST);
+          } else {
+            showSuccessToast(`Sales order confirmed but failed to generate invoice: ${response.invoiceError}`);
+          }
         } else {
           showSuccessToast('Sales order confirmed and invoice generated successfully');
         }
@@ -1459,7 +1490,18 @@ const SalesOrders = ({ tabId }) => {
         setShowOutOfStockModal(false);
         setOutOfStockItems([]);
         setPendingConfirmId(null);
-        showErrorToast(handleApiError(error));
+        const apiMsg =
+          error?.data?.message ||
+          error?.response?.data?.message ||
+          handleApiError(error);
+        if (
+          error?.data?.error === 'CREDIT_LIMIT_EXCEEDED' ||
+          (typeof apiMsg === 'string' && apiMsg.includes('Credit limit'))
+        ) {
+          showErrorToast(CREDIT_LIMIT_TOAST);
+        } else {
+          showErrorToast(typeof apiMsg === 'string' ? apiMsg : handleApiError(error));
+        }
       });
   };
 
@@ -1504,10 +1546,16 @@ const SalesOrders = ({ tabId }) => {
     }
   };
 
-  const handleUpdateItemsConfirmation = (itemUpdates, confirmAll, cancelAll) => {
-    const id = selectedOrder?._id ?? selectedOrder?.id;
+  const handleUpdateItemsConfirmation = (itemUpdates, confirmAll, cancelAll, orderOverride = null) => {
+    const orderRef = orderOverride || selectedOrder;
+    const id = orderRef?._id ?? orderRef?.id;
     if (!id) return;
-    updateItemsConfirmationMutation({ id, itemUpdates, confirmAll, cancelAll })
+    updateItemsConfirmationMutation({
+      id,
+      itemUpdates: itemUpdates ?? [],
+      confirmAll,
+      cancelAll,
+    })
       .unwrap()
       .then((response) => {
         const msg = response?.sale
@@ -1515,7 +1563,11 @@ const SalesOrders = ({ tabId }) => {
           : response?.invoiceError
             ? 'Items confirmed but invoice creation failed'
             : 'Items confirmation updated';
-        showSuccessToast(msg);
+        if (response?.invoiceError && String(response.invoiceError).includes('Credit limit')) {
+          showErrorToast(CREDIT_LIMIT_TOAST);
+        } else {
+          showSuccessToast(msg);
+        }
         if (response?.salesOrder) {
           setSelectedOrder(response.salesOrder);
         }
@@ -1524,7 +1576,65 @@ const SalesOrders = ({ tabId }) => {
         refreshProductCatalogCache();
       })
       .catch((error) => {
-        showErrorToast(handleApiError(error));
+        const apiMsg =
+          error?.data?.message ||
+          error?.response?.data?.message ||
+          handleApiError(error);
+        if (
+          error?.data?.error === 'CREDIT_LIMIT_EXCEEDED' ||
+          (typeof apiMsg === 'string' && apiMsg.includes('Credit limit'))
+        ) {
+          showErrorToast(CREDIT_LIMIT_TOAST);
+        } else {
+          showErrorToast(typeof apiMsg === 'string' ? apiMsg : handleApiError(error));
+        }
+      });
+  };
+
+  const completeSalesOrderToFullInvoice = (order) => {
+    const action = getSalesOrderInvoiceCompleteAction(order);
+    if (!action) return;
+    const id = order?.id ?? order?._id;
+    if (!id) return;
+
+    if (action === 'confirmAll') {
+      if (!window.confirm('Confirm all remaining lines and create the full sales invoice?')) return;
+      handleUpdateItemsConfirmation([], true, false, order);
+      return;
+    }
+
+    if (
+      !window.confirm(
+        'Create the sales invoice now? Inventory was already reduced when this order was confirmed.'
+      )
+    ) {
+      return;
+    }
+
+    createInvoiceFromSOMutation(id)
+      .unwrap()
+      .then((res) => {
+        showSuccessToast(res?.message || 'Sales invoice created successfully');
+        refetch();
+        refreshProductCatalogCache();
+        const updated = res?.salesOrder;
+        if (updated && selectedOrder && (selectedOrder.id === id || selectedOrder._id === id)) {
+          setSelectedOrder(updated);
+        }
+      })
+      .catch((error) => {
+        const apiMsg =
+          error?.data?.message ||
+          error?.response?.data?.message ||
+          handleApiError(error);
+        if (
+          error?.data?.error === 'CREDIT_LIMIT_EXCEEDED' ||
+          (typeof apiMsg === 'string' && apiMsg.includes('Credit limit'))
+        ) {
+          showErrorToast(CREDIT_LIMIT_TOAST);
+        } else {
+          showErrorToast(typeof apiMsg === 'string' ? apiMsg : handleApiError(error));
+        }
       });
   };
 
@@ -1796,20 +1906,39 @@ const SalesOrders = ({ tabId }) => {
   };
 
 
-  const getStatusIcon = (status) => {
+  /** Order lifecycle label + icon (distinct from per-line item “Confirmed”). */
+  const getSalesOrderStatusPresentation = (order) => {
+    const status = order?.status;
     switch (status) {
-      case 'closed':
-      case 'fully_invoiced':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'confirmed':
-      case 'partially_invoiced':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'cancelled':
-        return <XCircle className="h-4 w-4 text-red-500" />;
       case 'draft':
-        return <Clock className="h-4 w-4 text-blue-500" />;
+        return { icon: <Clock className="h-4 w-4 text-blue-500 shrink-0" />, label: 'Pending' };
+      case 'confirmed':
+        return {
+          icon: <FileCheck className="h-4 w-4 text-amber-600 shrink-0" />,
+          label: 'Order confirmed',
+        };
+      case 'partially_invoiced':
+        return {
+          icon: <Clock className="h-4 w-4 text-yellow-500 shrink-0" />,
+          label: 'Partially invoiced',
+        };
+      case 'fully_invoiced':
+        return {
+          icon: <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />,
+          label: 'Fully invoiced',
+        };
+      case 'closed':
+        return {
+          icon: <CheckCircle className="h-4 w-4 text-gray-600 shrink-0" />,
+          label: 'Closed',
+        };
+      case 'cancelled':
+        return { icon: <XCircle className="h-4 w-4 text-red-500 shrink-0" />, label: 'Cancelled' };
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return {
+          icon: <Clock className="h-4 w-4 text-gray-500 shrink-0" />,
+          label: String(status ?? '—').replace(/_/g, ' '),
+        };
     }
   };
 
@@ -1890,154 +2019,109 @@ const SalesOrders = ({ tabId }) => {
 
   return (
     <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden px-2 sm:px-0">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">Sales Orders</h1>
-          <p className="hidden sm:block text-sm sm:text-base text-gray-600">Process sales order transactions</p>
-        </div>
-        <div className="flex items-center space-x-2 flex-shrink-0">
-
-          <Button
-            onClick={resetForm}
-            variant="default"
-            size="default"
-            className="px-3 sm:px-4"
-          >
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">New Sales Order</span>
-            <span className="sm:hidden">New Order</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Customer Selection and Information Row */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-start lg:gap-12 gap-4">
-        {/* Customer Selection */}
-        <div className="w-full max-w-3xl lg:flex-shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Select Customer
-              </label>
-              {selectedCustomer && (
-                <button
-                  onClick={() => {
-                    setSelectedCustomer(null);
-                    setCustomerSearchTerm('');
-                    setFormData(prev => ({ ...prev, customer: '' }));
-
-                    // Reset last prices state when customer is cleared
-                    setOriginalPrices({});
-                    setIsLastPricesApplied(false);
-                    setPriceStatus({});
-
-                    // Tab title will be updated by useEffect when selectedCustomer changes
-                  }}
-                  className="text-xs text-blue-600 hover:text-blue-800 underline"
-                  title="Change customer"
-                >
-                  Change Customer
-                </button>
-              )}
+      {/* Modern Header Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+          {/* Title & Customer Selection */}
+          <div className="flex flex-col sm:flex-row sm:items-center flex-1 gap-3">
+            <div className="flex-shrink-0">
+              <h1 className="text-base sm:text-xl font-bold text-gray-900 truncate">Sales Orders</h1>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-2">
-                <label className="text-xs font-normal text-gray-400">Price Type:</label>
-                <select
-                  value={priceType}
-                  onChange={(e) => setPriceType(e.target.value)}
-                  className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
-                >
-                  <option value="wholesale">Wholesale</option>
-                  <option value="retail">Retail</option>
-                  <option value="distributor">Distributor</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <SearchableDropdown
-            ref={customerSearchRef}
-            placeholder="Search customers by name, email, or business..."
-            items={customers}
-            onSelect={handleCustomerSelect}
-            onSearch={handleCustomerSearch}
-            displayKey={customerDisplayKey}
-            selectedItem={selectedCustomer}
-            loading={customersLoading || customersFetching}
-            emptyMessage={customerSearchTerm.length > 0 ? "No customers found" : "Start typing to search customers..."}
-            value={customerSearchTerm}
-            rightContentKey="city"
-          />
-        </div>
-
-        {/* Customer Information - Right Side */}
-        <div className="flex-1">
-          {selectedCustomer ? (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <div className="flex items-center space-x-3">
-                <User className="h-5 w-5 text-gray-400" />
-                <div className="flex-1">
-                  <p className="font-medium">{selectedCustomer.businessName || selectedCustomer.business_name || selectedCustomer.displayName || selectedCustomer.name || 'Unknown'}</p>
-                  <p className="text-sm text-gray-600 capitalize">
-                    {selectedCustomer.businessType || 'Business'} • {selectedCustomer.phone || 'No phone'}
-                  </p>
-                  <div className="flex items-center space-x-4 mt-2 flex-wrap gap-y-1">
-                    {(() => {
-                      // Use displayBalance which prioritizes selectedCustomer.currentBalance (already correct from bulk query)
-                      const balanceNum = Number(displayBalance);
-                      const totalBalance = (isNaN(balanceNum) || balanceNum === null || balanceNum === undefined) ? 0 : balanceNum;
-                      const isPayable = totalBalance < 0;
-                      const isReceivable = totalBalance > 0;
-                      return (
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs text-gray-500">Balance:</span>
-                          <span className={`text-sm font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'}`}>
-                            {isPayable ? '-' : ''}{Math.abs(totalBalance).toFixed(2)}
-                          </span>
-                        </div>
-                      );
-                    })()}
-                    {(() => {
-                      const creditLimitNum = Math.max(0, Number(displayCreditLimit) || 0);
-                      const currentBalanceNum = Number(displayBalance);
-                      const safeBalance = (isNaN(currentBalanceNum) || currentBalanceNum === null || currentBalanceNum === undefined) ? 0 : currentBalanceNum;
-                      const availableCreditNum = Math.max(0, creditLimitNum - safeBalance);
-                      return (
-                        <>
-                          <div className="flex items-center space-x-1">
-                            <span className="text-xs text-gray-500">Credit Limit:</span>
-                            <span className={`text-sm font-medium ${creditLimitNum > 0 ? (
-                              safeBalance >= creditLimitNum * 0.9 ? 'text-red-600'
-                                : safeBalance >= creditLimitNum * 0.7 ? 'text-yellow-600' : 'text-blue-600'
-                            ) : 'text-gray-600'}`}>
-                              {creditLimitNum.toFixed(2)}
-                            </span>
-                            {creditLimitNum > 0 && safeBalance >= creditLimitNum * 0.9 && (
-                              <span className="text-xs text-red-600 font-bold ml-1">⚠️</span>
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <span className="text-xs text-gray-500">Available Credit:</span>
-                            <span className={`text-sm font-medium ${creditLimitNum > 0 ? (
-                              availableCreditNum <= creditLimitNum * 0.1 ? 'text-red-600'
-                                : availableCreditNum <= creditLimitNum * 0.3 ? 'text-yellow-600' : 'text-green-600'
-                            ) : 'text-gray-600'}`}>
-                              {availableCreditNum.toFixed(2)}
-                            </span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
+            <div className="hidden sm:block h-7 w-px bg-gray-200"></div>
+            <div className="flex-1 min-w-0 sm:min-w-[300px]">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    Select Customer
+                  </label>
+                  {selectedCustomer && (
+                    <button
+                      onClick={() => {
+                        setSelectedCustomer(null);
+                        setCustomerSearchTerm('');
+                        setFormData(prev => ({ ...prev, customer: '' }));
+                        setOriginalPrices({});
+                        setIsLastPricesApplied(false);
+                        setPriceStatus({});
+                      }}
+                      className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase tracking-wider underline"
+                    >
+                      Change
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Price Type:</label>
+                  <select
+                    value={priceType}
+                    onChange={(e) => setPriceType(e.target.value)}
+                    className="bg-gray-50 border-none text-[11px] font-bold text-gray-700 rounded-md py-0 px-2 h-5 focus:ring-0 cursor-pointer"
+                  >
+                    <option value="wholesale">Wholesale</option>
+                    <option value="retail">Retail</option>
+                    <option value="distributor">Distributor</option>
+                    <option value="custom">Custom</option>
+                  </select>
                 </div>
               </div>
+              <SearchableDropdown
+                className="[&_input]:h-8"
+                ref={customerSearchRef}
+                placeholder="Search customers by name, email, or business..."
+                items={customers}
+                onSelect={handleCustomerSelect}
+                onSearch={handleCustomerSearch}
+                displayKey={customerDisplayKey}
+                selectedItem={selectedCustomer}
+                loading={customersLoading || customersFetching}
+                emptyMessage={customerSearchTerm.length > 0 ? "No customers found" : "Start typing to search customers..."}
+                value={customerSearchTerm}
+                rightContentKey="city"
+              />
             </div>
-          ) : (
-            <div className="hidden lg:block">
-              {/* Empty space to maintain layout consistency */}
-            </div>
-          )}
+          </div>
+
+          {/* Customer Information - Right Side */}
+          <div className="lg:w-auto w-full lg:max-w-md lg:self-end">
+            {selectedCustomer ? (() => {
+              const balanceNum = Number(displayBalance);
+              const totalBalance = (isNaN(balanceNum) || balanceNum === null || balanceNum === undefined) ? 0 : balanceNum;
+              const creditLimitNum = Math.max(0, Number(displayCreditLimit) || 0);
+              const availableCreditNum = Math.max(0, creditLimitNum - totalBalance);
+              const isPayable = totalBalance < 0;
+              const isReceivable = totalBalance > 0;
+
+              return (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl h-8 px-2 flex items-center">
+                  <div className="flex items-center gap-2 text-xs whitespace-nowrap overflow-hidden">
+                    <span className="text-gray-500 uppercase font-semibold">Balance</span>
+                    <span className={`font-bold ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'}`}>
+                      {isPayable ? '-' : ''}{Math.abs(totalBalance).toFixed(2)}
+                    </span>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-gray-500 uppercase font-semibold">Credit</span>
+                    <span className={`font-bold ${creditLimitNum > 0 ? (
+                      totalBalance >= creditLimitNum * 0.9 ? 'text-red-600' : totalBalance >= creditLimitNum * 0.7 ? 'text-yellow-600' : 'text-blue-600'
+                    ) : 'text-gray-600'}`}>
+                      {creditLimitNum.toFixed(2)}
+                      {creditLimitNum > 0 && totalBalance >= creditLimitNum * 0.9 && <span className="ml-1">⚠️</span>}
+                    </span>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-gray-500 uppercase font-semibold">Available</span>
+                    <span className={`font-bold ${creditLimitNum > 0 ? (
+                      availableCreditNum <= creditLimitNum * 0.1 ? 'text-red-600' : availableCreditNum <= creditLimitNum * 0.3 ? 'text-yellow-600' : 'text-green-600'
+                    ) : 'text-gray-600'}`}>
+                      {availableCreditNum.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })() : (
+              <div className="hidden lg:flex items-center justify-center h-full px-8 border-2 border-dashed border-gray-100 rounded-xl">
+                <span className="text-gray-400 text-sm font-medium italic">No customer selected</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2139,7 +2223,7 @@ const SalesOrders = ({ tabId }) => {
         </div>
         <div className="card-content">
           {/* Product Search */}
-          <div className="mb-6">
+          <div className="mb-2">
             <ProductSearch
               onAddProduct={addToCartFromProductSearch}
               selectedCustomer={selectedCustomer}
@@ -2177,12 +2261,12 @@ const SalesOrders = ({ tabId }) => {
 
           {/* Cart Items */}
           {formData.items.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 border-t border-gray-200">
+            <div className="p-8 text-center text-gray-500">
               <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
               <p className="mt-2">No items in cart</p>
             </div>
           ) : (
-            <div className="border-t border-gray-200 pt-6 overflow-x-hidden">
+            <div className="pt-2 overflow-x-hidden">
               {isLastPricesApplied && Object.keys(priceStatus).length > 0 && (
                 <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 mb-3 text-xs">
                   <span className="text-gray-600 font-medium">Price Status:</span>
@@ -2200,31 +2284,6 @@ const SalesOrders = ({ tabId }) => {
                   </div>
                 </div>
               )}
-              <CartTableHeader
-                className={`hidden md:grid gap-x-1 items-center pb-2 border-b border-gray-300 mb-2 ${dualUnitShowBoxInputEnabled
-                  ? (
-                    showCostPrice && canViewCostPrice
-                      ? 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5rem_5.35rem_5.35rem_2.25rem]'
-                      : 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-                  )
-                  : (
-                    showCostPrice && canViewCostPrice
-                      ? 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5rem_5.35rem_5.35rem_2.25rem]'
-                      : 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-                  )
-                  }`}
-                columns={[
-                  { key: 'sno', label: 'S.NO', labelClassName: 'text-xs font-semibold text-gray-600 uppercase text-left' },
-                  { key: 'product', label: 'Product' },
-                  ...(dualUnitShowBoxInputEnabled ? [{ key: 'box', label: 'Box' }] : []),
-                  { key: 'stock', label: 'Stock' },
-                  { key: 'qty', label: 'Qty' },
-                  ...(showCostPrice && canViewCostPrice ? [{ key: 'cost', label: 'Cost' }] : []),
-                  { key: 'rate', label: 'Rate' },
-                  { key: 'total', label: 'Total', labelClassName: 'text-xs font-semibold text-gray-600 uppercase block text-center' },
-                  { key: 'action', label: 'Action', wrapperClassName: 'min-w-0 flex justify-end', labelClassName: 'text-xs font-semibold text-gray-600 uppercase text-right' },
-                ]}
-              />
               <div
                 ref={soCartScrollRef}
                 className={
@@ -2267,8 +2326,8 @@ const SalesOrders = ({ tabId }) => {
                         <div className="min-w-0 flex justify-start">
                           <span
                             className={`text-sm font-medium px-0.5 py-1 rounded border block text-center h-8 flex items-center justify-center transition-colors duration-300 ${serialHighlight
-                                ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
-                                : 'text-gray-700 bg-gray-50 border-gray-200'
+                              ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
+                              : 'text-gray-700 bg-gray-50 border-gray-200'
                               }`}
                           >
                             {index + 1}
@@ -2531,8 +2590,8 @@ const SalesOrders = ({ tabId }) => {
                               <div className="flex items-center gap-2 mb-1">
                                 <span
                                   className={`text-xs font-semibold px-2 py-0.5 rounded transition-colors duration-300 ${serialHighlight
-                                      ? 'bg-green-100 text-green-800 border border-green-400 ring-2 ring-green-300/80'
-                                      : 'text-gray-500 bg-gray-100'
+                                    ? 'bg-green-100 text-green-800 border border-green-400 ring-2 ring-green-300/80'
+                                    : 'text-gray-500 bg-gray-100'
                                     }`}
                                 >
                                   #{index + 1}
@@ -2785,6 +2844,89 @@ const SalesOrders = ({ tabId }) => {
             className={`mt-0 ml-0 max-w-none min-w-0 w-full border-slate-200 bg-none bg-slate-50 shadow-sm ring-0 ${showSalesOrderDetailsFields ? 'order-2' : 'order-1'
               }`}
           >
+            <OrderSummaryBar>
+              <div className="flex items-center gap-3">
+                {selectedOrder ? (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={cancelEdit}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-slate-600 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </Button>
+                    <LoadingButton
+                      onClick={handleUpdate}
+                      isLoading={updating}
+                      disabled={updating || formData.items.length === 0}
+                      variant="default"
+                      size="sm"
+                      className="bg-slate-900 hover:bg-slate-800 text-white border-none h-8 px-4 font-bold"
+                    >
+                      <Receipt className="h-4 w-4 mr-2" />
+                      {updating ? 'Updating...' : 'Update SO'}
+                    </LoadingButton>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleCreate}
+                    disabled={creating || formData.items.length === 0}
+                    variant="default"
+                    size="sm"
+                    className="bg-slate-900 hover:bg-slate-800 text-white border-none h-8 px-4 font-bold"
+                  >
+                    <Receipt className="h-4 w-4 mr-2" />
+                    {creating ? 'Creating...' : 'Create SO'}
+                  </Button>
+                )}
+
+                <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+                  {formData.items.length > 0 && (
+                    <Button
+                      onClick={resetForm}
+                      variant="ghost"
+                      size="icon-sm"
+                      className="h-8 w-8 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      title="Clear Cart"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {formData.items.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="h-8 w-8 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                          title="Print Options"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setDirectPrintOrder(buildDraftSalesOrderPrintOrder());
+                          }}
+                        >
+                          <Printer className="h-4 w-4 mr-2" />
+                          Print
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handlePrint(buildDraftSalesOrderPrintOrder())}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Print Preview
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </div>
+            </OrderSummaryBar>
             <OrderSummaryContent className="bg-none bg-slate-50">
               <div className="space-y-2">
                 {totalDiscount > 0 && (
@@ -2847,91 +2989,6 @@ const SalesOrders = ({ tabId }) => {
                 )}
               </div>
 
-              <OrderCheckoutActions>
-                {formData.items.length > 0 && (
-                  <Button
-                    onClick={resetForm}
-                    variant="secondary"
-                    className="flex-1"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear Cart
-                  </Button>
-                )}
-                {formData.items.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="secondary" className="flex-1">
-                        <Printer className="h-4 w-4 mr-2" />
-                        Print
-                        <ChevronDown className="h-4 w-4 ml-2" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setDirectPrintOrder(buildDraftSalesOrderPrintOrder());
-                        }}
-                      >
-                        <Printer className="h-4 w-4 mr-2" />
-                        Print
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handlePrint(buildDraftSalesOrderPrintOrder())}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Print Preview
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-                <div className="flex items-center space-x-2 px-2">
-                  <Input
-                    type="checkbox"
-                    id="soAutoPrint"
-                    checked={autoPrint}
-                    onChange={(e) => setAutoPrint(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="soAutoPrint" className="text-sm font-medium text-gray-700 cursor-pointer">
-                    Print after sale
-                  </label>
-                </div>
-                {selectedOrder ? (
-                  <>
-                    <Button
-                      type="button"
-                      onClick={cancelEdit}
-                      variant="secondary"
-                      className="flex-1"
-                    >
-                      Cancel Edit
-                    </Button>
-                    <LoadingButton
-                      onClick={handleUpdate}
-                      isLoading={updating}
-                      disabled={updating || formData.items.length === 0}
-                      variant="default"
-                      size="lg"
-                      className="flex-2"
-                    >
-                      <Receipt className="h-4 w-4 mr-2" />
-                      {updating ? 'Updating...' : 'Update Sales Order'}
-                    </LoadingButton>
-                  </>
-                ) : (
-                  <Button
-                    onClick={handleCreate}
-                    disabled={creating || formData.items.length === 0}
-                    variant="default"
-                    size="lg"
-                    className="flex-2"
-                  >
-                    <Receipt className="h-4 w-4 mr-2" />
-                    {creating ? 'Creating...' : 'Create Sales Order'}
-                  </Button>
-                )}
-              </OrderCheckoutActions>
             </OrderSummaryContent>
           </OrderCheckoutCard>
         </div>
@@ -2990,7 +3047,7 @@ const SalesOrders = ({ tabId }) => {
               >
                 <option value="">All Statuses</option>
                 <option value="draft">Pending</option>
-                <option value="confirmed">Confirmed</option>
+                <option value="confirmed">Order confirmed</option>
                 <option value="partially_invoiced">Partially Invoiced</option>
                 <option value="fully_invoiced">Fully Invoiced</option>
                 <option value="cancelled">Cancelled</option>
@@ -3109,11 +3166,16 @@ const SalesOrders = ({ tabId }) => {
                           {order?.order_type ?? order?.orderType ?? '—'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div className="flex items-center space-x-1">
-                            {getStatusIcon(order?.status)}
-                            <span className="capitalize">
-                              {order?.status === 'draft' ? 'Pending' : (order?.status ?? '').replace(/_/g, ' ')}
-                            </span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {(() => {
+                              const pres = getSalesOrderStatusPresentation(order);
+                              return (
+                                <>
+                                  {pres.icon}
+                                  <span className="text-sm">{pres.label}</span>
+                                </>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -3153,21 +3215,57 @@ const SalesOrders = ({ tabId }) => {
                               <Printer className="h-4 w-4" />
                             </button>
                             <ExcelExportButton
-                              getData={() => {
-                                const payload = getInvoicePdfPayload(order, companySettings, 'Sales Order', 'Customer');
-                                return {
-                                  ...payload,
-                                  filename: `Sales_Order_${order.soNumber || order.orderNumber || order._id}.xlsx`
-                                };
+                              getData={async () => {
+                                try {
+                                  const result = await fetchSalesOrderById(order.id || order._id).unwrap();
+                                  const freshOrder = result?.order || result?.data?.salesOrder || result?.data || result || order;
+                                  const payload = getInvoicePdfPayload(freshOrder, companySettings, 'Sales Order', 'Customer');
+                                  return {
+                                    ...payload,
+                                    filename: `Sales_Order_${order.soNumber || order.orderNumber || order._id}.xlsx`
+                                  };
+                                } catch (err) {
+                                  return {
+                                    ...getInvoicePdfPayload(order, companySettings, 'Sales Order', 'Customer'),
+                                    filename: `Sales_Order_${order.soNumber || order.orderNumber || order._id}.xlsx`
+                                  };
+                                }
                               }}
                               label=""
                               className="p-1 bg-transparent border-none shadow-none hover:bg-transparent text-green-600 hover:text-green-800 px-1 py-1"
                             />
                             <PdfExportButton
-                              getData={() => getInvoicePdfPayload(order, companySettings, 'Sales Order', 'Customer')}
+                              getData={async () => {
+                                try {
+                                  const result = await fetchSalesOrderById(order.id || order._id).unwrap();
+                                  const freshOrder = result?.order || result?.data?.salesOrder || result?.data || result || order;
+                                  return getInvoicePdfPayload(freshOrder, companySettings, 'Sales Order', 'Customer');
+                                } catch (err) {
+                                  return getInvoicePdfPayload(order, companySettings, 'Sales Order', 'Customer');
+                                }
+                              }}
                               label=""
                               className="p-1 bg-transparent border-none shadow-none hover:bg-transparent text-red-600 hover:text-red-800 px-1 py-1"
                             />
+                            {getSalesOrderInvoiceCompleteAction(order) && (
+                              <LoadingButton
+                                type="button"
+                                onClick={() => completeSalesOrderToFullInvoice(order)}
+                                isLoading={updatingItemsConfirmation || creatingInvoiceFromSO}
+                                size="icon-sm"
+                                iconOnly
+                                variant="ghost"
+                                className="text-teal-600 hover:text-teal-900 shrink-0"
+                                title={
+                                  getSalesOrderInvoiceCompleteAction(order) === 'createInvoice'
+                                    ? 'Create sales invoice (fully invoiced)'
+                                    : 'Convert to full invoice'
+                                }
+                                disabled={updatingItemsConfirmation || creatingInvoiceFromSO}
+                              >
+                                <Receipt className="h-4 w-4" />
+                              </LoadingButton>
+                            )}
                             {order.status === 'draft' && (
                               <>
                                 <button
@@ -3254,6 +3352,25 @@ const SalesOrders = ({ tabId }) => {
               Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
             </div>
             <div className="flex flex-wrap gap-2 justify-end">
+              {selectedOrder && getSalesOrderInvoiceCompleteAction(selectedOrder) && (
+                <LoadingButton
+                  type="button"
+                  onClick={() => completeSalesOrderToFullInvoice(selectedOrder)}
+                  isLoading={updatingItemsConfirmation || creatingInvoiceFromSO}
+                  disabled={updatingItemsConfirmation || creatingInvoiceFromSO}
+                  className="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white"
+                  title={
+                    getSalesOrderInvoiceCompleteAction(selectedOrder) === 'createInvoice'
+                      ? 'Create sales invoice (fully invoiced)'
+                      : 'Convert to full invoice'
+                  }
+                >
+                  <Receipt className="h-4 w-4 mr-2 shrink-0" />
+                  {getSalesOrderInvoiceCompleteAction(selectedOrder) === 'createInvoice'
+                    ? 'Create sales invoice'
+                    : 'Convert to full invoice'}
+                </LoadingButton>
+              )}
               <Button
                 type="button"
                 onClick={() => handlePrint(selectedOrder)}
@@ -3301,13 +3418,13 @@ const SalesOrders = ({ tabId }) => {
                   <p><span className="font-medium">Order Type:</span> {selectedOrder.orderType || 'Standard'}</p>
                   <p><span className="font-medium">Status:</span>
                     <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                      selectedOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                      selectedOrder.status === 'confirmed' ? 'bg-amber-100 text-amber-900' :
                         selectedOrder.status === 'partially_invoiced' ? 'bg-yellow-100 text-yellow-800' :
                           selectedOrder.status === 'fully_invoiced' ? 'bg-green-100 text-green-800' :
                             selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-800'
                       }`}>
-                      {selectedOrder.status === 'draft' ? 'Pending' : selectedOrder.status.replace('_', ' ')}
+                      {getSalesOrderStatusPresentation(selectedOrder).label}
                     </span>
                   </p>
                   {itemWiseConfirmationEnabled && (
@@ -3466,13 +3583,13 @@ const SalesOrders = ({ tabId }) => {
                   </div>
                   {taxSystemEnabled &&
                     Number(selectedOrder.tax ?? selectedOrder.pricing?.taxAmount ?? 0) > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Tax:</span>
-                      <span className="font-medium">
-                        {Math.round(Number(selectedOrder.tax ?? selectedOrder.pricing?.taxAmount ?? 0))}
-                      </span>
-                    </div>
-                  )}
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Tax:</span>
+                        <span className="font-medium">
+                          {Math.round(Number(selectedOrder.tax ?? selectedOrder.pricing?.taxAmount ?? 0))}
+                        </span>
+                      </div>
+                    )}
                   {selectedOrder.discount && selectedOrder.discount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Discount:</span>

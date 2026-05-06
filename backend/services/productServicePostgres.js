@@ -75,7 +75,8 @@ function toApiProduct(row, categoryMap = null) {
     pricing: {
       cost: parseFloat(row.cost_price) || 0,
       wholesale: row.wholesale_price != null ? parseFloat(row.wholesale_price) : (parseFloat(row.selling_price) || 0),
-      retail: parseFloat(row.selling_price) || 0
+      retail: parseFloat(row.selling_price) || 0,
+      lastSale: parseFloat(row.last_sale_price) || 0
     },
     inventory: {
       currentStock: parseFloat(row.stock_quantity) || 0,
@@ -97,12 +98,7 @@ function toApiProduct(row, categoryMap = null) {
     updated_at: row.updated_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    imageUrl: row.image_url || null,
-    // Storefront compatibility fields
-    title: row.name,
-    price: parseFloat(row.selling_price) || 0,
-    stock: parseFloat(row.stock_quantity) || 0,
-    image: row.image_url || null
+    imageUrl: row.image_url || null
   };
 }
 
@@ -153,7 +149,9 @@ class ProductServicePostgres {
     } else if (queryParams.search) {
       filters.search = queryParams.search;
     }
-    if (queryParams.category) filters.categoryId = queryParams.category;
+    if (queryParams.category && queryParams.category !== 'all' && isValidUuid(queryParams.category)) {
+      filters.categoryId = queryParams.category;
+    }
     else if (queryParams.categories) {
       try {
         const arr = JSON.parse(queryParams.categories);
@@ -175,12 +173,36 @@ class ProductServicePostgres {
     const getAll = queryParams.all === 'true' || queryParams.all === true ||
       (queryParams.limit && parseInt(queryParams.limit, 10) >= 999999);
     const page = getAll ? 1 : (parseInt(queryParams.page, 10) || 1);
-    let limit = getAll
-      ? Math.min(parseInt(queryParams.limit, 10) || MAX_EXPORT, MAX_EXPORT)
-      : Math.min(parseInt(queryParams.limit, 10) || 20, MAX_PAGE);
+
+    const requestedLimit = parseInt(queryParams.limit, 10);
+    const hasExplicitLimit =
+      queryParams.limit != null &&
+      String(queryParams.limit).trim() !== '' &&
+      Number.isFinite(requestedLimit) &&
+      requestedLimit > 0;
+
+    let limit;
+    if (getAll) {
+      limit = Math.min(requestedLimit || MAX_EXPORT, MAX_EXPORT);
+    } else if (hasExplicitLimit) {
+      // Explicit limit (e.g. pickers sending limit=10000) — honor up to route max, not MAX_PAGE (200).
+      limit = Math.min(requestedLimit, MAX_EXPORT);
+    } else {
+      limit = Math.min(20, MAX_PAGE);
+    }
     if (!getAll && (!Number.isFinite(limit) || limit < 1)) limit = 20;
 
     const filters = this.buildFilter(queryParams);
+    if (queryParams.category && queryParams.category !== 'all' && !isValidUuid(queryParams.category)) {
+      const resolvedId = await resolveCategoryId(queryParams.category);
+      if (resolvedId) {
+        filters.categoryId = resolvedId;
+      } else {
+        // If category name doesn't exist, force empty result or ignore filter?
+        // Let's ignore it for now or set to a non-existent UUID.
+        filters.categoryId = '00000000-0000-0000-0000-000000000000';
+      }
+    }
     const listMode = queryParams.listMode === 'minimal' ? 'minimal' : 'full';
     const result = await productRepository.findWithPagination(filters, {
       page,
@@ -219,9 +241,7 @@ class ProductServicePostgres {
               reservedStock: reserved,
               reorderPoint: reorder,
               minStock: reorder
-            },
-            // Update stock for storefront compatibility
-            stock: available
+            }
           };
         }
         return p;
@@ -233,19 +253,17 @@ class ProductServicePostgres {
       products = products.map((p) => attachInvestorsToApiProduct(p, invMap.get(String(p.id)) || []));
     }
 
+    if (productIds.length > 0) {
+      const usedInSales = await productRepository.findProductIdsUsedInSales(productIds);
+      products = products.map((p) => ({
+        ...p,
+        canDelete: !usedInSales.has(String(p.id))
+      }));
+    }
+
     return {
       products,
-      pagination: {
-        page,
-        current: page,
-        totalPages: Math.ceil(result.pagination.total / limit) || 1,
-        pages: Math.ceil(result.pagination.total / limit) || 1,
-        total: result.pagination.total,
-        limit,
-        mode: 'offset',
-        nextCursor: result.pagination.nextCursor,
-        hasMore: result.pagination.hasMore
-      }
+      pagination: result.pagination
     };
   }
 
@@ -284,13 +302,16 @@ class ProductServicePostgres {
           reservedStock: reserved,
           reorderPoint: reorder,
           minStock: reorder
-        },
-        // Update stock for storefront compatibility
-        stock: available
+        }
       };
     }
     const invMap = await productRepository.findInvestorsByProductIds([id]);
-    return attachInvestorsToApiProduct(product, invMap.get(String(id)) || []);
+    const withInvestors = attachInvestorsToApiProduct(product, invMap.get(String(id)) || []);
+    const usedInSales = await productRepository.findProductIdsUsedInSales([id]);
+    return {
+      ...withInvestors,
+      canDelete: !usedInSales.has(String(id))
+    };
   }
 
   async createProduct(productData, userId, req = null) {
@@ -298,9 +319,10 @@ class ProductServicePostgres {
     const cost = pricing.cost !== undefined && pricing.cost !== null ? Number(pricing.cost) : 0;
     const retail = pricing.retail !== undefined && pricing.retail !== null ? Number(pricing.retail) : 0;
     const wholesale = pricing.wholesale !== undefined && pricing.wholesale !== null ? Number(pricing.wholesale) : retail;
+    const lastSale = pricing.lastSale !== undefined && pricing.lastSale !== null ? Number(pricing.lastSale) : 0;
 
     if (cost < 0) throw new Error('Cost price is required and must be non-negative');
-    if (retail < 0) throw new Error('Retail price is required and must be non-negative');
+    if (retail < 0) throw new Error('Retail price must be non-negative');
     if (wholesale < 0) throw new Error('Wholesale price must be non-negative');
 
     if (productData.name) {
@@ -338,6 +360,7 @@ class ProductServicePostgres {
           costPrice: cost,
           sellingPrice: retail,
           wholesalePrice: wholesale,
+          lastSalePrice: lastSale,
           stockQuantity: openingQty,
           minStockLevel: inv.reorderPoint ?? inv.minStock ?? inv.minStockLevel ?? 0,
           unit: productData.unit,
@@ -447,9 +470,11 @@ class ProductServicePostgres {
       const retail = pricing.retail !== undefined && pricing.retail !== null ? Number(pricing.retail) : current.selling_price;
       const currentWholesale = current.wholesale_price ?? current.wholesalePrice ?? current.selling_price;
       const wholesale = pricing.wholesale !== undefined && pricing.wholesale !== null ? Number(pricing.wholesale) : currentWholesale;
+      const lastSale = pricing.lastSale !== undefined && pricing.lastSale !== null ? Number(pricing.lastSale) : current.last_sale_price;
       data.costPrice = cost;
       data.sellingPrice = retail;
       data.wholesalePrice = wholesale;
+      data.lastSalePrice = lastSale;
     }
 
     const inv = updateData.inventory;
@@ -556,6 +581,10 @@ class ProductServicePostgres {
   async deleteProduct(id, req = null) {
     const product = await productRepository.findById(id);
     if (!product) throw new Error('Product not found');
+    const usedInSales = await productRepository.findProductIdsUsedInSales([id]);
+    if (usedInSales.has(String(id))) {
+      throw new Error('Cannot delete this product because it has been used in a sale.');
+    }
     await transaction(async (client) => {
       await AccountingService.removeProductOpeningStockLedger(id, { client });
       await productRepository.delete(id, client);
@@ -563,25 +592,11 @@ class ProductServicePostgres {
     return { message: 'Product deleted successfully' };
   }
 
-  async searchProducts(query, limit = 10, page = 1) {
-    const result = await productRepository.findWithPagination({ search: query }, { limit, page });
-    const categoryIds = [...new Set(result.products.map(p => p.category_id).filter(Boolean))];
+  async searchProducts(query, limit = 10) {
+    const rows = await productRepository.search(query, { limit });
+    const categoryIds = [...new Set(rows.map(p => p.category_id).filter(Boolean))];
     const categoryMap = await getCategoryMap(categoryIds);
-    const products = result.products.map(p => toApiProduct(p, categoryMap));
-    
-    return {
-      products,
-      pagination: {
-        page,
-        current: page,
-        totalPages: result.pagination.pages || 1,
-        pages: result.pagination.pages || 1,
-        total: result.pagination.total,
-        limit,
-        mode: 'offset',
-        hasMore: result.pagination.hasMore
-      }
-    };
+    return rows.map(p => toApiProduct(p, categoryMap));
   }
 
   async productExistsByName(name) {

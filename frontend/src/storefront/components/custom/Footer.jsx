@@ -6,8 +6,8 @@ import {
   SOCIAL_MEDIA,
   COPYRIGHT_TEXT,
   SECTION_TITLES,
-} from '@/constants/footer'
-import { getCurrentYear, renderSocialIcon } from '@/utils/footerHelpers'
+} from '@/storefront/constants/footer'
+import { getCurrentYear, renderSocialIcon } from '@/storefront/utils/footerHelpers'
 
 const Footer = () => {
   const [hoveredIcon, setHoveredIcon] = useState(null)

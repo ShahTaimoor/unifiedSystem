@@ -12,13 +12,24 @@ export const ProductList = ({
   onManageInvestors,
   onGenerateBarcode,
   showCostPrice = true,
-  /** When false, per-row delete (trash) is hidden — e.g. Products page policy */
+  /** When false, per-row delete (trash) is hidden */
   showDeleteButton = true,
+  /** When true, trash only shows if `product.canDelete === true` (e.g. never used on a sale) */
+  deleteRequiresCanDelete = false,
 }) => {
   const [showImages, setShowImages] = useState(localStorage.getItem('showProductImagesUI') !== 'false');
   const [showHsCodeColumn, setShowHsCodeColumn] = useState(
-    () => localStorage.getItem('showProductHsCodeColumn') !== 'false'
+    () => localStorage.getItem('showProductHsCodeColumn') !== 'false' || localStorage.getItem('showProductSetting_hsCode') === 'true'
   );
+  const [showExpiryDate, setShowExpiryDate] = useState(
+    () => localStorage.getItem('showProductSetting_expiryDate') === 'true'
+  );
+  const [showImportRefs, setShowImportRefs] = useState(
+    () => localStorage.getItem('showProductSetting_importRefNo') === 'true' || 
+          localStorage.getItem('showProductSetting_gdNumber') === 'true' || 
+          localStorage.getItem('showProductSetting_invoiceRef') === 'true'
+  );
+
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -30,10 +41,27 @@ export const ProductList = ({
 
   useEffect(() => {
     const handleHsCodeColumn = () => {
-      setShowHsCodeColumn(localStorage.getItem('showProductHsCodeColumn') !== 'false');
+      setShowHsCodeColumn(localStorage.getItem('showProductHsCodeColumn') !== 'false' || localStorage.getItem('showProductSetting_hsCode') === 'true');
     };
     window.addEventListener('productHsCodeColumnConfigChanged', handleHsCodeColumn);
-    return () => window.removeEventListener('productHsCodeColumnConfigChanged', handleHsCodeColumn);
+    window.addEventListener('productVisibilitySettingsChanged', handleHsCodeColumn);
+    return () => {
+      window.removeEventListener('productHsCodeColumnConfigChanged', handleHsCodeColumn);
+      window.removeEventListener('productVisibilitySettingsChanged', handleHsCodeColumn);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleVisibilitySettings = () => {
+      setShowExpiryDate(localStorage.getItem('showProductSetting_expiryDate') === 'true');
+      setShowImportRefs(
+        localStorage.getItem('showProductSetting_importRefNo') === 'true' || 
+        localStorage.getItem('showProductSetting_gdNumber') === 'true' || 
+        localStorage.getItem('showProductSetting_invoiceRef') === 'true'
+      );
+    };
+    window.addEventListener('productVisibilitySettingsChanged', handleVisibilitySettings);
+    return () => window.removeEventListener('productVisibilitySettingsChanged', handleVisibilitySettings);
   }, []);
   if (products.length === 0) {
     return (
@@ -154,7 +182,7 @@ export const ProductList = ({
                           <h3 className="text-[10px] xl:text-xs 2xl:text-sm font-medium text-gray-900 truncate">
                             {product.name}
                           </h3>
-                          {product.expiryDate && (() => {
+                          {showExpiryDate && product.expiryDate && (() => {
                             const expiryStatus = getExpiryStatus(product);
                             if (expiryStatus?.status === 'expired') {
                               return (
@@ -172,7 +200,7 @@ export const ProductList = ({
                             return null;
                           })()}
                         </div>
-                        {(product.importRefNo || product.gdNumber || product.invoiceRef) && (
+                        {showImportRefs && (product.importRefNo || product.gdNumber || product.invoiceRef) && (
                           <p className="text-[10px] xl:text-xs text-gray-500 truncate mt-0.5">
                             {product.importRefNo ? `IMP: ${product.importRefNo}` : ''}
                             {product.gdNumber ? `${product.importRefNo ? ' | ' : ''}GD: ${product.gdNumber}` : ''}
@@ -256,7 +284,7 @@ export const ProductList = ({
                       >
                         <Edit className="h-3.5 w-3.5 xl:h-4 xl:w-4 2xl:h-5 2xl:w-5" />
                       </button>
-                      {showDeleteButton && (
+                      {showDeleteButton && (!deleteRequiresCanDelete || product.canDelete === true) && (
                         <button
                           type="button"
                           onClick={() => onDelete(product)}
@@ -372,7 +400,7 @@ export const ProductList = ({
                               {product.category?.name || '-'}
                             </p>
                           </div>
-                          {(product.importRefNo || product.gdNumber || product.invoiceRef) && (
+                          {showImportRefs && (product.importRefNo || product.gdNumber || product.invoiceRef) && (
                             <div className="col-span-2 sm:col-span-3">
                               <p className="text-[10px] xl:text-xs text-gray-500 mb-0.5">Import References</p>
                               <p className="text-xs xl:text-sm font-semibold text-gray-900 truncate">
@@ -385,7 +413,7 @@ export const ProductList = ({
                         </div>
 
                         {/* Expiry Date Badge */}
-                        {product.expiryDate && (() => {
+                        {showExpiryDate && product.expiryDate && (() => {
                           const expiryStatus = getExpiryStatus(product);
                           if (expiryStatus?.status === 'expired') {
                             return (
@@ -439,7 +467,7 @@ export const ProductList = ({
                             >
                               <Edit className="h-4 w-4 xl:h-5 xl:w-5" />
                             </button>
-                            {showDeleteButton && (
+                            {showDeleteButton && (!deleteRequiresCanDelete || product.canDelete === true) && (
                               <button
                                 onClick={() => onDelete(product)}
                                 className="text-danger-600 hover:text-danger-800 p-1.5 xl:p-2 rounded hover:bg-red-50 transition-colors"
@@ -467,4 +495,3 @@ export const ProductList = ({
     </div>
   );
 };
-

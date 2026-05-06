@@ -1,7 +1,7 @@
 import * as React from "react"
 import * as SeparatorPrimitive from "@radix-ui/react-separator"
 
-import { cn } from "@pos/lib/utils"
+import { cn } from "@/pos/lib/utils"
 
 const Separator = React.forwardRef((
   { className, orientation = "horizontal", decorative = true, ...props },
@@ -21,4 +21,3 @@ const Separator = React.forwardRef((
 Separator.displayName = SeparatorPrimitive.Root.displayName
 
 export { Separator }
-

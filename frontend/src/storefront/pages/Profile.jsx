@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { updateProfile } from '@/redux/slices/auth/authSlice';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
-import OneLoader from '@/components/ui/OneLoader';
-import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/storefront/components/ui/input';
+import { Button } from '@/storefront/components/ui/button';
+import { updateProfile } from '@/storefront/redux/slices/auth/authSlice';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/storefront/components/ui/card';
+import { Avatar, AvatarImage, AvatarFallback } from '@/storefront/components/ui/avatar';
+import { Skeleton } from '@/storefront/components/ui/skeleton';
+import { Textarea } from '@/storefront/components/ui/textarea';
+import OneLoader from '@/storefront/components/ui/OneLoader';
+import { useToast } from '@/storefront/hooks/use-toast';
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -44,7 +44,7 @@ const Profile = () => {
 
   const handleSubmit = async () => {
     // Validate with Zod
-    const { profileSchema } = await import('@/schemas/profileSchemas');
+    const { profileSchema } = await import('@/storefront/schemas/profileSchemas');
     const result = profileSchema.safeParse(formData);
     
     if (!result.success) {

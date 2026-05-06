@@ -8,7 +8,7 @@ import {
   XCircle,
   Shield
 } from 'lucide-react';
-import { Button } from '@pos/components/ui/button';
+import { Button } from '@/pos/components/ui/button';
 
 const ConfirmationDialog = ({
   isOpen,
@@ -262,4 +262,3 @@ export const BulkDeleteConfirmationDialog = ({ isOpen, onClose, onConfirm, itemC
 );
 
 export default ConfirmationDialog;
-

@@ -3,7 +3,7 @@ import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { useGetBalanceSummaryQuery } from '../store/services/customerBalancesApi';
 import PrintDocument from './PrintDocument';
 import { PrintModal, PrintWrapper } from './print';
-import { PRINT_PAGE_STYLE } from './print/printPageStyle';
+import { PRINT_PAGE_STYLE, THERMAL_PRINT_PAGE_STYLE } from './print/printPageStyle';
 import { getInvoicePdfPayload } from '../utils/invoicePdfUtils';
 
 /**
@@ -56,12 +56,15 @@ export const DirectPrintInvoice = ({
 
   if (!orderData) return null;
 
+  const isCompact = companySettings?.printSettings?.invoiceLayout === 'compact' || orderData?.invoiceLayout === 'compact';
+  const selectedPageStyle = isCompact ? THERMAL_PRINT_PAGE_STYLE : (pageStyle || PRINT_PAGE_STYLE);
+
   return (
     <div style={{ position: 'fixed', left: '-9999px', top: 0, visibility: 'hidden' }} aria-hidden="true">
       <PrintWrapper
         ref={printRef}
         documentTitle={resolvedDocumentTitle}
-        pageStyle={PRINT_PAGE_STYLE}
+        pageStyle={selectedPageStyle}
         onAfterPrint={handleAfterPrint}
       >
         <PrintDocument
@@ -114,6 +117,9 @@ const InvoicePrintModal = ({
     balanceSummaryData?.balances?.currentBalance ??
     null;
 
+  const isCompact = companySettings?.printSettings?.invoiceLayout === 'compact' || orderData?.invoiceLayout === 'compact';
+  const pageStyle = isCompact ? THERMAL_PRINT_PAGE_STYLE : PRINT_PAGE_STYLE;
+
   return (
     <PrintModal
       isOpen={isOpen}
@@ -123,7 +129,8 @@ const InvoicePrintModal = ({
       emptyMessage="No invoice data to print."
       autoPrint={autoPrint}
       onAfterPrint={onAfterPrint}
-      getPdfData={() => getInvoicePdfPayload(orderData, companySettings, resolvedDocumentTitle, partyLabel)}
+      pageStyle={pageStyle}
+      getPdfData={() => getInvoicePdfPayload(orderData, companySettings, resolvedDocumentTitle, partyLabel, ledgerBalance)}
     >
       <PrintDocument
         companySettings={companySettings || {}}
@@ -142,4 +149,3 @@ const InvoicePrintModal = ({
 };
 
 export default InvoicePrintModal;
-

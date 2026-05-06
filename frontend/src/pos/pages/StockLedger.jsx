@@ -19,8 +19,8 @@ import { handleApiError } from '../utils/errorHandler';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan, getDateDaysAgo, formatDateForInput } from '../utils/dateUtils';
 import { toast } from 'sonner';
-import { cn } from '@pos/lib/utils';
-import { Button } from '@pos/components/ui/button';
+import { cn } from '@/pos/lib/utils';
+import { Button } from '@/pos/components/ui/button';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import PageShell from '../components/PageShell';
 
@@ -760,4 +760,3 @@ export const StockLedger = () => {
 };
 
 export default StockLedger;
-

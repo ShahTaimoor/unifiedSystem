@@ -32,9 +32,9 @@ import {
 } from '../store/services/investorsApi';
 import { toast } from 'sonner';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
-import { Textarea } from '@pos/components/ui/textarea';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
+import { Textarea } from '@/pos/components/ui/textarea';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 import { useTab } from '../contexts/TabContext';
@@ -1592,5 +1592,4 @@ const InvestmentModal = ({ investor, onSave, onCancel, isSubmitting }) => {
 };
 
 export default Investors;
-
 

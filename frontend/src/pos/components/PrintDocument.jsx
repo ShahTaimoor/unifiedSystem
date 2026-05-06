@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { formatQuantityDisplay } from '../utils/dualUnitUtils';
+import ThermalReceipt from './print/ThermalReceipt';
 
 const PrintDocument = ({
     companySettings,
@@ -33,8 +34,10 @@ const PrintDocument = ({
         showPrintPaymentStatus = true,
         showPrintPaymentMethod = true,
         showPrintPaymentAmount = true,
+        showPrintLedgerBalance = true,
         headerText = '',
         footerText = '',
+        receiptFooterText = '',
         invoiceLayout = 'standard',
         logoSize = 100
     } = printSettings || {};
@@ -51,7 +54,9 @@ const PrintDocument = ({
     const saleOrPurchaseClass = !isReceipt ? (isSale ? ' print-document--sale' : isPurchase ? ' print-document--purchase' : '') : '';
     const receiptTypeClass = isReceipt ? (isBank ? ' print-document--bank' : isCash ? ' print-document--cash' : '') : '';
 
-    const printClassName = `print-document${invoiceLayout === 'layout2' ? ' print-document--layout2' : ''}${isReceipt ? ' print-document--receipt' : ''}${isMobileLayout ? ' print-document--mobile' : ''}${saleOrPurchaseClass}${receiptTypeClass}`;
+    const isCompact = invoiceLayout === 'compact';
+
+    const printClassName = `print-document${invoiceLayout === 'layout2' ? ' print-document--layout2' : ''}${isReceipt ? ' print-document--receipt' : ''}${isCompact ? ' print-document--compact' : ''}${isMobileLayout ? ' print-document--mobile' : ''}${saleOrPurchaseClass}${receiptTypeClass}`;
 
     const formatDate = (date) =>
         new Date(date || new Date()).toLocaleDateString('en-GB', {
@@ -73,7 +78,7 @@ const PrintDocument = ({
 
     const formatCurrency = (value) => {
         if (value === undefined || value === null || isNaN(value)) return '-';
-        return Number(value).toLocaleString(undefined, {
+        return Number(value).toLocaleString('en-US', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 2
         });
@@ -447,7 +452,7 @@ const PrintDocument = ({
                             <div className="receipt-voucher__label w-1/3 font-semibold p-2">Amount</div>
                             <div className="receipt-voucher__value flex-1 p-2 border-l border-black font-bold text-lg">{formatCurrency(amount)}</div>
                         </div>
-                        {ledgerBalanceProp != null && (
+                        {showPrintLedgerBalance && ledgerBalanceProp != null && (
                             <div className="receipt-voucher__row flex border-b border-black">
                                 <div className="receipt-voucher__label w-1/3 font-semibold p-2">Ledger Balance</div>
                                 <div className="receipt-voucher__value flex-1 p-2 border-l border-black">{formatCurrency(Number(ledgerBalanceProp))}</div>
@@ -616,6 +621,8 @@ const PrintDocument = ({
                                     <td className="border-b border-r border-black p-1 text-right font-bold">Received Amount</td>
                                     <td className="border-b border-r border-black p-1 text-right">{formatCurrency(receivedAmount)}</td>
                                 </tr>
+                                {showPrintLedgerBalance && (
+                                  <>
                                 <tr>
                                     <td className="border-b border-r border-black p-1 text-right font-bold">Previous Balance</td>
                                     <td className="border-b border-r border-black p-1 text-right">{formatCurrency(previousBalance)}</td>
@@ -624,10 +631,29 @@ const PrintDocument = ({
                                     <td className="border-b border-r border-black p-1 text-right font-bold">Total Receivables</td>
                                     <td className="border-b border-r border-black p-1 text-right font-bold">{formatCurrency(totalReceivables)}</td>
                                 </tr>
+                                  </>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
+            </div>
+        );
+    }
+
+    // ==========================================
+    // Layout: Compact Thermal Receipt
+    // ==========================================
+    if (invoiceLayout === 'compact') {
+        return (
+            <div className={printClassName}>
+                {children}
+                <ThermalReceipt
+                    companySettings={safeCompanySettings}
+                    orderData={orderData}
+                    printSettings={printSettings}
+                    documentTitle={resolvedDocumentTitle}
+                />
             </div>
         );
     }
@@ -838,10 +864,12 @@ const PrintDocument = ({
                         <span>Total</span>
                         <span>{formatCurrency(totalValue)}</span>
                     </div>
+                    {showPrintLedgerBalance && (
                     <div className="print-document__summary-row">
                         <span>Ledger Balance</span>
                         <span>{formatCurrency(ledgerBalance)}</span>
                     </div>
+                    )}
                 </div>
             </div>
 
@@ -858,6 +886,19 @@ const PrintDocument = ({
                             {footerText}
                         </div>
                     )}
+                    {receiptFooterText && (
+                        <div
+                            className="mt-3 pt-2"
+                            style={{
+                                borderTop: '1px dashed #9ca3af',
+                                textAlign: 'center',
+                                whiteSpace: 'pre-line',
+                                lineHeight: 1.35
+                            }}
+                        >
+                            {receiptFooterText}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -865,4 +906,3 @@ const PrintDocument = ({
 };
 
 export default PrintDocument;
-

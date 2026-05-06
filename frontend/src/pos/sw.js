@@ -42,4 +42,3 @@ registerRoute(
 self.addEventListener('fetch', (event) => {
   // Pass-through for now, workbox-precaching handles the precached assets
 });
-

@@ -16,12 +16,12 @@ export const fetchCart = createAsyncThunk('fetchCart', async (_, thunkAPI) => {
   }
 });
 
-// Add item to cart (local); pass full `product` from the listing or detail page.
-export const addToCart = createAsyncThunk('addToCart', async ({ productId, quantity, product }, thunkAPI) => {
+// Add item to cart
+export const addToCart = createAsyncThunk('addToCart', async ({ productId, quantity }, thunkAPI) => {
   try {
-    return await cartService.addToCart({ productId, quantity, product });
+    return await cartService.addToCart({ productId, quantity });
   } catch (err) {
-    return thunkAPI.rejectWithValue(err.response?.data?.message || err.message || String(err));
+    return thunkAPI.rejectWithValue(err.response?.data?.message || err.message);
   }
 });
 

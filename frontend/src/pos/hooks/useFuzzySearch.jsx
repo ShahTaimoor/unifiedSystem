@@ -34,4 +34,3 @@ export const useQuickFuzzySearch = (items, searchTerm, fields = ['name']) => {
   }, [items, searchTerm, fields]);
 };
 
-

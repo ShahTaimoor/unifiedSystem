@@ -160,4 +160,3 @@ export const IntegratedSearchFilters = ({
 
 export default IntegratedSearchFilters;
 
-

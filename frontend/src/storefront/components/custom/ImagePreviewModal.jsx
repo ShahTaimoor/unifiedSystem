@@ -1,7 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../ui/button';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
 
 const ImagePreviewModal = ({ previewImage, onClose }) => {
   if (!previewImage) return null;
@@ -20,7 +19,7 @@ const ImagePreviewModal = ({ previewImage, onClose }) => {
       >
         <div className="relative bg-white rounded-lg shadow-2xl overflow-hidden">
           <img
-            src={resolveMediaUrl(previewImage) || previewImage}
+            src={previewImage}
             alt="Product Preview"
             className="object-contain w-full h-auto max-h-[85vh]"
             loading="eager"

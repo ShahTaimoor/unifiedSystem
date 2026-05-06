@@ -5,9 +5,9 @@ import { X, TrendingUp, TrendingDown, Package, AlertTriangle } from 'lucide-reac
 import { useFormValidation } from '../hooks/useFormValidation';
 import { validateRequired, validatePositiveNumber } from '../utils/validation';
 import { LoadingButton } from './LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
-import { Textarea } from '@pos/components/ui/textarea';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
+import { Textarea } from '@/pos/components/ui/textarea';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { useUpdateStockMutation } from '../store/services/inventoryApi';
 
@@ -393,4 +393,3 @@ const StockUpdateModal = ({ isOpen, onClose, product, onSuccess }) => {
 };
 
 export default StockUpdateModal;
-

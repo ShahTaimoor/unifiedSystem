@@ -262,4 +262,3 @@ const InventoryReportFilters = ({ filters, onFilterChange, onClose }) => {
 };
 
 export default InventoryReportFilters;
-

@@ -51,7 +51,7 @@ export const imageService = {
    * @param {string} src - Image source URL
    * @param {string} alt - Alt text
    * @param {string} fallback - Fallback image URL
-   * @param {string} loading - Loading strategy: 'lazy' or 'eager' (default 'eager')
+   * @param {string} loading - Loading strategy: 'lazy' or 'eager' (default: 'eager' for admin, 'lazy' for public)
    * @returns {Object} Image props object
    */
   getSafeImageProps: (src, alt = '', fallback = '/placeholder-product.jpg', loading = 'eager') => {

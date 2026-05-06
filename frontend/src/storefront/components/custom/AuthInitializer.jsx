@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { restoreUser } from '@/redux/slices/auth/authSlice';
-import { verifyToken } from '@/hooks/use-auth';
+import { restoreUser } from '@/storefront/redux/slices/auth/authSlice';
+import { verifyToken } from '@/storefront/hooks/use-auth';
 
 /**
  * AuthInitializer - Checks authentication on app load

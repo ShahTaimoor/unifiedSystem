@@ -1,16 +1,16 @@
-import ProductList from '@/components/custom/ProductList';
-import HeroBanner from '@/components/custom/HeroBanner';
-import React from 'react';
-
+import ProductList from '@/storefront/components/custom/ProductList'
+import { Button } from '@/storefront/components/ui/button'
+import axios from 'axios'
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 const Home = () => {
+ 
+
   return (
     <div>
-      <HeroBanner />
-      <div id="products-section">
-        <ProductList />
-      </div>
+      <ProductList />
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home

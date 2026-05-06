@@ -75,4 +75,3 @@ const ReturnStatsCard = ({ title, value, icon, color = 'blue', subtitle, trend }
 };
 
 export default ReturnStatsCard;
-

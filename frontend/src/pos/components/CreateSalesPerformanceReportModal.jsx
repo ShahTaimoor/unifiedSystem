@@ -18,8 +18,8 @@ import {
 import { useGenerateReportMutation } from '../store/services/salesPerformanceApi';
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
 import { LoadingButton } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 
 const CreateSalesPerformanceReportModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -599,4 +599,3 @@ const CreateSalesPerformanceReportModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 export default CreateSalesPerformanceReportModal;
-

@@ -1,5 +1,5 @@
-import { Button } from "@pos/components/ui/button";
-import { ButtonGroup } from "@pos/components/ui/button-group";
+import { Button } from "@/pos/components/ui/button";
+import { ButtonGroup } from "@/pos/components/ui/button-group";
 import { Edit2, Copy, Trash2 } from "lucide-react";
 
 export default function BasicButtonGroupDemo() {
@@ -19,4 +19,3 @@ export default function BasicButtonGroupDemo() {
     </>
   );
 }
-

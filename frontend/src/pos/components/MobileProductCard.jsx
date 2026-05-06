@@ -121,4 +121,3 @@ const MobileProductCard = ({
 };
 
 export default MobileProductCard;
-

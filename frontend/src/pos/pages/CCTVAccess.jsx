@@ -328,7 +328,7 @@ const CCTVAccess = ({ tabId }) => {
                   <p className="text-xs text-slate-500 mt-0.5">Bill times are used for CCTV playback windows</p>
                 </div>
                 <Link
-                  to="/pos/inventory-alerts"
+                  to="/inventory-alerts"
                   className="inline-flex items-center gap-0.5 text-sm font-medium text-slate-700 hover:text-slate-900 shrink-0"
                 >
                   Inventory alerts
@@ -682,4 +682,3 @@ const CCTVAccess = ({ tabId }) => {
 };
 
 export default CCTVAccess;
-

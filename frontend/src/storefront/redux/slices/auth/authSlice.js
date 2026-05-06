@@ -34,6 +34,17 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+export const updateUserRole = createAsyncThunk(
+  'auth/updateUserRole',
+  async ({ userId, role }, thunkAPI) => {
+    try {
+      return await authService.updateUserRole(userId, role);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 export const changePassword = createAsyncThunk(
   'auth/changePassword',
   async (passwordData, thunkAPI) => {
@@ -56,13 +67,25 @@ export const updateUsername = createAsyncThunk(
   }
 );
 
-export const storefrontLogin = createAsyncThunk(
-  'auth/storefrontLogin',
+export const signupOrLogin = createAsyncThunk(
+  'auth/signupOrLogin',
   async (userData, thunkAPI) => {
     try {
-      return await authService.storefrontLogin(userData);
+      return await authService.signupOrLogin(userData);
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Authentication failed';
+      return thunkAPI.rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const adminLogin = createAsyncThunk(
+  'auth/adminLogin',
+  async (userData, thunkAPI) => {
+    try {
+      return await authService.adminLogin(userData);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Admin authentication failed';
       return thunkAPI.rejectWithValue(errorMessage);
     }
   }
@@ -72,6 +95,7 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, thunkAPI) => {
     try {
+      const { authService } = await import('@/storefront/services/authService');
       await authService.logout();
       return true;
     } catch (error) {
@@ -145,6 +169,16 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
+      .addCase(updateUserRole.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(updateUserRole.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+      })
+      .addCase(updateUserRole.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
       .addCase(changePassword.pending, (state) => {
         state.status = 'loading';
       })
@@ -166,24 +200,34 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-      .addCase(storefrontLogin.pending, (state) => {
+      .addCase(signupOrLogin.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(storefrontLogin.fulfilled, (state, action) => {
+      .addCase(signupOrLogin.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.tokenExpired = false;
       })
-      .addCase(storefrontLogin.rejected, (state, action) => {
+      .addCase(signupOrLogin.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(adminLogin.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(adminLogin.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.tokenExpired = false;
+      })
+      .addCase(adminLogin.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       })
       .addCase(logoutUser.pending, (state) => {
         state.status = 'loading';
-        state.user = null;
-        state.isAuthenticated = false;
-        state.tokenExpired = false;
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.status = 'idle';

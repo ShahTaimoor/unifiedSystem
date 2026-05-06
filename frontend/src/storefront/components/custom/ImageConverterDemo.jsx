@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Zap, Download, Upload } from 'lucide-react';
-import { convertToWebP, getImageInfo, createPreviewUrl, revokePreviewUrl } from '@/utils/imageConverter';
+import { convertToWebP, getImageInfo, createPreviewUrl, revokePreviewUrl } from '@/storefront/utils/imageConverter';
 
 const ImageConverterDemo = () => {
   const [originalFile, setOriginalFile] = useState(null);

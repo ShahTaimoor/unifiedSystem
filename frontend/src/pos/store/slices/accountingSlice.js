@@ -51,4 +51,3 @@ const accountingSlice = createSlice({
 
 export default accountingSlice.reducer;
 
-

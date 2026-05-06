@@ -45,4 +45,3 @@ export const OfflineIndicator = () => {
 
 export default OfflineIndicator;
 
-

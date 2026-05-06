@@ -125,6 +125,7 @@ export const cashReceiptsApi = api.injectEndpoints({
       }),
       invalidatesTags: [
         { type: 'CashReceipts', id: 'LIST' },
+        { type: 'BankReceipts', id: 'LIST' },
         { type: 'Customers', id: 'LIST' },
         { type: 'Suppliers', id: 'LIST' },
         { type: 'Accounting' },
@@ -157,5 +158,4 @@ export const {
   useDeleteCashReceiptMutation,
   useCreateBatchCashReceiptsMutation,
 } = cashReceiptsApi;
-
 

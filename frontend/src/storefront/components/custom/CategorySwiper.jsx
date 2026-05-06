@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
@@ -68,20 +67,7 @@ const CategorySwiper = React.memo(({
   );
 });
 
-/** Stable resolved URL + one-shot fallback avoids CORS flicker and onError loops. */
-const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => {
-  const raw = category?.image || category?.picture?.secure_url;
-  const resolved = useMemo(
-    () => (raw ? resolveMediaUrl(raw) || raw : null),
-    [raw]
-  );
-  const [src, setSrc] = useState(() => resolved || '/fallback.jpg');
-
-  useEffect(() => {
-    setSrc(resolved || '/fallback.jpg');
-  }, [resolved]);
-
-  return (
+const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
   <div
     className={`flex flex-col items-center rounded-xl  ${
       isSelected
@@ -94,25 +80,22 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => {
     aria-label={`Filter by ${category?.name || "Category"}`}
     onKeyDown={(e) => e.key === 'Enter' && onSelect(category?._id)}
   >
-    <div className="rounded-full min-h-14 min-w-14 bg-gray-100">
+    <div className="rounded-full ">
       <img
-        src={src}
+        src={category?.image || category?.picture?.secure_url || "/fallback.jpg"}
         alt={category?.name || "Category"}
         className="w-14 h-14 object-cover rounded-full border-2 border-white/30"
-        loading="eager"
+        loading="lazy"
         width="56"
         height="56"
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer-when-downgrade"
         decoding="async"
-        onError={() => {
-          setSrc((current) => {
-            try {
-              const path = new URL(current, window.location.href).pathname || '';
-              if (path.endsWith('/fallback.jpg') || path === '/fallback.jpg') return current;
-            } catch {
-              /* ignore */
-            }
-            return '/fallback.jpg';
-          });
+        fetchPriority="auto"
+        onError={(e) => {
+          if (e.currentTarget.src !== "/fallback.jpg") {
+            e.currentTarget.src = "/fallback.jpg";
+          }
         }}
       />
     </div>
@@ -122,8 +105,7 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => {
       ).join(' ')}
     </p>
   </div>
-  );
-});
+));
 
 const NavigationButtons = React.memo(() => (
   <div className="hidden lg:block">

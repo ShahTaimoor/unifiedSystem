@@ -373,4 +373,3 @@ export function CompanySettingsForm() {
     </form>
   );
 }
-

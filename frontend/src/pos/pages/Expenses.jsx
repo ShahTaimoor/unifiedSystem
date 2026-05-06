@@ -34,9 +34,9 @@ import {
   useDeleteBankPaymentMutation,
 } from '../store/services/bankPaymentsApi';
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
-import { Textarea } from '@pos/components/ui/textarea';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
+import { Textarea } from '@/pos/components/ui/textarea';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import RecurringExpensesPanel from '../components/RecurringExpensesPanel';
 import { getLocalDateString } from '../utils/dateUtils';
@@ -970,4 +970,3 @@ const Expenses = () => {
 };
 
 export default Expenses;
-

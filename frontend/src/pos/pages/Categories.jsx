@@ -11,8 +11,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 
@@ -651,4 +651,3 @@ export const Categories = () => {
 };
 
 export default Categories;
-

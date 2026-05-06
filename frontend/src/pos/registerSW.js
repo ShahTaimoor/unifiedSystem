@@ -55,4 +55,3 @@ export function registerServiceWorker() {
     window.location.reload();
   });
 }
-

@@ -40,4 +40,3 @@ export function buildReceiptLabelProductsFromLineItems(lineItems) {
 
   return Array.from(byId.values());
 }
-

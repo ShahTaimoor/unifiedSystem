@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '../../lib/utils';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
 
 /**
  * CartImage component optimized for cart drawer
@@ -35,47 +34,55 @@ const CartImage = ({
     return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
   };
 
-  const getOptimizedUrl = useCallback((originalUrl) => {
+  // Generate optimized URL for cart images
+  const getOptimizedUrl = (originalUrl) => {
     if (!originalUrl) return null;
-
+    
+    // If it's already a WebP URL, return as is
     if (originalUrl.includes('.webp')) return originalUrl;
-
+    
+    // If it's a Cloudinary URL, add WebP transformation for cart size
     if (originalUrl.includes('cloudinary.com')) {
       const parts = originalUrl.split('/');
-      const uploadIndex = parts.findIndex((part) => part === 'upload');
+      const uploadIndex = parts.findIndex(part => part === 'upload');
       if (uploadIndex !== -1 && uploadIndex < parts.length - 1) {
-        const transformations = [];
-
+        let transformations = [];
+        
         if (supportsWebP()) {
           transformations.push('f_webp');
         }
-
+        
         transformations.push(`q_${quality}`);
-        transformations.push('w_112');
-        transformations.push('h_80');
-        transformations.push('c_fill');
-        transformations.push('g_center');
-        transformations.push('fl_progressive');
-
+        transformations.push('w_112'); // Match w-28 (28 * 4 = 112px)
+        transformations.push('h_80');  // Match h-20 (20 * 4 = 80px)
+        transformations.push('c_fill'); // Fill to maintain aspect ratio
+        transformations.push('g_center'); // Center gravity for consistent cropping
+        transformations.push('fl_progressive'); // Progressive loading
+        
         parts[uploadIndex + 1] = transformations.join(',');
         return parts.join('/');
       }
     }
-
+    
+    // For other URLs, try to convert to WebP
+    if (supportsWebP()) {
+      return originalUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+    }
+    
     return originalUrl;
-  }, [quality]);
+  };
 
+  // Load image immediately when component mounts
   useEffect(() => {
-    if (!src) {
+    if (src && !currentSrc) {
+      const optimizedUrl = getOptimizedUrl(src);
+      setCurrentSrc(optimizedUrl);
+    } else if (!src) {
+      // If no src, show fallback immediately
       setCurrentSrc(fallback);
       setImageError(true);
-      setImageLoaded(false);
-      return;
     }
-    setImageLoaded(false);
-    setImageError(false);
-    setCurrentSrc(getOptimizedUrl(resolveMediaUrl(src)));
-  }, [src, fallback, getOptimizedUrl]);
+  }, [src, currentSrc, fallback]);
 
   // Handle image load
   const handleImageLoad = () => {
@@ -85,9 +92,9 @@ const CartImage = ({
 
   // Handle image error
   const handleImageError = () => {
-    const base = src ? resolveMediaUrl(src) : src;
-    if (currentSrc && currentSrc !== base && currentSrc !== fallback) {
-      setCurrentSrc(base);
+    if (currentSrc && currentSrc !== src && currentSrc !== fallback) {
+      // Try fallback to original format
+      setCurrentSrc(src);
     } else if (currentSrc !== fallback) {
       // Use fallback image
       setCurrentSrc(fallback);

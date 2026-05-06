@@ -70,4 +70,3 @@ class ModalErrorBoundary extends React.Component {
 }
 
 export default ModalErrorBoundary;
-

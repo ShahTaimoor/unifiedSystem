@@ -1,5 +1,5 @@
 import React from 'react';
-import ProductList from '@/components/custom/ProductList';
+import ProductList from '@/storefront/components/custom/ProductList';
 
 /**
  * Public Products Page - Shows all products with search and filtering

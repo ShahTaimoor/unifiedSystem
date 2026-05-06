@@ -1,4 +1,4 @@
-import { logout } from "@/redux/slices/auth/authSlice"
+import { logout } from "@/storefront/redux/slices/auth/authSlice"
 import { useDispatch } from "react-redux"
 
 const useErrorLogout = () => {

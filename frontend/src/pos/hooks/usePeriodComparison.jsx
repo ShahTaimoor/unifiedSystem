@@ -3,7 +3,7 @@
  * Fetches and compares data between two periods
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from 'react-query';
 import { useState, useMemo } from 'react';
 import {
   getCurrentMonth,
@@ -64,26 +64,30 @@ export const usePeriodComparison = (fetchFunction, periodType = 'month', customR
   const dateRanges = useMemo(() => getDateRanges(), [comparisonPeriod, customRange]);
 
   // Fetch current period data
-  const { data: currentData, isLoading: currentLoading, error: currentError } = useQuery({
-    queryKey: ['periodComparison', 'current', comparisonPeriod, dateRanges.current.start, dateRanges.current.end],
-    queryFn: () => fetchFunction({
+  const { data: currentData, isLoading: currentLoading, error: currentError } = useQuery(
+    ['periodComparison', 'current', comparisonPeriod, dateRanges.current.start, dateRanges.current.end],
+    () => fetchFunction({
       dateFrom: dateRanges.current.start,
       dateTo: dateRanges.current.end
     }),
-    enabled: !!fetchFunction,
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
+    {
+      enabled: !!fetchFunction,
+      staleTime: 5 * 60 * 1000 // 5 minutes
+    }
+  );
 
   // Fetch previous period data
-  const { data: previousData, isLoading: previousLoading, error: previousError } = useQuery({
-    queryKey: ['periodComparison', 'previous', comparisonPeriod, dateRanges.previous.start, dateRanges.previous.end],
-    queryFn: () => fetchFunction({
+  const { data: previousData, isLoading: previousLoading, error: previousError } = useQuery(
+    ['periodComparison', 'previous', comparisonPeriod, dateRanges.previous.start, dateRanges.previous.end],
+    () => fetchFunction({
       dateFrom: dateRanges.previous.start,
       dateTo: dateRanges.previous.end
     }),
-    enabled: !!fetchFunction,
-    staleTime: 5 * 60 * 1000 // 5 minutes
-  });
+    {
+      enabled: !!fetchFunction,
+      staleTime: 5 * 60 * 1000 // 5 minutes
+    }
+  );
 
   // Extract values from data (assuming data structure)
   const extractValue = (data, field = 'total') => {
@@ -141,5 +145,4 @@ export const usePeriodComparison = (fetchFunction, periodType = 'month', customR
 };
 
 export default usePeriodComparison;
-
 

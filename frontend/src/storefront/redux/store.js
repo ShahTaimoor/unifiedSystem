@@ -18,13 +18,23 @@ export const store = configureStore({
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: {
+                // Ignore these action types
                 ignoredActions: [
                     'products/fetchAll/fulfilled',
                     'products/getSingleProduct/fulfilled',
+                    'products/AddProduct/fulfilled',
+                    'products/AddProduct/pending',
+                    'products/AddProduct/rejected',
+                    'products/updateSingleProduct/fulfilled',
+                    'products/updateSingleProduct/pending',
+                    'products/updateSingleProduct/rejected',
+                    'products/importProductsFromExcel/fulfilled',
                 ],
+                // Ignore these field paths in all actions
                 ignoredActionPaths: [
-                    'payload.timestamp',
+                    'payload.timestamp', 
                     'payload.error.stack',
+                    'meta.arg.inputValues', // Allow FormData in updateSingleProduct and AddProduct actions
                 ],
                 // Ignore these paths in the state
                 ignoredPaths: [

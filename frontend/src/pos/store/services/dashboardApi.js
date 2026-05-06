@@ -16,4 +16,3 @@ export const dashboardApi = api.injectEndpoints({
 });
 
 export const { useGetDashboardRangeSummaryQuery } = dashboardApi;
-

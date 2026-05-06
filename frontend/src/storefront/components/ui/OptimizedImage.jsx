@@ -1,7 +1,6 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { cn } from '../../lib/utils';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
 
 /**
  * OptimizedImage component with advanced features
@@ -33,8 +32,6 @@ const OptimizedImage = ({
   const [currentSrc, setCurrentSrc] = useState(null);
   const [showBlur, setShowBlur] = useState(!!blurDataURL);
   const imgRef = useRef(null);
-
-  const resolvedSrc = useMemo(() => (src ? resolveMediaUrl(src) : null), [src]);
 
   // Intersection Observer for lazy loading (skip if priority)
   const { ref, inView } = useInView({
@@ -93,23 +90,21 @@ const OptimizedImage = ({
       }
     }
     
+    // For other URLs, try to convert to WebP
+    if (supportsWebP()) {
+      return originalUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+    }
+    
     return originalUrl;
   };
 
+  // Load image when in view or if priority
   useEffect(() => {
-    if (!src) {
-      setCurrentSrc(null);
-      setImageLoaded(false);
-      setImageError(false);
-      return;
+    if ((inView || priority) && src && !currentSrc) {
+      const optimizedUrl = getOptimizedUrl(src, { width, height });
+      setCurrentSrc(optimizedUrl);
     }
-    if (!inView && !priority) return;
-
-    setImageLoaded(false);
-    setImageError(false);
-    const base = resolvedSrc ?? src;
-    setCurrentSrc(getOptimizedUrl(base, { width, height }));
-  }, [inView, priority, src, resolvedSrc, width, height, quality]);
+  }, [inView, priority, src, currentSrc, width, height]);
 
   // Handle image load
   const handleImageLoad = () => {
@@ -120,10 +115,11 @@ const OptimizedImage = ({
 
   // Handle image error
   const handleImageError = () => {
-    const base = resolvedSrc ?? src;
-    if (currentSrc && currentSrc !== base) {
-      setCurrentSrc(base);
+    if (currentSrc && currentSrc !== src) {
+      // Try fallback to original format
+      setCurrentSrc(src);
     } else {
+      // Use fallback image
       setCurrentSrc(fallback);
       setImageError(true);
     }
@@ -196,7 +192,7 @@ const OptimizedImage = ({
           onError={handleImageError}
           loading={priority ? 'eager' : loading}
           sizes={getResponsiveSizes()}
-          srcSet={generateSrcSet(resolvedSrc ?? src)}
+          srcSet={generateSrcSet(src)}
           {...props}
         />
       )}

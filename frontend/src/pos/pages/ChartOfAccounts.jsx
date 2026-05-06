@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, 
   Edit, 
@@ -27,9 +26,9 @@ import {
 import { useGetBanksQuery } from '../store/services/banksApi';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
 import { handleApiError } from '../utils/errorHandler';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
-import { Textarea } from '@pos/components/ui/textarea';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
+import { Textarea } from '@/pos/components/ui/textarea';
 import PaginationControls from '../components/PaginationControls';
 import ExcelExportButton from '../components/ExcelExportButton';
 import PdfExportButton from '../components/PdfExportButton';
@@ -770,7 +769,6 @@ export const ChartOfAccounts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const queryClient = useQueryClient();
 
   // Function to organize accounts into 3-level hierarchy
   const organizeAccountsHierarchy = (accounts) => {
@@ -1154,9 +1152,9 @@ export const ChartOfAccounts = () => {
       {showCategoryManagement && (
         <CategoryManagement
           categories={categories?.data || {}}
-          onCategoryCreated={() => queryClient.invalidateQueries({ queryKey: ['accountCategories'] })}
-          onCategoryUpdated={() => queryClient.invalidateQueries({ queryKey: ['accountCategories'] })}
-          onCategoryDeleted={() => queryClient.invalidateQueries({ queryKey: ['accountCategories'] })}
+          onCategoryCreated={() => queryClient.invalidateQueries('accountCategories')}
+          onCategoryUpdated={() => queryClient.invalidateQueries('accountCategories')}
+          onCategoryDeleted={() => queryClient.invalidateQueries('accountCategories')}
         />
       )}
 
@@ -1408,5 +1406,4 @@ export const ChartOfAccounts = () => {
 };
 
 export default ChartOfAccounts;
-
 

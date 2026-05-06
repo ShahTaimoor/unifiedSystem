@@ -193,4 +193,3 @@ const PrintReportModal = ({
 };
 
 export default PrintReportModal;
-

@@ -1,5 +1,5 @@
 "use client";;
-import { cn } from "@pos/lib/utils";
+import { cn } from "@/pos/lib/utils";
 import React from "react";
 
 const SpinningText = ({
@@ -60,4 +60,3 @@ const SpinningTextDemo = () => {
 };
 
 export default SpinningTextDemo;
-

@@ -19,4 +19,3 @@ export const Checkbox = ({ checked, onChange, disabled = false, className = '', 
 
 export default Checkbox;
 
-

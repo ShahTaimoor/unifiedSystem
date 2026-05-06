@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Filter, X, Calendar } from 'lucide-react';
-import { Input } from '@pos/components/ui/input';
+import { Input } from '@/pos/components/ui/input';
 import DateFilter from './DateFilter';
 
 const ReturnFilters = ({ filters, onFilterChange, isLoading }) => {
@@ -205,4 +205,3 @@ const ReturnFilters = ({ filters, onFilterChange, isLoading }) => {
 };
 
 export default ReturnFilters;
-

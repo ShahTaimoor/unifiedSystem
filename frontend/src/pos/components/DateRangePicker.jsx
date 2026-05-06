@@ -2,15 +2,15 @@ import React, { useState } from "react";
 import { CalendarIcon, ChevronDown } from "lucide-react";
 import { addDays, format } from "date-fns";
 
-import { cn } from "@pos/lib/utils";
-import { Button } from "@pos/components/ui/button";
-import { Calendar } from "@pos/components/ui/calendar";
+import { cn } from "@/pos/lib/utils";
+import { Button } from "@/pos/components/ui/button";
+import { Calendar } from "@/pos/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@pos/components/ui/popover";
-import { Label } from "@pos/components/ui/label";
+} from "@/pos/components/ui/popover";
+import { Label } from "@/pos/components/ui/label";
 
 /**
  * Date Range Picker - shadcn-style design with Popover + Calendar
@@ -104,4 +104,3 @@ const DateRangePicker = ({
 };
 
 export default DateRangePicker;
-

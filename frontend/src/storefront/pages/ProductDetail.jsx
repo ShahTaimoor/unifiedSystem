@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getSingleProduct } from '@/redux/slices/products/productSlice';
-import { addToCart } from '@/redux/slices/cart/cartSlice';
-import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
-import { useToast } from '@/hooks/use-toast';
-import LazyImage from '@/components/ui/LazyImage';
-import OneLoader from '@/components/ui/OneLoader';
-import { Button } from '@/components/ui/button';
+import { getSingleProduct } from '@/storefront/redux/slices/products/productSlice';
+import { addToCart } from '@/storefront/redux/slices/cart/cartSlice';
+import { useAuthDrawer } from '@/storefront/contexts/AuthDrawerContext';
+import { useToast } from '@/storefront/hooks/use-toast';
+import LazyImage from '@/storefront/components/ui/LazyImage';
+import OneLoader from '@/storefront/components/ui/OneLoader';
+import { Button } from '@/storefront/components/ui/button';
 import { ArrowLeft, ShoppingCart, Plus, Minus } from 'lucide-react';
 
 const ProductDetail = () => {
@@ -74,8 +74,7 @@ const ProductDetail = () => {
     try {
       await dispatch(addToCart({
         productId: singleProducts._id,
-        quantity: quantity,
-        product: singleProducts,
+        quantity: quantity
       })).unwrap();
       
       toast.success(`${quantity} ${quantity === 1 ? 'item' : 'items'} of ${singleProducts.title} added to cart successfully!`);

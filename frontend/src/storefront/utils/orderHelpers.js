@@ -1,5 +1,5 @@
-import { Clock, CheckCircle, XCircle } from 'lucide-react';
-import { imageService } from '@/services/imageService';
+import { Clock, CheckCircle } from 'lucide-react';
+import { imageService } from '@/storefront/services/imageService';
 
 /**
  * Get today's date in 'yyyy-mm-dd' format for Pakistan timezone
@@ -33,10 +33,7 @@ export const getImageBase64 = async (url) => {
  */
 export const statusColors = {
   Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  Processing: 'bg-blue-50 text-blue-700 border-blue-200',
   Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  Cancelled: 'bg-red-50 text-red-700 border-red-200',
-  canceled: 'bg-red-50 text-red-700 border-red-200',
 };
 
 /**
@@ -44,9 +41,6 @@ export const statusColors = {
  */
 export const statusIcons = {
   Pending: Clock,
-  Processing: Clock,
   Completed: CheckCircle,
-  Cancelled: XCircle,
-  canceled: XCircle,
 };
 

@@ -333,4 +333,3 @@ const ResponsiveTable = ({
 };
 
 export default ResponsiveTable;
-

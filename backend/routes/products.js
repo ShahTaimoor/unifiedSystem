@@ -379,8 +379,8 @@ router.get('/deleted', [
 router.get('/search/:query', auth, maskSensitiveData('view_product_costs', 'pricing.cost'), async (req, res, next) => {
   try {
     const query = req.params.query;
-    const result = await productService.searchProducts(query, 10);
-    res.json({ products: result.products });
+    const products = await productService.searchProducts(query, 10);
+    res.json({ products });
   } catch (error) {
     return next(error);
   }

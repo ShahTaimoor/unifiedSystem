@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { addToCart, removeFromCart, updateCartQuantity } from '@/redux/slices/cart/cartSlice';
-import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
-import { fetchProducts, searchProducts } from '@/redux/slices/products/productSlice';
+import { addToCart, removeFromCart, updateCartQuantity } from '@/storefront/redux/slices/cart/cartSlice';
+import { AllCategory } from '@/storefront/redux/slices/categories/categoriesSlice';
+import { fetchProducts, searchProducts } from '@/storefront/redux/slices/products/productSlice';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import CategorySwiper from './CategorySwiper';
 import ProductGrid from './ProductGrid';
 import Pagination from './Pagination';
-import { usePagination } from '@/hooks/use-pagination';
+import { usePagination } from '@/storefront/hooks/use-pagination';
 import { ShoppingCart, ArrowUpDown, SortAsc, Grid3X3, List, AlertCircle, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -25,11 +25,10 @@ import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import CartImage from '../ui/CartImage';
 import Checkout from '../../pages/Checkout';
-import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
-import { useToast } from '@/hooks/use-toast';
+import { useAuthDrawer } from '@/storefront/contexts/AuthDrawerContext';
+import { useToast } from '@/storefront/hooks/use-toast';
 import SearchSuggestions from './SearchSuggestions';
-import { resolveMediaUrl } from '@/utils/mediaUrl';
-import { getHeaderClassName, getStickyHeaderClassName, getSpacerHeightClassName } from '@/utils/classNameHelpers';
+import { getHeaderClassName, getStickyHeaderClassName, getSpacerHeightClassName } from '@/storefront/utils/classNameHelpers';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -199,14 +198,12 @@ const ProductList = () => {
     }
   }, [category]);
 
-  // Unblock product fetch once category list request has settled (even if empty or failed).
-  // Waiting only for length > 0 left isInitialized false forever with no categories or a failed load,
-  // so filtered URLs never called fetchProducts.
+  // Mark as initialized after categories are loaded
   useEffect(() => {
-    if (isInitialized) return;
-    if (categoriesStatus === 'loading' || categoriesStatus === 'idle') return;
-    setIsInitialized(true);
-  }, [categoriesStatus, isInitialized]);
+    if (categories && categories.length > 0 && !isInitialized) {
+      setIsInitialized(true);
+    }
+  }, [categories, isInitialized]);
 
   // Local state for UI-specific functionality
   const [quantities, setQuantities] = useState({});
@@ -347,11 +344,8 @@ const ProductList = () => {
 
   // Memoized combined categories - filter to show only active categories
   const combinedCategories = useMemo(() => {
-    // Storefront API returns only active categories and does not send `active` (legacy Mongo field).
-    // PostgreSQL uses `isActive` when present. Treat missing flags as active; hide only explicit false.
-    const activeCategories = (categories || []).filter(
-      (cat) => cat.active !== false && cat.isActive !== false
-    );
+    // Filter to show only active categories (active === true)
+    const activeCategories = (categories || []).filter(cat => cat.active === true);
     const allCategories = [
       { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
       ...activeCategories
@@ -418,14 +412,17 @@ const ProductList = () => {
     }
   }, [dispatch, page, limit, stockFilter, sortBy, categoryBySlug, isSearchMode, urlSearchQuery, isInitialized]);
 
-  // Load categories once when the slice is idle. Do not refetch on every empty list:
-  // empty + failed (e.g. 429) or empty + succeeded (no categories) would otherwise
-  // re-dispatch forever because status is not "loading".
+  // Fetch categories on mount and ensure they stay loaded
   useEffect(() => {
-    if (categoriesStatus === 'idle') {
+    dispatch(AllCategory(''));
+  }, [dispatch]);
+
+  // Ensure categories are always available (refetch if empty)
+  useEffect(() => {
+    if ((!categories || categories.length === 0) && categoriesStatus !== 'loading') {
       dispatch(AllCategory(''));
     }
-  }, [dispatch, categoriesStatus]);
+  }, [dispatch, categories, categoriesStatus]);
 
   // Initialize quantities from cart items when cart loads
   useEffect(() => {
@@ -524,8 +521,7 @@ const ProductList = () => {
     setAddingProductId(product._id);
     dispatch(addToCart({
       productId: product._id,
-      quantity: qty,
-      product,
+      quantity: qty
     })).then(() => {
       toast.success(`${qty} ${qty === 1 ? 'item' : 'items'} added to cart!`);
     }).catch((error) => {
@@ -740,7 +736,7 @@ const ProductList = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={resolveMediaUrl(previewImage) || previewImage}
+              src={previewImage}
               alt="Preview"
               className="rounded-lg shadow-lg object-contain w-full h-auto max-h-[90vh]"
               loading="eager"

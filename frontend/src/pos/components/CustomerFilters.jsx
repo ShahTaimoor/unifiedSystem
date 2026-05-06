@@ -213,4 +213,3 @@ const CustomerFilters = ({ filters, onFiltersChange, onClearFilters }) => {
 };
 
 export default CustomerFilters;
-

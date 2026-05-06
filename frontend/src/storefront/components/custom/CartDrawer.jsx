@@ -5,7 +5,7 @@ import { ShoppingCart, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import {
   removeFromCart,
   updateCartQuantity,
-} from '@/redux/slices/cart/cartSlice';
+} from '@/storefront/redux/slices/cart/cartSlice';
 
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -18,12 +18,12 @@ import {
   SheetDescription,
   SheetFooter,
   SheetClose,
-} from '@/components/ui/sheet';
+} from '@/storefront/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import CartImage from '../ui/CartImage';
-import Checkout from '@/pages/Checkout';
-import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
-import { useToast } from '@/hooks/use-toast';
+import Checkout from '@/storefront/pages/Checkout';
+import { useAuthDrawer } from '@/storefront/contexts/AuthDrawerContext';
+import { useToast } from '@/storefront/hooks/use-toast';
 
 // Optimized CartProduct component with memoization
 const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
@@ -34,8 +34,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const prevIsValid = useRef(true);
   const updateTimeoutRef = useRef(null);
-  const { id, _id: mongoId, title, stock } = product;
-  const _id = mongoId || id;
+  const { _id, title, stock } = product;
   const image = product.image || product.picture?.secure_url;
   const isOutOfStock = product.isOutOfStock || stock <= 0;
   const availableStock = product.availableStock !== undefined ? product.availableStock : stock;
@@ -324,7 +323,7 @@ const CartDrawer = () => {
   // Memoized cart items to prevent unnecessary re-renders
   // Filter out items with null/deleted products
   const memoizedCartItems = useMemo(() => 
-    cartItems.filter((item) => item.product && (item.product._id || item.product.id)), 
+    cartItems.filter((item) => item.product && item.product._id), 
     [cartItems]
   );
 
@@ -365,7 +364,7 @@ const CartDrawer = () => {
             {memoizedCartItems.length > 0 ? (
               memoizedCartItems.map((item) => (
                 <CartProduct
-                  key={item.product._id || item.product.id}
+                  key={item.product._id}
                   product={item.product}
                   quantity={item.quantity}
                   onValidationChange={handleValidationChange}

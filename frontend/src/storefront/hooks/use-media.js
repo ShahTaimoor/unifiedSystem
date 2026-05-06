@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { mediaService } from '@/services/mediaService';
+import { mediaService } from '@/storefront/services/mediaService';
 
 /**
  * Custom hook for media management

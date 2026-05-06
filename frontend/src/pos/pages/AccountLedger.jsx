@@ -17,8 +17,8 @@ import {
 } from '../store/services/accountLedgerApi';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 import { handleApiError, showSuccessToast } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import DateFilter from '../components/DateFilter';
@@ -588,5 +588,4 @@ const AccountLedger = () => {
 };
 
 export default AccountLedger;
-
 

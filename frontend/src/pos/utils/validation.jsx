@@ -448,4 +448,3 @@ export default {
   sanitizeFormData,
   validateFile
 };
-

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { cn } from '../../lib/utils';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
 
 /**
  * LazyImage component with WebP support and fallback
@@ -35,7 +34,6 @@ const LazyImage = ({
   width,
   height,
   sizes,
-  /** When not "eager", visibility is gated by Intersection Observer below. */
   loading = 'lazy',
   quality = 80,
   ...props
@@ -56,49 +54,49 @@ const LazyImage = ({
   // Check WebP support (cached globally)
   const supportsWebP = useMemo(() => checkWebPSupport(), []);
 
-  // Only Cloudinary can serve WebP variants by URL. POS/API images stay as-is (no fake .webp path).
+  // Generate WebP URL - memoized to avoid recreation
   const getWebPUrl = useMemo(() => (originalUrl) => {
     if (!originalUrl) return null;
-
+    
+    // If it's already a WebP URL, return as is
     if (originalUrl.includes('.webp')) return originalUrl;
-
+    
+    // If it's a Cloudinary URL, add WebP transformation
     if (originalUrl.includes('cloudinary.com')) {
       const parts = originalUrl.split('/');
-      const uploadIndex = parts.findIndex((part) => part === 'upload');
+      const uploadIndex = parts.findIndex(part => part === 'upload');
       if (uploadIndex !== -1 && uploadIndex < parts.length - 1) {
         parts[uploadIndex + 1] = `f_webp,q_${quality}`;
         return parts.join('/');
       }
     }
-
-    return originalUrl;
+    
+    // For other URLs, replace extension with .webp
+    return originalUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
   }, [quality]);
 
-  const prevSrcRef = useRef(null);
-
-  const resolvedSrc = useMemo(() => (src ? resolveMediaUrl(src) : null), [src]);
-
-  // Load when in view (or eager). Do not depend on currentSrc — that caused error→fallback→webp loops (blinking).
+  // Load image when in view (or immediately if loading="eager")
+  // Also reload if src changes (for cache-busting)
   useEffect(() => {
-    if (!src) {
-      prevSrcRef.current = null;
+    if (src) {
+      // If loading is eager, load immediately without waiting for inView
+      // Also reload if src changed (for updated images)
+      if (loading === 'eager' || inView || (currentSrc && currentSrc !== src)) {
+        const webpUrl = supportsWebP ? getWebPUrl(src) : src;
+        // Reset loading state when src changes to show loading indicator
+        if (currentSrc !== webpUrl) {
+          setImageLoaded(false);
+          setImageError(false);
+        }
+        setCurrentSrc(webpUrl);
+      }
+    } else if (currentSrc) {
+      // Clear src if it becomes null/undefined
       setCurrentSrc(null);
       setImageLoaded(false);
       setImageError(false);
-      return;
     }
-
-    if (loading !== 'eager' && !inView) return;
-
-    const base = resolvedSrc ?? src;
-    const next = supportsWebP ? getWebPUrl(base) : base;
-    if (prevSrcRef.current !== src) {
-      prevSrcRef.current = src;
-      setImageLoaded(false);
-      setImageError(false);
-    }
-    setCurrentSrc(next);
-  }, [inView, src, resolvedSrc, supportsWebP, getWebPUrl, loading]);
+  }, [inView, src, currentSrc, supportsWebP, getWebPUrl, loading]);
 
   // Handle image load
   const handleImageLoad = () => {
@@ -108,10 +106,11 @@ const LazyImage = ({
 
   // Handle image error
   const handleImageError = () => {
-    const base = resolvedSrc ?? src;
-    if (currentSrc && currentSrc !== base) {
-      setCurrentSrc(base);
+    if (currentSrc && currentSrc !== src) {
+      // Try fallback to original format
+      setCurrentSrc(src);
     } else {
+      // Use fallback image
       setCurrentSrc(fallback);
       setImageError(true);
     }
@@ -130,27 +129,26 @@ const LazyImage = ({
     return defaultSizes;
   };
 
+  // Generate srcSet for responsive images
   const generateSrcSet = (baseUrl) => {
     if (!baseUrl || imageError) return null;
-    if (!baseUrl.includes('cloudinary.com')) return null;
-
+    
     const sizes = [150, 300, 600, 1200];
     return sizes
-      .map((size) => {
+      .map(size => {
         const webpUrl = supportsWebP ? getWebPUrl(baseUrl) : baseUrl;
-        const parts = webpUrl.split('/');
-        const uploadIndex = parts.findIndex((part) => part === 'upload');
-        if (uploadIndex !== -1 && uploadIndex < parts.length - 1) {
-          parts[uploadIndex + 1] = `f_webp,q_${quality},w_${size}`;
-          return `${parts.join('/')} ${size}w`;
+        if (webpUrl.includes('cloudinary.com')) {
+          const parts = webpUrl.split('/');
+          const uploadIndex = parts.findIndex(part => part === 'upload');
+          if (uploadIndex !== -1 && uploadIndex < parts.length - 1) {
+            parts[uploadIndex + 1] = `f_webp,q_${quality},w_${size}`;
+            return `${parts.join('/')} ${size}w`;
+          }
         }
-        return null;
+        return `${webpUrl} ${size}w`;
       })
-      .filter(Boolean)
       .join(', ');
   };
-
-  const responsiveSrcSet = generateSrcSet(resolvedSrc ?? src);
 
   return (
     <div
@@ -182,9 +180,10 @@ const LazyImage = ({
           )}
           onLoad={handleImageLoad}
           onError={handleImageError}
-          loading="eager"
-          sizes={responsiveSrcSet ? getResponsiveSizes() : undefined}
-          srcSet={responsiveSrcSet || undefined}
+          loading={loading}
+          sizes={getResponsiveSizes()}
+          srcSet={generateSrcSet(src)}
+          crossOrigin="anonymous"
           referrerPolicy="no-referrer-when-downgrade"
           decoding="async"
           fetchPriority="auto"

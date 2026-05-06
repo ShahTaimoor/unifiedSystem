@@ -51,15 +51,15 @@ import { api } from '../store/api';
 import { useProductOperations } from '../hooks/useProductOperations';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@pos/components/ui/dropdown-menu';
+} from '@/pos/components/ui/dropdown-menu';
 import ExcelExportButton from '../components/ExcelExportButton';
 import ExcelImportButton from '../components/ExcelImportButton';
 import PdfExportButton from '../components/PdfExportButton';
@@ -488,7 +488,8 @@ export const Products = () => {
         searchTerm={searchTerm}
         bulkOps={bulkOps}
         onEdit={productOps.handleEdit}
-        showDeleteButton={false}
+        showDeleteButton
+        deleteRequiresCanDelete
         onDelete={(product) => productOps.handleDelete(product, confirmDelete)}
         onManageInvestors={(product) => {
           productOps.setSelectedProductForInvestors(product);
@@ -626,4 +627,3 @@ export const Products = () => {
 };
 
 export default Products;
-

@@ -1,15 +1,12 @@
 import axiosInstance from '../auth/axiosInstance';
 
-const getAllCat = async (search = '') => {
+// Create Category
+const createCat = async (inputValues) => {
     try {
-        const params = {};
-        if (search && search.trim()) {
-            params.search = search.trim();
-        }
-        const axiosResponse = await axiosInstance.get('/storefront/categories', {
-            params,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const axiosResponse = await axiosInstance.post(
+            '/create-category',
+            inputValues
+        );
         return axiosResponse.data;
     } catch (error) {
         const errorMessage =
@@ -18,6 +15,96 @@ const getAllCat = async (search = '') => {
     }
 };
 
-const categoryService = { getAllCat };
+// Update Category
+const updateCat = async ({ name, slug, picture, position, active }) => {
+    try {
+        const formData = new FormData();
+        formData.append('name', name);
+        if (picture) formData.append('picture', picture);
+        if (position !== undefined) formData.append('position', position);
+        if (active !== undefined) formData.append('active', active);
+
+        const axiosResponse = await axiosInstance.put(
+            `/update-category/${slug}`,
+            formData
+        );
+
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+// Delete Category
+const deleteCat = async (slug) => {
+    try {
+        const axiosResponse = await axiosInstance.delete(
+            `/delete-category/${slug}`,
+            { headers: { "Content-Type": "application/json" } }
+        );
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+// Get All Categories
+const getAllCat = async (search = '') => {
+    try {
+        const params = {};
+        if (search && search.trim()) {
+            params.search = search.trim();
+        }
+        const axiosResponse = await axiosInstance.get(
+            '/all-category',
+            { 
+                params,
+                headers: { 'Content-Type': 'application/json' } 
+            }
+        );
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+// Get Single Category
+const getSingleCat = async (slug) => {
+    try {
+        const axiosResponse = await axiosInstance.get(
+            `/single-category/${slug}`,
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+// Toggle Category Active Status
+const toggleCategoryActive = async (slug) => {
+    try {
+        const axiosResponse = await axiosInstance.patch(
+            `/toggle-category-active/${slug}`,
+            {},
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+const categoryService = { createCat, getAllCat, deleteCat, updateCat, getSingleCat, toggleCategoryActive };
 
 export default categoryService;

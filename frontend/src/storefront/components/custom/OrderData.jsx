@@ -2,31 +2,36 @@ import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { Separator } from "../ui/separator";
 import LazyImage from "../ui/LazyImage";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { 
   Package, 
   MapPin, 
   Phone, 
+  Calendar, 
   Download,
   User,
   ShoppingBag,
   AlertCircle,
   Building,
-  CheckCircle,
-  Ban,
+  Truck,
+  Trash2,
+  CheckCircle
 } from "lucide-react";
-import { statusColors, statusIcons } from "@/utils/orderHelpers";
+import { statusColors, statusIcons } from "@/storefront/utils/orderHelpers";
 
 
 const OrderData = ({
@@ -43,23 +48,10 @@ const OrderData = ({
   hideStatus = false,
   hideCOD = false,
   hideDownload = false,
-  onCancel,
-  cancelPending = false,
+  onDelete,
   _id,
 }) => {
   const [downloading, setDownloading] = useState(false);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-
-  const orderProducts = Array.isArray(products) ? products : [];
-
-  const statusNorm = String(status ?? "").trim();
-  const badgeClass =
-    statusColors[statusNorm] ||
-    statusColors[statusNorm.charAt(0).toUpperCase() + statusNorm.slice(1).toLowerCase()] ||
-    "bg-gray-50 text-gray-700 border-gray-200";
-  const canCancel =
-    typeof onCancel === "function" &&
-    statusNorm.toLowerCase() === "pending";
 
   const handleDownloadInvoice = async () => {
     setDownloading(true);
@@ -187,104 +179,162 @@ const OrderData = ({
       
       yPos += infoBoxHeight + 10;
 
-      const tableBody = orderProducts.map((product, idx) => [
-        idx + 1,
-        product?.id?.title || "Unnamed Product",
-        product?.quantity || 0,
-        product?.id?.price ? `Rs. ${product.id.price}` : "",
-        product?.quantity && product?.id?.price
-          ? `Rs. ${product.quantity * product.id.price}`
-          : ""
-      ]);
+      // Product Table: Admin or Super Admin (role 1 or 2)
+      if (Number(user?.role) === 1 || Number(user?.role) === 2) {
+        const tableBody = products.map((product, idx) => [
+          idx + 1,
+          product?.id?.title || "Unnamed Product",
+          product?.quantity || 0,
+          product?.id?.price ? `Rs. ${product.id.price}` : "",
+          product?.quantity && product?.id?.price
+            ? `Rs. ${product.quantity * product.id.price}`
+            : ""
+        ]);
 
-      const grandTotal = orderProducts.reduce(
-        (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
-        0
-      );
+        const grandTotal = products.reduce(
+          (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
+          0
+        );
 
-      tableBody.push([
-        {
-          content: "Grand Total",
-          colSpan: 4,
-          styles: { halign: "right", fontStyle: "bold", fillColor: lightGray }
-        },
-        {
-          content: `Rs. ${grandTotal.toLocaleString()}`,
-          styles: { halign: "right", fontStyle: "bold", fillColor: lightGray }
-        }
-      ]);
+        tableBody.push([
+          {
+            content: "Grand Total",
+            colSpan: 4,
+            styles: { halign: "right", fontStyle: "bold", fillColor: lightGray }
+          },
+          {
+            content: `Rs. ${grandTotal.toLocaleString()}`,
+            styles: { halign: "right", fontStyle: "bold", fillColor: lightGray }
+          }
+        ]);
 
-      doc.setFontSize(13);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(...primaryColor);
-      doc.text('ORDER ITEMS', margin, yPos - 3);
-      yPos += 5;
-      
-      autoTable(doc, {
-        startY: yPos,
-        head: [[
-          { content: "#", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
-          { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
-          { content: "QTY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
-          { content: "PRICE", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
-          { content: "TOTAL", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
-        ]],
-        body: tableBody,
-        theme: "striped",
-        styles: {
-          fontSize: 9.5,
-          cellPadding: 4,
-          textColor: [0, 0, 0],
-          lineColor: borderGray,
-          lineWidth: 0.3,
-          halign: 'left'
-        },
-        headStyles: {
-          fillColor: primaryColor,
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 10
-        },
-        columnStyles: {
-          0: { cellWidth: 15, halign: "center" },
-          1: { cellWidth: 90 },
-          2: { cellWidth: 18, halign: "center" },
-          3: { cellWidth: 28, halign: "right" },
-          4: { cellWidth: 32, halign: "right" }
-        },
-        margin: { left: margin, right: margin },
-        alternateRowStyles: {
-          fillColor: [255, 255, 255]
-        },
-        bodyStyles: {
-          fillColor: [255, 255, 255]
-        }
-      });
+        // Section Title for Products
+        doc.setFontSize(13);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...primaryColor);
+        doc.text('ORDER ITEMS', margin, yPos - 3);
+        yPos += 5;
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [[
+            { content: "#", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "QTY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "PRICE", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "TOTAL", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
+          ]],
+          body: tableBody,
+          theme: "striped",
+          styles: {
+            fontSize: 9.5,
+            cellPadding: 4,
+            textColor: [0, 0, 0],
+            lineColor: borderGray,
+            lineWidth: 0.3,
+            halign: 'left'
+          },
+          headStyles: {
+            fillColor: primaryColor,
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          columnStyles: {
+            0: { cellWidth: 15, halign: "center" },
+            1: { cellWidth: 90 },
+            2: { cellWidth: 18, halign: "center" },
+            3: { cellWidth: 28, halign: "right" },
+            4: { cellWidth: 32, halign: "right" }
+          },
+          margin: { left: margin, right: margin },
+          alternateRowStyles: {
+            fillColor: [255, 255, 255]
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255]
+          }
+        });
 
-      const finalYAfterTable = doc.lastAutoTable.finalY || yPos + 60;
-      yPos = finalYAfterTable + 10;
-      
-      const summaryHeight = 25;
-      doc.setFillColor(...accentGray);
-      doc.setDrawColor(...borderGray);
-      doc.setLineWidth(0.5);
-      doc.rect(margin, yPos, contentWidth, summaryHeight, 'FD');
-      
-      doc.setFillColor(...primaryColor);
-      doc.rect(margin, yPos, 4, summaryHeight, 'F');
-      
-      yPos += 8;
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(...darkGray);
-      doc.text('Total Amount:', margin + 10, yPos);
-      doc.setFontSize(16);
-      doc.setTextColor(...primaryColor);
-      const totalAmount = price || orderProducts.reduce(
-        (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
-        0
-      );
-      doc.text(`Rs. ${totalAmount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
+        // Order Summary Box for Admin - Below the table
+        const finalY = doc.lastAutoTable.finalY || yPos + 60;
+        yPos = finalY + 10;
+        
+        const summaryHeight = 25;
+        doc.setFillColor(...accentGray);
+        doc.setDrawColor(...borderGray);
+        doc.setLineWidth(0.5);
+        doc.rect(margin, yPos, contentWidth, summaryHeight, 'FD');
+        
+        // Left accent
+        doc.setFillColor(...primaryColor);
+        doc.rect(margin, yPos, 4, summaryHeight, 'F');
+        
+        yPos += 8;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...darkGray);
+        doc.text('Total Amount:', margin + 10, yPos);
+        doc.setFontSize(16);
+        doc.setTextColor(...primaryColor);
+        const totalAmount = price || products.reduce(
+          (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
+          0
+        );
+        doc.text(`Rs. ${totalAmount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
+      } else {
+        // Product Table: Customer (role 0) - no images, no price/total
+        const customerTableBody = products.map((product, idx) => [
+          idx + 1,
+          product?.id?.title || "Unnamed Product",
+          product?.quantity || 0
+        ]);
+
+        // Section Title for Products
+        doc.setFontSize(13);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...primaryColor);
+        doc.text('ORDER ITEMS', margin, yPos - 3);
+        yPos += 5;
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [[
+            { content: "#", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "QUANTITY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
+          ]],
+          body: customerTableBody,
+          theme: "striped",
+          styles: {
+            fontSize: 9.5,
+            cellPadding: 4,
+            textColor: [0, 0, 0],
+            lineColor: borderGray,
+            lineWidth: 0.3,
+            halign: 'left'
+          },
+          headStyles: {
+            fillColor: primaryColor,
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
+          },
+          columnStyles: {
+            0: { cellWidth: 15, halign: "center" }, // ID column
+            1: { cellWidth: 140 }, // Product Name column
+            2: { cellWidth: 35, halign: "center" } // Quantity column
+          },
+          bodyStyles: { 
+            fillColor: [255, 255, 255],
+            halign: "left" 
+          },
+          margin: { left: margin, right: margin },
+          alternateRowStyles: {
+            fillColor: [255, 255, 255]
+          }
+        });
+      }
 
       // Professional Footer
       const finalY = doc.lastAutoTable.finalY || yPos + 60;
@@ -337,10 +387,8 @@ const OrderData = ({
     }
   };
 
-  const StatusIcon =
-    statusIcons[statusNorm] ||
-    statusIcons[statusNorm.charAt(0).toUpperCase() + statusNorm.slice(1).toLowerCase()] ||
-    AlertCircle;
+  const totalQuantity = products.reduce((sum, product) => sum + (product.quantity || 0), 0);
+  const StatusIcon = statusIcons[status] || AlertCircle;
 
   return (
     <div className="space-y-4">
@@ -355,33 +403,19 @@ const OrderData = ({
             <div>
               <h2 className="text-lg font-bold text-gray-900">Order Summary</h2>
               <p className="text-sm text-gray-600">
-                {new Date(createdAt).toLocaleDateString()} • {orderProducts.length} products
+                {new Date(createdAt).toLocaleDateString()} • {products.length} products
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
             {!hideStatus && (
-              <Badge className={`${badgeClass} border flex items-center gap-1`}>
+              <Badge className={`${statusColors[status]} border flex items-center gap-1`}>
                 <StatusIcon className="h-3 w-3" />
                 {status}
               </Badge>
             )}
             
-            {canCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2 border-red-200 text-red-700 hover:bg-red-50"
-                disabled={cancelPending}
-                onClick={() => setCancelDialogOpen(true)}
-              >
-                <Ban className="h-4 w-4" />
-                {cancelPending ? "Cancelling..." : "Cancel order"}
-              </Button>
-            )}
-
             {!hideDownload && (
               <Button 
                 onClick={handleDownloadInvoice} 
@@ -406,33 +440,56 @@ const OrderData = ({
             <div>
               <h2 className="text-lg font-bold text-gray-900">Order Details</h2>
               <p className="text-sm text-gray-600">
-                {new Date(createdAt).toLocaleDateString()} • {orderProducts.length} products
+                {new Date(createdAt).toLocaleDateString()} • {products.length} products
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-3">
             {!hideStatus && (
-              <Badge className={`${badgeClass} border flex items-center gap-1`}>
+              <Badge className={`${statusColors[status]} border flex items-center gap-1`}>
                 <StatusIcon className="h-3 w-3" />
                 {status}
               </Badge>
             )}
             
-            {canCancel && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2 border-red-200 text-red-700 hover:bg-red-50"
-                disabled={cancelPending}
-                onClick={() => setCancelDialogOpen(true)}
-              >
-                <Ban className="h-4 w-4" />
-                {cancelPending ? "Cancelling..." : "Cancel order"}
-              </Button>
+            {onDelete && (Number(user?.role) === 1 || Number(user?.role) === 2) && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="mx-4 sm:mx-0">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-lg sm:text-xl">Delete Order</AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm sm:text-base">
+                      Are you sure you want to delete this order? This action will:
+                      <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                        <li>Permanently remove the order from your account</li>
+                        <li>Restore the product stock that was deducted</li>
+                        <li>This action cannot be undone</li>
+                      </ul>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                    <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(_id)}
+                      className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+                    >
+                      Delete Order
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
-
+            
             {!hideDownload && (
               <Button 
                 onClick={handleDownloadInvoice} 
@@ -448,36 +505,6 @@ const OrderData = ({
           </div>
         </div>
       </div>
-
-      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <AlertDialogContent className="mx-4 sm:mx-0">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You can only cancel while the order is still pending. This will notify the store and may restock items.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel className="w-full sm:w-auto">Keep order</AlertDialogCancel>
-            <Button
-              type="button"
-              className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
-              disabled={cancelPending}
-              onClick={async () => {
-                if (!_id || !onCancel) return;
-                try {
-                  await Promise.resolve(onCancel(_id));
-                  setCancelDialogOpen(false);
-                } catch {
-                  /* parent shows toast */
-                }
-              }}
-            >
-              {cancelPending ? "Cancelling..." : "Yes, cancel order"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Left Side - Customer Information */}
@@ -536,12 +563,12 @@ const OrderData = ({
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-blue-600" />
-              Products ({orderProducts.length})
+              Products ({products.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {orderProducts.map((product, idx) => (
+              {products.map((product, idx) => (
                 <div
                   key={idx}
                   className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"

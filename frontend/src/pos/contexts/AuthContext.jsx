@@ -1,7 +1,9 @@
 import { toast } from 'sonner';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
+  authApi,
   useLoginMutation,
   useRequestTwoFactorCodeMutation,
   useVerifyTwoFactorMutation,
@@ -18,7 +20,15 @@ export const useAuth = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, token, isAuthenticated, status, error } = useAppSelector((s) => s.auth);
-  const isLoginPage = location.pathname === '/pos/login' || location.pathname === '/login';
+  const isLoginPage = location.pathname === '/login';
+  const hasStoredSessionHint = (() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return !!(localStorage.getItem('authToken') || localStorage.getItem('authUser'));
+    } catch {
+      return false;
+    }
+  })();
 
   const {
     isLoading: currentUserLoading,
@@ -26,8 +36,10 @@ export const useAuth = () => {
     error: currentUserErrorData,
     refetch: refetchCurrentUser,
   } = useCurrentUserQuery(undefined, {
-    // Skip when: on login page, or already authenticated with user (no need to refetch)
-    skip: isLoginPage || (isAuthenticated && !!user),
+    // Skip only on login or when there is no session hint and Redux says logged out.
+    // Do NOT skip just because user + token exist in storage — we must validate the JWT on load
+    // or expired tokens let ProtectedRoute render the app while every API call returns 401.
+    skip: isLoginPage || (!isAuthenticated && !hasStoredSessionHint),
     // Disable retries completely to prevent infinite loading
     retry: false,
     // Don't refetch on window focus to prevent unnecessary requests
@@ -42,6 +54,7 @@ export const useAuth = () => {
   const [requestTwoFactorMutation, { isLoading: requestTwoFactorLoading }] = useRequestTwoFactorCodeMutation();
   const [verifyTwoFactorMutation, { isLoading: verifyTwoFactorLoading }] = useVerifyTwoFactorMutation();
   const [logoutMutation] = useLogoutMutation();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const login = async (email, password) => {
     try {
@@ -88,14 +101,23 @@ export const useAuth = () => {
   };
 
   const logout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
+    // Clear local session first to avoid role-specific UI race conditions
+    // where user state can appear "stuck" during async logout calls.
+    dispatch(logoutAction());
+    dispatch(authApi.util.resetApiState());
+    navigate('/login', { replace: true });
+    toast.success('Logged out successfully');
+
     try {
       await logoutMutation().unwrap();
     } catch (error) {
       // Continue with logout even if API call fails
+    } finally {
+      setIsLoggingOut(false);
     }
-    dispatch(logoutAction());
-    toast.success('Logged out successfully');
-    navigate('/pos/login', { replace: true });
   };
 
   const updateUser = (userData) => {
@@ -130,9 +152,9 @@ export const useAuth = () => {
     requestTwoFactorCode,
     verifyTwoFactor,
     logout,
+    isLoggingOut,
     updateUser,
     hasPermission,
     refetchCurrentUser,
   };
 };
-

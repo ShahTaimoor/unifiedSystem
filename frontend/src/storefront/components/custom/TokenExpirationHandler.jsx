@@ -1,8 +1,8 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect, useCallback, useRef } from 'react';
-import { clearTokenExpired, logout, setTokenExpired } from '@/redux/slices/auth/authSlice';
-import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
-import { verifyToken } from '@/hooks/use-auth';
+import { clearTokenExpired, logout, setTokenExpired } from '@/storefront/redux/slices/auth/authSlice';
+import { useAuthDrawer } from '@/storefront/contexts/AuthDrawerContext';
+import { verifyToken } from '@/storefront/hooks/use-auth';
 
 const TokenExpirationHandler = () => {
   const dispatch = useDispatch();

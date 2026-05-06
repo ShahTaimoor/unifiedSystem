@@ -1,8 +1,7 @@
-import React, { useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import OneLoader from '../ui/OneLoader';
+import LazyImage from '../ui/LazyImage';
 import { Badge } from '../ui/badge';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
-import { useStorefrontSettings } from '../../contexts/StorefrontSettingsContext';
 
 const ProductCard = React.memo(({
   product,
@@ -14,7 +13,6 @@ const ProductCard = React.memo(({
   gridType,
   setPreviewImage,
 }) => {
-  const { showPrices } = useStorefrontSettings();
   const imgRef = useRef(null);
   const clickAudioRef = useRef(null);
   const quantityInputRef = useRef(null);
@@ -134,14 +132,14 @@ const ProductCard = React.memo(({
 
   const handleQuantityChange = useCallback((value) => {
     if (value === '') {
-      onQuantityChange(product._id || product.id, '', product.stock);
+      onQuantityChange(product._id, '', product.stock);
       return;
     }
     const parsed = parseInt(value);
     if (!isNaN(parsed) && parsed >= 0) {
-      onQuantityChange(product._id || product.id, parsed, product.stock);
+      onQuantityChange(product._id, parsed, product.stock);
     }
-  }, [onQuantityChange, product._id, product.id, product.stock]);
+  }, [onQuantityChange, product._id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
     // Prevent default only if event is cancelable and not a touch event
@@ -159,7 +157,7 @@ const ProductCard = React.memo(({
     
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.max(currentQty - 1, 0);
-    onQuantityChange(product._id || product.id, newValue, product.stock);
+    onQuantityChange(product._id, newValue, product.stock);
     return false;
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
@@ -179,20 +177,13 @@ const ProductCard = React.memo(({
     
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.min(currentQty + 1, product.stock);
-    onQuantityChange(product._id || product.id, newValue, product.stock);
+    onQuantityChange(product._id, newValue, product.stock);
     return false;
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
-  const rawImageUrl = product.image || product.picture?.secure_url;
-
-  const displayImageSrc = useMemo(() => {
-    if (!rawImageUrl || rawImageUrl === '/logo.jpeg') return rawImageUrl || '/logo.jpeg';
-    return resolveMediaUrl(rawImageUrl) || rawImageUrl;
-  }, [rawImageUrl]);
-
   const handleImageClick = useCallback(() => {
-    setPreviewImage(rawImageUrl || '/logo.jpeg');
-  }, [setPreviewImage, rawImageUrl]);
+    setPreviewImage(product.image || product.picture?.secure_url || '/logo.jpeg');
+  }, [setPreviewImage, product.image, product.picture]);
 
   const handleImageError = useCallback((e) => {
     e.currentTarget.src = '/logo.jpeg';
@@ -232,16 +223,15 @@ const ProductCard = React.memo(({
           </div>
         )}
 
-        <img
+        <LazyImage
           ref={imgRef}
-          src={displayImageSrc}
+          src={product.image || product.picture?.secure_url || '/logo.jpeg'}
           alt={product.title}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 cursor-pointer"
           onClick={handleImageClick}
-          onError={handleImageError}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer-when-downgrade"
+          fallback="/logo.jpeg"
+          quality={85}
+         
         />
 
 
@@ -279,32 +269,11 @@ const ProductCard = React.memo(({
           gridType === 'grid3' ? 'w-3/4 sm:w-7/8' : 'w-full'
         }`}
       >
-        <h3 className={`font-semibold leading-snug mb-1 text-gray-900 group-hover:text-primary transition-colors duration-200 ${
+        <h3 className={`font-semibold leading-snug mb-3 text-gray-900 group-hover:text-primary transition-colors duration-200 ${
           gridType === 'grid3' ? 'text-xs sm:text-sm' : 'text-xs sm:text-sm'
         }`}>
           {capitalizeTitle(product.title)}
         </h3>
-
-        {/* Price display */}
-        {showPrices && product.price != null && (
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-bold text-primary">
-              Rs. {Number(product.price).toLocaleString('en-PK')}
-            </span>
-            {product.stock > 0 && product.stock <= 10 && (
-              <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-full">
-                Only {product.stock} left!
-              </span>
-            )}
-          </div>
-        )}
-        {showPrices && product.price == null && product.pricing?.retail != null && (
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-bold text-primary">
-              Rs. {Number(product.pricing.retail).toLocaleString('en-PK')}
-            </span>
-          </div>
-        )}
         
         <div className="flex-grow" />
 

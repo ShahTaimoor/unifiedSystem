@@ -32,11 +32,6 @@ class SettingsService {
       dataToUpdate.address = updateData.address;
     }
 
-    // Storefront settings (nested in order_settings JSONB)
-    if (updateData.storefrontSettings !== undefined) {
-      dataToUpdate.storefrontSettings = updateData.storefrontSettings;
-    }
-
     return await SettingsRepository.updateSettings(dataToUpdate);
   }
 

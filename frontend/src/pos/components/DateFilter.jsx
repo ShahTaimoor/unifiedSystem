@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 import { Calendar as CalendarIcon, ChevronDown, X } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -11,13 +11,13 @@ import {
   getEndOfMonth,
   getDatePresets
 } from '../utils/dateUtils';
-import { Calendar } from '@pos/components/ui/calendar';
+import { Calendar } from '@/pos/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@pos/components/ui/popover';
-import { cn } from '@pos/lib/utils';
+} from '@/pos/components/ui/popover';
+import { cn } from '@/pos/lib/utils';
 
 /**
  * Reusable Date Filter Component
@@ -256,4 +256,3 @@ const DateFilter = ({
 };
 
 export default DateFilter;
-

@@ -1,26 +1,21 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  TrendingUp, 
-  TrendingDown,
+import {
+  Users,
+  TrendingUp,
   AlertTriangle,
-  Target,
-  PieChart,
-  BarChart3,
   Filter,
   Crown,
   Star,
   Heart,
   User,
-  Clock,
   XCircle,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
 import { useGetSummaryQuery, useGetAnalyticsQuery } from '../store/services/customerAnalyticsApi';
 import { formatCurrency } from '../utils/formatters';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 import { showErrorToast, handleApiError } from '../utils/errorHandler';
 
 const CustomerAnalytics = () => {
@@ -399,5 +394,4 @@ const CustomerAnalytics = () => {
 };
 
 export default CustomerAnalytics;
-
 

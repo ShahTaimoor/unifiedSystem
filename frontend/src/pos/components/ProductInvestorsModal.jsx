@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X } from 'lucide-react';
-import { Button } from '@pos/components/ui/button';
+import { Button } from '@/pos/components/ui/button';
 import { useGetInvestorsQuery } from '../store/services/investorsApi';
 import { toast } from 'sonner';
 
@@ -286,5 +286,4 @@ export const ProductInvestorsModal = ({ product, isOpen, onClose, onSave }) => {
     </div>
   );
 };
-
 

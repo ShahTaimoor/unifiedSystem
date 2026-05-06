@@ -236,8 +236,6 @@ class CustomerService {
     const result = await query(
       `SELECT DISTINCT name AS city FROM cities WHERE is_active = TRUE 
        UNION
-       SELECT DISTINCT city FROM customers WHERE city IS NOT NULL AND city != ''
-       UNION
        SELECT DISTINCT (jsonb_array_elements(address)->>'city') AS city FROM customers WHERE address IS NOT NULL AND jsonb_typeof(address) = 'array'
        UNION
        SELECT DISTINCT (address->>'city') AS city FROM customers WHERE address IS NOT NULL AND jsonb_typeof(address) = 'object'

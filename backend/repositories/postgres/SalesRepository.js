@@ -307,8 +307,9 @@ class SalesRepository {
     const result = await q(
       `INSERT INTO sales (
         order_number, customer_id, sale_date, items, subtotal, discount, tax, total,
-        payment_method, payment_status, status, notes, created_by, applied_discounts, order_type, amount_paid, client_side_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        payment_method, payment_status, status, notes, created_by, applied_discounts, order_type, amount_paid, client_side_id,
+        shipping_address, shipping_phone, shipping_city
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *`,
       [
         orderNumber,
@@ -327,7 +328,10 @@ class SalesRepository {
         JSON.stringify(Array.isArray(appliedDiscounts) ? appliedDiscounts : []),
         (orderType || 'retail').toLowerCase(),
         amountPaid || 0,
-        clientSideId || null
+        clientSideId || null,
+        saleData.shippingAddress || saleData.shipping_address || null,
+        saleData.shippingPhone || saleData.shipping_phone || null,
+        saleData.shippingCity || saleData.shipping_city || null
       ]
     );
 
@@ -420,6 +424,21 @@ class SalesRepository {
     if (updateData.amountPaid !== undefined) {
       fields.push(`amount_paid = $${paramCount++}`);
       values.push(updateData.amountPaid);
+    }
+
+    if (updateData.shippingAddress !== undefined) {
+      fields.push(`shipping_address = $${paramCount++}`);
+      values.push(updateData.shippingAddress);
+    }
+
+    if (updateData.shippingPhone !== undefined) {
+      fields.push(`shipping_phone = $${paramCount++}`);
+      values.push(updateData.shippingPhone);
+    }
+
+    if (updateData.shippingCity !== undefined) {
+      fields.push(`shipping_city = $${paramCount++}`);
+      values.push(updateData.shippingCity);
     }
 
     if (fields.length === 0) {

@@ -72,4 +72,3 @@ const FinancialTransactionHeader = ({ children }) => {
 };
 
 export default FinancialTransactionHeader;
-

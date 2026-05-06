@@ -30,4 +30,3 @@ export const queueForSync = async (type, data) => {
   });
   return clientSideId;
 };
-

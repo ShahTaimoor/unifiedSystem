@@ -206,8 +206,8 @@ class SalesOrderRepository {
         so_number, customer_id, items, subtotal, tax, is_tax_exempt, total, status, confirmation_status,
         order_type, order_date, expected_delivery, confirmed_date, last_invoiced_date, notes, terms,
         conversions, ledger_posted, auto_posted, posted_at, ledger_reference_id, invoice_id, auto_converted,
-        created_by, last_modified_by, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        created_by, last_modified_by, shipping_address, shipping_phone, shipping_city, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         (data.soNumber || data.so_number || '').toUpperCase(),
@@ -234,7 +234,10 @@ class SalesOrderRepository {
         data.invoiceId || data.invoice_id || null,
         data.autoConverted === true,
         data.createdBy || data.created_by,
-        data.lastModifiedBy || data.last_modified_by || null
+        data.lastModifiedBy || data.last_modified_by || null,
+        data.shippingAddress || data.shipping_address || null,
+        data.shippingPhone || data.shipping_phone || null,
+        data.shippingCity || data.shipping_city || null
       ]
     );
     return result.rows[0];
@@ -257,7 +260,10 @@ class SalesOrderRepository {
       confirmedDate: 'confirmed_date', lastInvoicedDate: 'last_invoiced_date', notes: 'notes', terms: 'terms',
       conversions: 'conversions', ledgerPosted: 'ledger_posted', autoPosted: 'auto_posted',
       postedAt: 'posted_at', ledgerReferenceId: 'ledger_reference_id', invoiceId: 'invoice_id',
-      lastModifiedBy: 'last_modified_by'
+      lastModifiedBy: 'last_modified_by',
+      shippingAddress: 'shipping_address', shipping_address: 'shipping_address',
+      shippingPhone: 'shipping_phone', shipping_phone: 'shipping_phone',
+      shippingCity: 'shipping_city', shipping_city: 'shipping_city'
     };
     for (const [k, col] of Object.entries(map)) {
       if (data[k] !== undefined) {

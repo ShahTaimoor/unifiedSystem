@@ -471,4 +471,3 @@ export const Login = () => {
     </div>
   );
 };
-

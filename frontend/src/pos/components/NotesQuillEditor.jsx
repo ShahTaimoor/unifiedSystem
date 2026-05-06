@@ -12,4 +12,3 @@ const NotesQuillEditor = forwardRef((props, ref) => (
 NotesQuillEditor.displayName = 'NotesQuillEditor';
 
 export default NotesQuillEditor;
-

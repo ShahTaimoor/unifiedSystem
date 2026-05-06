@@ -99,22 +99,7 @@ const initializeScheduledJobs = () => {
 };
 
 // Security middleware
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://*.cloudinary.com", "https://cdn.pixabay.com"],
-      connectSrc: ["'self'", "http://localhost:5000", "https://res.cloudinary.com"],
-      fontSrc: ["'self'", "https:", "data:"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'self'"],
-    },
-  },
-}));
+app.use(helmet());
 
 // Compression middleware (compress responses)
 app.use(compression());
@@ -166,7 +151,7 @@ const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 app.use(cors({
   origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key', 'Idempotency-Key', 'idempotency-key', 'X-Client'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key', 'Idempotency-Key', 'idempotency-key'],
   credentials: true
 }));
 
@@ -216,7 +201,7 @@ app.use('/exports', express.static(path.join(__dirname, 'exports')));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auth/users', require('./routes/users'));
-
+app.use('/api', require('./routes/ecommerceBridge'));
 
 app.use('/api/products', require('./routes/products'));
 app.use('/api/product-variants', require('./routes/productVariants'));
@@ -278,7 +263,7 @@ app.use('/api/investors', require('./routes/investors'));
 app.use('/api/drop-shipping', require('./routes/dropShipping'));
 app.use('/api/customer-balances', require('./routes/customerBalances'));
 app.use('/api/supplier-balances', require('./routes/supplierBalances'));
-app.use('/api/storefront', require('./routes/storefront'));
+app.use('/api/presence', require('./routes/presence'));
 
 // Health check endpoint (API version) - PostgreSQL only
 app.get('/api/health', (req, res) => {

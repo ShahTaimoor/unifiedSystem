@@ -334,4 +334,3 @@ export const BulkUpdateModal = ({
 
 export default BulkUpdateModal;
 
-

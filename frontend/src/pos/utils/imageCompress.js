@@ -66,4 +66,3 @@ export function compressImageFileToDataUrl(file, options = {}) {
     reader.readAsDataURL(file);
   });
 }
-

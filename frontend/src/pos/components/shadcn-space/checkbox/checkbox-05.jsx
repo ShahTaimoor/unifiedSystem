@@ -1,6 +1,6 @@
 import { Gamepad2, MapPinned, Music2 } from 'lucide-react'
-import { Checkbox } from '@pos/components/ui/checkbox'
-import { Label } from '@pos/components/ui/label'
+import { Checkbox } from '@/pos/components/ui/checkbox'
+import { Label } from '@/pos/components/ui/label'
 
 const skills = [
   { label: 'Music & Singing', icon: Music2  },
@@ -26,4 +26,3 @@ const CheckboxListGroupDemo = () => {
 }
 
 export default CheckboxListGroupDemo
-

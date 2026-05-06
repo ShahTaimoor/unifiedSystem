@@ -1675,4 +1675,3 @@ const TabButton = ({ active, onClick, label }) => (
     {label}
   </button>
 );
-

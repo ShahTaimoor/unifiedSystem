@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useDebounce } from '@/hooks/use-debounce';
-import { fetchSearchSuggestions } from '@/redux/slices/products/productSlice';
+import { useDebounce } from '@/storefront/hooks/use-debounce';
+import { fetchSearchSuggestions } from '@/storefront/redux/slices/products/productSlice';
 import { Input } from '../ui/input';
 import { Search, X, Loader2 } from 'lucide-react';
 import LazyImage from '../ui/LazyImage';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/storefront/hooks/use-mobile';
 
 /**
  * Capitalize first letter of each word

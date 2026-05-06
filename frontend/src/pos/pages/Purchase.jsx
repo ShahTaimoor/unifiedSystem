@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Package,
-  Plus,
   Trash2,
   Building,
   Truck,
@@ -10,7 +9,6 @@ import {
   Eye,
   ChevronDown,
   Phone,
-  Mail,
   MapPin,
   ArrowUpDown,
   Download,
@@ -28,6 +26,7 @@ import {
 } from '../store/services/purchaseInvoicesApi';
 import { SearchableDropdown } from '../components/SearchableDropdown';
 import { useGetUnifiedBalanceQuery } from '../store/services/accountingApi';
+import { useGetBanksQuery } from '../store/services/banksApi';
 import { toast } from 'sonner';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage, LoadingInline } from '../components/LoadingSpinner';
 import PrintModal, { DirectPrintInvoice } from '../components/PrintModal';
@@ -35,18 +34,19 @@ import BarcodeLabelPrinter from '../components/BarcodeLabelPrinter';
 import { buildReceiptLabelProductsFromLineItems } from '../utils/receiptLabelUtils';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../components/ComponentRegistry';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@pos/components/ui/dropdown-menu';
+} from '@/pos/components/ui/dropdown-menu';
 import {
   OrderCheckoutCard,
   OrderDetailsSection,
   OrderSummaryContent,
+  OrderSummaryBar,
   OrderInsetPanel,
   OrderCheckoutActions,
 } from '../components/order/OrderCheckoutLayout';
@@ -210,15 +210,15 @@ const PurchaseItem = ({
       <div className={`hidden md:block py-1 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
         <div
           className={`grid gap-x-1 items-center ${dualUnitShowBoxInputEnabled
-              ? 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-              : 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
+            ? 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
+            : 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
             }`}
         >
           <div className="min-w-0 flex justify-start">
             <span
               className={`text-sm font-medium px-0.5 py-1 rounded border block w-8 text-center h-8 flex items-center justify-center transition-colors duration-300 ${highlightSerial
-                  ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
-                  : 'text-gray-700 bg-gray-50 border-gray-200'
+                ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
+                : 'text-gray-700 bg-gray-50 border-gray-200'
                 }`}
             >
               {index + 1}
@@ -277,10 +277,10 @@ const PurchaseItem = ({
                       onChange={(e) => onUpdateCartBoxCount(item.product?._id, e.target.value)}
                       onFocus={(e) => e.target.select()}
                       className={`text-sm font-semibold w-full min-w-0 rounded border px-2 py-1 text-center h-8 focus:outline-none focus:ring-2 focus:ring-primary-500/35 ${(product.inventory?.currentStock || 0) === 0
-                          ? 'text-red-700 bg-red-50 border-red-200'
-                          : (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
-                            ? 'text-yellow-800 bg-yellow-50 border-yellow-200'
-                            : 'text-gray-700 bg-gray-100 border-gray-200'
+                        ? 'text-red-700 bg-red-50 border-red-200'
+                        : (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
+                          ? 'text-yellow-800 bg-yellow-50 border-yellow-200'
+                          : 'text-gray-700 bg-gray-100 border-gray-200'
                         }`}
                       title="Full boxes"
                     />
@@ -300,10 +300,10 @@ const PurchaseItem = ({
           <div className="min-w-0">
             <span
               className={`text-sm font-semibold px-2 py-1 rounded border block text-center h-8 flex items-center justify-center ${(product.inventory?.currentStock || 0) === 0
-                  ? 'text-red-700 bg-red-50 border-red-200'
-                  : (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
-                    ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
-                    : 'text-gray-700 bg-gray-100 border-gray-200'
+                ? 'text-red-700 bg-red-50 border-red-200'
+                : (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
+                  ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
+                  : 'text-gray-700 bg-gray-100 border-gray-200'
                 }`}
             >
               {hasDualUnit(product) ? formatStockDualLabel(currentStock, product) : currentStock}
@@ -456,6 +456,7 @@ export const Purchase = ({ tabId, editData }) => {
 
   // Payment and discount state variables (matching Sales component)
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [selectedBankAccount, setSelectedBankAccount] = useState('');
   const [amountPaid, setAmountPaid] = useState(0);
   const [directDiscount, setDirectDiscount] = useState({ type: 'amount', value: 0 });
 
@@ -502,6 +503,22 @@ export const Purchase = ({ tabId, editData }) => {
   const [createPurchaseInvoice] = useCreatePurchaseInvoiceMutation();
   const [updatePurchaseInvoice] = useUpdatePurchaseInvoiceMutation();
 
+  const { data: banksData, isLoading: banksLoading } = useGetBanksQuery(
+    { isActive: true },
+    { staleTime: 5 * 60_000 }
+  );
+
+  const activeBanks = useMemo(() => {
+    const banks = banksData?.data?.banks || banksData?.banks || [];
+    return banks.filter((bank) => bank.isActive !== false);
+  }, [banksData]);
+
+  useEffect(() => {
+    if (paymentMethod !== 'bank' || selectedBankAccount) return;
+    const first = activeBanks[0];
+    const id = first?._id || first?.id;
+    if (id) setSelectedBankAccount(id);
+  }, [paymentMethod, selectedBankAccount, activeBanks]);
 
   // Focus on supplier selection field when component mounts
   useEffect(() => {
@@ -554,6 +571,11 @@ export const Purchase = ({ tabId, editData }) => {
         setAmountPaid(typeof amt === 'number' ? amt : parseFloat(amt) || 0);
         if (editData.payment.method) {
           setPaymentMethod(editData.payment.method);
+        }
+        if (editData.payment.method === 'bank') {
+          setSelectedBankAccount(editData.payment.bankAccount || '');
+        } else {
+          setSelectedBankAccount('');
         }
       }
 
@@ -1026,6 +1048,11 @@ export const Purchase = ({ tabId, editData }) => {
       return;
     }
 
+    if (paymentMethod === 'bank' && !selectedBankAccount) {
+      toast.error('Please select a bank account');
+      return;
+    }
+
     // Ensure invoice number is set (auto-generate if empty and auto-generate is enabled)
     // If auto-generate is enabled, let backend generate invoice number based on invoiceDate
     // Otherwise, use the manually entered invoice number
@@ -1073,6 +1100,7 @@ export const Purchase = ({ tabId, editData }) => {
       },
       payment: {
         method: paymentMethod,
+        bankAccount: paymentMethod === 'bank' ? selectedBankAccount : null,
         amount: amountPaid,
         remainingBalance: Math.max(0, total - amountPaid),
         isPartialPayment: amountPaid > 0 && amountPaid < total,
@@ -1096,175 +1124,127 @@ export const Purchase = ({ tabId, editData }) => {
     } else {
       handleCreatePurchaseInvoice(invoiceData);
     }
-  }, [purchaseItems, selectedSupplier, invoiceNumber, autoGenerateInvoice, expectedDelivery, billDate, notes, taxSystemEnabled, subtotal, tax, total, directDiscountAmount, paymentMethod, amountPaid, editData, handleCreatePurchaseInvoice, handleUpdatePurchaseInvoice, printBarcodeLabelsAfterInvoice]);
+  }, [purchaseItems, selectedSupplier, invoiceNumber, autoGenerateInvoice, expectedDelivery, billDate, notes, taxSystemEnabled, subtotal, tax, total, directDiscountAmount, paymentMethod, selectedBankAccount, amountPaid, editData, handleCreatePurchaseInvoice, handleUpdatePurchaseInvoice, printBarcodeLabelsAfterInvoice]);
 
 
   return (
     <AsyncErrorBoundary>
       <div className="space-y-4 lg:space-y-6">
-        <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-start justify-between'}`}>
-          <div>
-            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>Purchase</h1>
-            <p className="text-gray-600">Process purchase transactions</p>
-          </div>
-          <div className="flex items-center space-x-2">
-
-            <Button
-              onClick={() => {
-                const componentInfo = getComponentInfo('/purchase');
-                if (componentInfo) {
-                  const newTabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                  openTab({
-                    title: 'Purchase',
-                    path: '/purchase',
-                    component: componentInfo.component,
-                    icon: componentInfo.icon,
-                    allowMultiple: true,
-                    props: { tabId: newTabId }
-                  });
-                }
-              }}
-              variant="default"
-              size="default"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Purchase
-            </Button>
-          </div>
-        </div>
-
-        {/* Supplier Selection and Information Row */}
-        <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-start space-x-12'}`}>
-          {/* Supplier Selection */}
-          <div className={`${isMobile ? 'w-full' : 'w-full max-w-3xl flex-shrink-0'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Select Supplier
-                </label>
-                {selectedSupplier && (
-                  <button
-                    onClick={() => {
-                      setSelectedSupplier(null);
-                      setSupplierSearchTerm('');
-                      setTimeout(() => {
-                        if (supplierSearchRef.current) {
-                          supplierSearchRef.current.focus();
-                        }
-                      }, 100);
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-800 underline"
-                    title="Change supplier"
-                  >
-                    Change Supplier
-                  </button>
-                )}
+        {/* Modern Header Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center flex-1 gap-3">
+              <div className="flex-shrink-0">
+                <h1 className={`${isMobile ? 'text-lg' : 'text-xl'} font-bold text-gray-900`}>Purchase</h1>
               </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (supplierSearchTerm) {
-                      try {
-                        await refetchSuppliers?.();
-                      } catch {
-                        /* ignore */
-                      }
-                    }
-                    if ((selectedSupplier?.id || selectedSupplier?._id) && refetchSupplier) {
-                      try {
-                        const result = await refetchSupplier();
-                        const s =
-                          result?.data?.supplier ??
-                          result?.data?.data?.supplier ??
-                          result?.data?.data;
-                        if (s && (s._id || s.id)) {
-                          setSelectedSupplier(s);
-                        }
-                      } catch {
-                        /* ignore */
-                      }
-                    }
-                  }}
-                  className="text-xs text-blue-600 hover:text-blue-800 underline"
-                  title="Refresh supplier list and outstanding balance"
-                >
-                  Refresh
-                </button>
-              </div>
-            </div>
-            <SearchableDropdown
-              ref={supplierSearchRef}
-              placeholder="Search suppliers by name, email, or business..."
-              items={suppliers?.data?.suppliers || suppliers?.suppliers || []}
-              onSelect={handleSupplierSelect}
-              onSearch={setSupplierSearchTerm}
-              displayKey={supplierDisplayKey}
-              selectedItem={selectedSupplier}
-              loading={suppliersLoading}
-              emptyMessage={supplierSearchTerm.length > 0 ? "No suppliers found" : "Start typing to search suppliers..."}
-            />
-          </div>
-
-          {/* Supplier Information - Right Side */}
-          <div className={`${isMobile ? 'w-full' : 'flex-1'}`}>
-            {selectedSupplier ? (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <div className="flex items-center space-x-3">
-                  <Building className="h-5 w-5 text-gray-400" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{selectedSupplier.companyName || selectedSupplier.company_name || selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.displayName || selectedSupplier.name || 'Unknown Supplier'}</p>
-                    <p className="text-sm text-gray-600 capitalize mt-1">
-                      {selectedSupplier.businessType && selectedSupplier.reliability
-                        ? `${selectedSupplier.businessType} • ${selectedSupplier.reliability}`
-                        : selectedSupplier.businessType || selectedSupplier.reliability || 'Supplier Information'
-                      }
-                    </p>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:space-x-4 mt-2">
-                      <div className="flex items-center space-x-1">
-                        <span className="text-xs text-gray-500">Outstanding Balance:</span>
-                        <span className={`text-xs sm:text-sm font-medium ${supplierOutstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {Math.round(supplierOutstanding)}
-                        </span>
-                      </div>
-                      {selectedSupplier.phone && (
-                        <div className="flex items-center space-x-1">
-                          <Phone className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs text-gray-500 truncate">{selectedSupplier.phone}</span>
-                        </div>
-                      )}
-                      {selectedSupplier.email && (
-                        <div className="flex items-center space-x-1 min-w-0">
-                          <Mail className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <span className="text-xs text-gray-500 truncate">{selectedSupplier.email}</span>
-                        </div>
-                      )}
-                    </div>
-                    {selectedSupplier.address && (
-                      <div className="flex items-start space-x-1 mt-1">
-                        <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0 mt-0.5" />
-                        <span className="text-xs text-gray-500 break-words">
-                          {(() => {
-                            const addr = selectedSupplier.address;
-                            if (typeof addr === 'string') return addr;
-                            return [addr.street, addr.city, addr.province || addr.state, addr.country].filter(Boolean).join(', ');
-                          })()}
-                        </span>
-                      </div>
+              <div className="hidden sm:block h-7 w-px bg-gray-200"></div>
+              <div className="flex-1 min-w-0 sm:min-w-[220px] lg:max-w-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      Select Supplier
+                    </label>
+                    {selectedSupplier && (
+                      <button
+                        onClick={() => {
+                          setSelectedSupplier(null);
+                          setSupplierSearchTerm('');
+                          setTimeout(() => {
+                            if (supplierSearchRef.current) {
+                              supplierSearchRef.current.focus();
+                            }
+                          }, 100);
+                        }}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase tracking-wider underline"
+                        title="Change supplier"
+                      >
+                        Change
+                      </button>
                     )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (supplierSearchTerm) {
+                        try {
+                          await refetchSuppliers?.();
+                        } catch {
+                          /* ignore */
+                        }
+                      }
+                      if ((selectedSupplier?.id || selectedSupplier?._id) && refetchSupplier) {
+                        try {
+                          const result = await refetchSupplier();
+                          const s =
+                            result?.data?.supplier ??
+                            result?.data?.data?.supplier ??
+                            result?.data?.data;
+                          if (s && (s._id || s.id)) {
+                            setSelectedSupplier(s);
+                          }
+                        } catch {
+                          /* ignore */
+                        }
+                      }
+                    }}
+                    className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase tracking-wider underline"
+                    title="Refresh supplier list and outstanding balance"
+                  >
+                    Refresh
+                  </button>
                 </div>
+                <SearchableDropdown
+                  className="[&_input]:h-8"
+                  ref={supplierSearchRef}
+                  placeholder="Search suppliers by name, email, or business..."
+                  items={suppliers?.data?.suppliers || suppliers?.suppliers || []}
+                  onSelect={handleSupplierSelect}
+                  onSearch={setSupplierSearchTerm}
+                  displayKey={supplierDisplayKey}
+                  selectedItem={selectedSupplier}
+                  loading={suppliersLoading}
+                  emptyMessage={supplierSearchTerm.length > 0 ? "No suppliers found" : "Start typing to search suppliers..."}
+                />
               </div>
-            ) : (
-              <div className="hidden lg:block">
-                {/* Empty space to maintain layout consistency */}
-              </div>
-            )}
+            </div>
+
+            <div className="lg:w-auto w-full lg:min-w-[360px] lg:max-w-xl lg:self-end">
+              {selectedSupplier ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl h-8 px-2 flex items-center">
+                  <div className="flex items-center gap-2 text-xs whitespace-nowrap overflow-hidden">
+                    <span className="font-bold text-gray-900 truncate">
+                      {selectedSupplier.companyName || selectedSupplier.company_name || selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.displayName || selectedSupplier.name || 'Unknown Supplier'}
+                    </span>
+                    <span className="text-gray-400">|</span>
+                      <span className="text-gray-600 capitalize">
+                        {selectedSupplier.businessType || 'Wholesaler'}
+                      </span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-gray-500 uppercase font-semibold">Outstanding</span>
+                      <span className={`font-bold ${supplierOutstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {Math.round(supplierOutstanding)}
+                      </span>
+                      {selectedSupplier.phone && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-400">|</span>
+                          <Phone className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <span className="text-xs text-gray-500">{selectedSupplier.phone}</span>
+                        </div>
+                      )}
+                  </div>
+                </div>
+              ) : (
+                <div className="hidden lg:flex items-center justify-center h-full px-8 border-2 border-dashed border-gray-100 rounded-xl">
+                  <span className="text-gray-400 text-sm font-medium italic">No supplier selected</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Combined Product Selection and Cart Section */}
         <ProductSelectionCartSection
+          searchSectionClassName="mb-2"
           headerActions={
             purchaseItems.length > 0 ? (
               <Button
@@ -1292,24 +1272,8 @@ export const Purchase = ({ tabId, editData }) => {
           emptyText="No items in cart"
         >
           <CartItemsTableSection
-            desktopHeader={(
-              <CartTableHeader
-                className={`hidden md:grid gap-x-1 items-center pb-2 border-b border-gray-300 mb-2 ${dualUnitShowBoxInputEnabledPage
-                    ? 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-                    : 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-                  }`}
-                columns={[
-                  { key: 'sno', label: 'S.NO', labelClassName: 'text-xs font-semibold text-gray-600 uppercase text-left' },
-                  { key: 'product', label: 'Product' },
-                  ...(dualUnitShowBoxInputEnabledPage ? [{ key: 'box', label: 'Box' }] : []),
-                  { key: 'stock', label: 'Stock' },
-                  { key: 'qty', label: 'Qty' },
-                  { key: 'cost', label: 'Cost' },
-                  { key: 'total', label: 'Total', labelClassName: 'text-xs font-semibold text-gray-600 uppercase block text-center' },
-                  { key: 'action', label: 'Action', wrapperClassName: 'min-w-0 flex justify-end', labelClassName: 'text-xs font-semibold text-gray-600 uppercase text-right' },
-                ]}
-              />
-            )}
+            className="pt-2"
+            desktopHeader={null}
           >
             <div
               ref={purchaseCartScrollRef}
@@ -1538,6 +1502,210 @@ export const Purchase = ({ tabId, editData }) => {
               className={`mt-0 ml-0 max-w-none min-w-0 w-full border-slate-200 bg-none bg-slate-50 shadow-sm ring-0 ${showPurchaseDetailsFields ? 'order-2' : 'order-1'
                 }`}
             >
+              <OrderSummaryBar>
+                <div className="flex items-center gap-3">
+                  <LoadingButton
+                    onClick={handleProcessPurchase}
+                    isLoading={false}
+                    variant="default"
+                    size="sm"
+                    className="bg-slate-900 hover:bg-slate-800 text-white border-none h-8 px-4 font-bold"
+                  >
+                    <Truck className="h-4 w-4 mr-2" />
+                    {editData?.isEditMode ? 'Update' : 'Complete'}
+                  </LoadingButton>
+
+                  <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+                    {purchaseItems.length > 0 && (
+                      <Button
+                        onClick={() => {
+                          setPurchaseItems([]);
+                          setHighlightedPurchaseLineIndex(null);
+                          setSelectedSupplier(null);
+                          setSupplierSearchTerm('');
+                          setDirectDiscount({ type: 'amount', value: 0 });
+                          setAmountPaid(0);
+                          setPaymentMethod('cash');
+                          setSelectedBankAccount('');
+                          setBillDate(getLocalDateString());
+                          toast.success('Cart cleared');
+                        }}
+                        variant="ghost"
+                        size="icon-sm"
+                        className="h-8 w-8 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        title="Clear Cart"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {purchaseItems.length > 0 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-8 w-8 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            title="Print Options"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const supplierInfoForPrint = selectedSupplier ? {
+                                name: selectedSupplier.companyName || selectedSupplier.company_name || selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.displayName || selectedSupplier.name,
+                                email: selectedSupplier.email,
+                                phone: selectedSupplier.phone,
+                                address: (() => {
+                                  if (typeof selectedSupplier.address === 'string' && selectedSupplier.address.trim()) return selectedSupplier.address.trim();
+                                  const addr = selectedSupplier.address || selectedSupplier.companyAddress || selectedSupplier.location;
+                                  if (addr && typeof addr === 'object') {
+                                    const parts = [addr.street || addr.address_line1 || addr.addressLine1 || addr.line1, addr.address_line2 || addr.addressLine2, addr.city, addr.province || addr.state, addr.country, addr.zipCode || addr.zip || addr.postalCode || addr.postal_code].filter(Boolean);
+                                    if (parts.length) return parts.join(', ');
+                                  }
+                                  if (selectedSupplier.addresses?.length) {
+                                    const a = selectedSupplier.addresses.find(x => x.isDefault) || selectedSupplier.addresses.find(x => x.type === 'billing' || x.type === 'both') || selectedSupplier.addresses[0];
+                                    const parts = [a.street || a.address_line1 || a.addressLine1, a.city, a.province || a.state, a.country, a.zipCode || a.zip].filter(Boolean);
+                                    if (parts.length) return parts.join(', ');
+                                  }
+                                  return null;
+                                })(),
+                                businessName: selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.companyName
+                              } : null;
+                              const tempOrder = {
+                                orderNumber: `PO-${Date.now()}`,
+                                orderType: 'purchase',
+                                supplier: selectedSupplier,
+                                supplierInfo: supplierInfoForPrint,
+                                customer: selectedSupplier,
+                                customerInfo: supplierInfoForPrint,
+                                items: purchaseItems.map(item => {
+                                  const product = item.product || {};
+                                  const displayName = product.isVariant
+                                    ? (product.displayName || product.variantName || product.name || 'Unknown Variant')
+                                    : (product.name || 'Unknown Product');
+
+                                  return {
+                                    product: {
+                                      name: displayName,
+                                      isVariant: product.isVariant,
+                                      variantType: product.variantType,
+                                      variantValue: product.variantValue,
+                                      ...(product.barcode ? { barcode: product.barcode } : {}),
+                                      ...(product.sku ? { sku: product.sku } : {})
+                                    },
+                                    quantity: item.quantity,
+                                    unitPrice: item.costPerUnit
+                                  };
+                                }),
+                                pricing: {
+                                  subtotal: subtotal,
+                                  discountAmount: directDiscountAmount,
+                                  taxAmount: tax,
+                                  isTaxExempt: !taxSystemEnabled,
+                                  total: total
+                                },
+                                payment: {
+                                  method: paymentMethod,
+                                  bankAccount: paymentMethod === 'bank' ? selectedBankAccount : null,
+                                  amountPaid: amountPaid,
+                                  remainingBalance: total - amountPaid,
+                                  isPartialPayment: amountPaid < total
+                                },
+                                createdAt: new Date(),
+                                createdBy: { name: 'Current User' },
+                                invoiceNumber: invoiceNumber,
+                                expectedDelivery: expectedDelivery,
+                                notes: notes
+                              };
+                              setDirectPrintOrder(tempOrder);
+                            }}
+                          >
+                            <Printer className="h-4 w-4 mr-2" />
+                            Print
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const supplierInfoForPrint = selectedSupplier ? {
+                                name: selectedSupplier.companyName || selectedSupplier.company_name || selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.displayName || selectedSupplier.name,
+                                email: selectedSupplier.email,
+                                phone: selectedSupplier.phone,
+                                address: (() => {
+                                  if (typeof selectedSupplier.address === 'string' && selectedSupplier.address.trim()) return selectedSupplier.address.trim();
+                                  const addr = selectedSupplier.address || selectedSupplier.companyAddress || selectedSupplier.location;
+                                  if (addr && typeof addr === 'object') {
+                                    const parts = [addr.street || addr.address_line1 || addr.addressLine1 || addr.line1, addr.address_line2 || addr.addressLine2, addr.city, addr.province || addr.state, addr.country, addr.zipCode || addr.zip || addr.postalCode || addr.postal_code].filter(Boolean);
+                                    if (parts.length) return parts.join(', ');
+                                  }
+                                  if (selectedSupplier.addresses?.length) {
+                                    const a = selectedSupplier.addresses.find(x => x.isDefault) || selectedSupplier.addresses.find(x => x.type === 'billing' || x.type === 'both') || selectedSupplier.addresses[0];
+                                    const parts = [a.street || a.address_line1 || a.addressLine1, a.city, a.province || a.state, a.country, a.zipCode || a.zip].filter(Boolean);
+                                    if (parts.length) return parts.join(', ');
+                                  }
+                                  return null;
+                                })(),
+                                businessName: selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.companyName
+                              } : null;
+                              const tempOrder = {
+                                orderNumber: `PO-${Date.now()}`,
+                                orderType: 'purchase',
+                                supplier: selectedSupplier,
+                                supplierInfo: supplierInfoForPrint,
+                                customer: selectedSupplier,
+                                customerInfo: supplierInfoForPrint,
+                                items: purchaseItems.map(item => {
+                                  const product = item.product || {};
+                                  const displayName = product.isVariant
+                                    ? (product.displayName || product.variantName || product.name || 'Unknown Variant')
+                                    : (product.name || 'Unknown Product');
+
+                                  return {
+                                    product: {
+                                      name: displayName,
+                                      isVariant: product.isVariant,
+                                      variantType: product.variantType,
+                                      variantValue: product.variantValue,
+                                      ...(product.barcode ? { barcode: product.barcode } : {}),
+                                      ...(product.sku ? { sku: product.sku } : {})
+                                    },
+                                    quantity: item.quantity,
+                                    unitPrice: item.costPerUnit
+                                  };
+                                }),
+                                pricing: {
+                                  subtotal: subtotal,
+                                  discountAmount: directDiscountAmount,
+                                  taxAmount: tax,
+                                  isTaxExempt: !taxSystemEnabled,
+                                  total: total
+                                },
+                                payment: {
+                                  method: paymentMethod,
+                                  bankAccount: paymentMethod === 'bank' ? selectedBankAccount : null,
+                                  amountPaid: amountPaid,
+                                  remainingBalance: total - amountPaid,
+                                  isPartialPayment: amountPaid < total
+                                },
+                                createdAt: new Date(),
+                                createdBy: { name: 'Current User' },
+                                invoiceNumber: invoiceNumber,
+                                expectedDelivery: expectedDelivery,
+                                notes: notes
+                              };
+                              setCurrentOrder(tempOrder);
+                              setShowPrintModal(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Print Preview
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </div>
+              </OrderSummaryBar>
               <OrderSummaryContent className="bg-none bg-slate-50">
                 <div className="space-y-2">
                   {directDiscountAmount > 0 && (
@@ -1554,306 +1722,135 @@ export const Purchase = ({ tabId, editData }) => {
                       <span className="text-xl font-semibold tabular-nums text-foreground">{tax.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="mt-2">
-                    <div className="grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-4">
-                      <div className="flex items-center justify-between md:block">
-                        <span className="text-sm font-medium text-muted-foreground">Subtotal:</span>
-                        <div className="text-2xl font-semibold tabular-nums text-foreground md:mt-1">{subtotal.toFixed(2)}</div>
-                      </div>
-                      <div className="flex items-center justify-between md:block">
-                        <span className="text-sm font-medium text-muted-foreground">Purchase Total:</span>
-                        <div className="text-2xl font-bold tabular-nums text-primary md:mt-1">{total.toFixed(2)}</div>
-                      </div>
-                      <div className="flex items-center justify-between md:block">
-                        <span className="text-sm font-medium text-muted-foreground">Previous Outstanding:</span>
-                        <div
-                          className={`text-2xl font-semibold tabular-nums md:mt-1 ${supplierOutstanding > 0 ? 'text-red-600' : 'text-green-600'
-                            }`}
-                        >
-                          {supplierOutstanding.toFixed(2)}
+                  {selectedSupplier && (() => {
+                    return (
+                      <div className="mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
+                          {/* 1. Subtotal */}
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Subtotal</span>
+                            <div className="h-8 flex items-center px-2 bg-slate-50 border border-gray-200 rounded-md text-xl font-semibold tabular-nums text-foreground">
+                              {subtotal.toFixed(2)}
+                            </div>
+                          </div>
+
+                          {/* 2. Manual Discount */}
+                          <div className="flex flex-col">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Discount</label>
+                              <select
+                                value={directDiscount.type}
+                                onChange={(e) => setDirectDiscount({ ...directDiscount, type: e.target.value })}
+                                className="border-none bg-transparent p-0 text-[10px] font-bold text-primary-600 focus:ring-0 cursor-pointer"
+                              >
+                                <option value="amount">Amt</option>
+                                <option value="percentage">%</option>
+                              </select>
+                            </div>
+                            <Input
+                              type="number"
+                              autoComplete="off"
+                              placeholder="0"
+                              value={directDiscount.value || ''}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value) || 0;
+                                setDirectDiscount({ ...directDiscount, value });
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="w-full h-8 px-2 border-gray-200 rounded-md bg-white focus:ring-1 focus:ring-primary-400 text-sm font-medium shadow-none"
+                            />
+                          </div>
+
+                          {/* 3. Purchase Total */}
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Total</span>
+                            <div className="h-8 flex items-center px-2 bg-slate-50 border border-gray-200 rounded-md text-xl font-bold tabular-nums text-primary">
+                              {total.toFixed(2)}
+                            </div>
+                          </div>
+
+                          {/* 4. Previous Outstanding */}
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Outstanding</span>
+                            <div className="h-8 flex items-center px-2 bg-slate-50 border border-gray-200 rounded-md text-xl font-semibold tabular-nums text-foreground">
+                              {supplierOutstanding.toFixed(2)}
+                            </div>
+                          </div>
+
+                          {/* 5. Payment Method & Amount Paid */}
+                          <div className="flex flex-col">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Payment</label>
+                              <select
+                                value={paymentMethod === 'bank' && selectedBankAccount ? `bank:${selectedBankAccount}` : paymentMethod}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  if (v.startsWith('bank:')) {
+                                    setPaymentMethod('bank');
+                                    setSelectedBankAccount(v.slice(5));
+                                  } else {
+                                    setPaymentMethod(v);
+                                    setSelectedBankAccount('');
+                                  }
+                                }}
+                                className="border-none bg-transparent p-0 text-[10px] font-bold text-primary-600 focus:ring-0 cursor-pointer max-w-[60px] overflow-hidden text-ellipsis"
+                              >
+                                <option value="cash">Cash</option>
+                                <optgroup label="Banks">
+                                  {activeBanks.map((bank) => {
+                                    const bid = bank._id || bank.id;
+                                    if (!bid) return null;
+                                    const label = [bank.bankName, bank.accountNumber].filter(Boolean).join(' - ');
+                                    return <option key={bid} value={`bank:${bid}`}>{label}</option>;
+                                  })}
+                                </optgroup>
+                                <option value="credit_card">Card</option>
+                                <option value="debit_card">Debit</option>
+                                <option value="check">Check</option>
+                                <option value="account">Acc</option>
+                                <option value="split">Split</option>
+                              </select>
+                            </div>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              autoComplete="off"
+                              value={amountPaid}
+                              onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
+                              onFocus={(e) => e.target.select()}
+                              className="w-full h-8 px-2 border-gray-200 rounded-md bg-white focus:ring-1 focus:ring-primary-400 text-sm font-medium shadow-none"
+                              placeholder="0"
+                            />
+                          </div>
+
+                          {/* 6. Total Payables */}
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-foreground mb-1">Payables</span>
+                            <div className="h-8 flex items-center px-2 bg-slate-50 border border-gray-200 rounded-md text-xl font-bold tabular-nums text-primary">
+                              {totalPayables.toFixed(2)}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between md:block">
-                        <span className="text-sm font-semibold text-foreground">Total Payables:</span>
-                        <div className="text-2xl font-bold tabular-nums text-primary md:mt-1">{totalPayables.toFixed(2)}</div>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
 
-                <OrderInsetPanel>
-                  <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 items-start">
-                    <div className="flex flex-col">
-                      <label className="block text-sm font-medium text-foreground mb-2">Apply Discount (manual)</label>
-                      <div className="flex space-x-2">
-                        <select
-                          value={directDiscount.type}
-                          onChange={(e) => setDirectDiscount({ ...directDiscount, type: e.target.value })}
-                          className="h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium"
-                        >
-                          <option value="amount">Amount</option>
-                          <option value="percentage">%</option>
-                        </select>
-                        <Input
-                          type="number"
-                          autoComplete="off"
-                          placeholder={directDiscount.type === 'amount' ? 'Enter amount...' : 'Enter percentage...'}
-                          value={directDiscount.value || ''}
-                          onChange={(e) => {
-                            const value = parseFloat(e.target.value) || 0;
-                            setDirectDiscount({ ...directDiscount, value });
-                          }}
-                          onFocus={(e) => e.target.select()}
-                          className="flex-1 h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium text-foreground"
-                          min="0"
-                          step={directDiscount.type === 'percentage' ? '0.1' : '0.01'}
-                        />
-                      </div>
-                      {directDiscount.value > 0 && (
-                        <div className="mt-2">
-                          <Button
-                            onClick={() => setDirectDiscount({ type: 'amount', value: 0 })}
-                            variant="destructive"
-                            size="sm"
-                          >
-                            Clear Discount
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col md:col-start-2 md:row-start-1 w-full">
-                      <label className="block text-sm font-medium text-foreground mb-2">Payment Method</label>
-                      <select
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-full h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium text-foreground"
-                      >
-                        <option value="cash">Cash</option>
-                        <option value="credit_card">Credit Card</option>
-                        <option value="debit_card">Debit Card</option>
-                        <option value="check">Check</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col">
-                      <label className="block text-sm font-medium text-foreground mb-2">Amount Paid</label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        autoComplete="off"
-                        value={amountPaid}
-                        onChange={(e) => setAmountPaid(parseFloat(e.target.value) || 0)}
-                        onFocus={(e) => e.target.select()}
-                        className="w-full h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium text-foreground text-lg"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                </OrderInsetPanel>
-
-                <OrderCheckoutActions>
-                  {purchaseItems.length > 0 && (
-                    <Button
-                      onClick={() => {
-                        setPurchaseItems([]);
-                        setHighlightedPurchaseLineIndex(null);
-                        setSelectedSupplier(null);
-                        setSupplierSearchTerm('');
-                        setDirectDiscount({ type: 'amount', value: 0 });
-                        setAmountPaid(0);
-                        setPaymentMethod('cash');
-                        setBillDate(getLocalDateString());
-                        toast.success('Cart cleared');
-                      }}
-                      variant="secondary"
-                      className="flex-1"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear Cart
-                    </Button>
-                  )}
-                  {purchaseItems.length > 0 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" className="flex-1">
-                          <Printer className="h-4 w-4 mr-2" />
-                          Print
-                          <ChevronDown className="h-4 w-4 ml-2" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const supplierInfoForPrint = selectedSupplier ? {
-                              name: selectedSupplier.companyName || selectedSupplier.company_name || selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.displayName || selectedSupplier.name,
-                              email: selectedSupplier.email,
-                              phone: selectedSupplier.phone,
-                              address: (() => {
-                                if (typeof selectedSupplier.address === 'string' && selectedSupplier.address.trim()) return selectedSupplier.address.trim();
-                                const addr = selectedSupplier.address || selectedSupplier.companyAddress || selectedSupplier.location;
-                                if (addr && typeof addr === 'object') {
-                                  const parts = [addr.street || addr.address_line1 || addr.addressLine1 || addr.line1, addr.address_line2 || addr.addressLine2, addr.city, addr.province || addr.state, addr.country, addr.zipCode || addr.zip || addr.postalCode || addr.postal_code].filter(Boolean);
-                                  if (parts.length) return parts.join(', ');
-                                }
-                                if (selectedSupplier.addresses?.length) {
-                                  const a = selectedSupplier.addresses.find(x => x.isDefault) || selectedSupplier.addresses.find(x => x.type === 'billing' || x.type === 'both') || selectedSupplier.addresses[0];
-                                  const parts = [a.street || a.address_line1 || a.addressLine1, a.city, a.province || a.state, a.country, a.zipCode || a.zip].filter(Boolean);
-                                  if (parts.length) return parts.join(', ');
-                                }
-                                return null;
-                              })(),
-                              businessName: selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.companyName
-                            } : null;
-                            const tempOrder = {
-                              orderNumber: `PO-${Date.now()}`,
-                              orderType: 'purchase',
-                              supplier: selectedSupplier,
-                              supplierInfo: supplierInfoForPrint,
-                              customer: selectedSupplier,
-                              customerInfo: supplierInfoForPrint,
-                              items: purchaseItems.map(item => {
-                                const product = item.product || {};
-                                const displayName = product.isVariant
-                                  ? (product.displayName || product.variantName || product.name || 'Unknown Variant')
-                                  : (product.name || 'Unknown Product');
-
-                                return {
-                                  product: {
-                                    name: displayName,
-                                    isVariant: product.isVariant,
-                                    variantType: product.variantType,
-                                    variantValue: product.variantValue,
-                                    ...(product.barcode ? { barcode: product.barcode } : {}),
-                                    ...(product.sku ? { sku: product.sku } : {})
-                                  },
-                                  quantity: item.quantity,
-                                  unitPrice: item.costPerUnit
-                                };
-                              }),
-                              pricing: {
-                                subtotal: subtotal,
-                                discountAmount: directDiscountAmount,
-                                taxAmount: tax,
-                                isTaxExempt: !taxSystemEnabled,
-                                total: total
-                              },
-                              payment: {
-                                method: paymentMethod,
-                                amountPaid: amountPaid,
-                                remainingBalance: total - amountPaid,
-                                isPartialPayment: amountPaid < total
-                              },
-                              createdAt: new Date(),
-                              createdBy: { name: 'Current User' },
-                              invoiceNumber: invoiceNumber,
-                              expectedDelivery: expectedDelivery,
-                              notes: notes
-                            };
-                            setDirectPrintOrder(tempOrder);
-                          }}
-                        >
-                          <Printer className="h-4 w-4 mr-2" />
-                          Print
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const supplierInfoForPrint = selectedSupplier ? {
-                              name: selectedSupplier.companyName || selectedSupplier.company_name || selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.displayName || selectedSupplier.name,
-                              email: selectedSupplier.email,
-                              phone: selectedSupplier.phone,
-                              address: (() => {
-                                if (typeof selectedSupplier.address === 'string' && selectedSupplier.address.trim()) return selectedSupplier.address.trim();
-                                const addr = selectedSupplier.address || selectedSupplier.companyAddress || selectedSupplier.location;
-                                if (addr && typeof addr === 'object') {
-                                  const parts = [addr.street || addr.address_line1 || addr.addressLine1 || addr.line1, addr.address_line2 || addr.addressLine2, addr.city, addr.province || addr.state, addr.country, addr.zipCode || addr.zip || addr.postalCode || addr.postal_code].filter(Boolean);
-                                  if (parts.length) return parts.join(', ');
-                                }
-                                if (selectedSupplier.addresses?.length) {
-                                  const a = selectedSupplier.addresses.find(x => x.isDefault) || selectedSupplier.addresses.find(x => x.type === 'billing' || x.type === 'both') || selectedSupplier.addresses[0];
-                                  const parts = [a.street || a.address_line1 || a.addressLine1, a.city, a.province || a.state, a.country, a.zipCode || a.zip].filter(Boolean);
-                                  if (parts.length) return parts.join(', ');
-                                }
-                                return null;
-                              })(),
-                              businessName: selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.companyName
-                            } : null;
-                            const tempOrder = {
-                              orderNumber: `PO-${Date.now()}`,
-                              orderType: 'purchase',
-                              supplier: selectedSupplier,
-                              supplierInfo: supplierInfoForPrint,
-                              customer: selectedSupplier,
-                              customerInfo: supplierInfoForPrint,
-                              items: purchaseItems.map(item => {
-                                const product = item.product || {};
-                                const displayName = product.isVariant
-                                  ? (product.displayName || product.variantName || product.name || 'Unknown Variant')
-                                  : (product.name || 'Unknown Product');
-
-                                return {
-                                  product: {
-                                    name: displayName,
-                                    isVariant: product.isVariant,
-                                    variantType: product.variantType,
-                                    variantValue: product.variantValue,
-                                    ...(product.barcode ? { barcode: product.barcode } : {}),
-                                    ...(product.sku ? { sku: product.sku } : {})
-                                  },
-                                  quantity: item.quantity,
-                                  unitPrice: item.costPerUnit
-                                };
-                              }),
-                              pricing: {
-                                subtotal: subtotal,
-                                discountAmount: directDiscountAmount,
-                                taxAmount: tax,
-                                isTaxExempt: !taxSystemEnabled,
-                                total: total
-                              },
-                              payment: {
-                                method: paymentMethod,
-                                amountPaid: amountPaid,
-                                remainingBalance: total - amountPaid,
-                                isPartialPayment: amountPaid < total
-                              },
-                              createdAt: new Date(),
-                              createdBy: { name: 'Current User' },
-                              invoiceNumber: invoiceNumber,
-                              expectedDelivery: expectedDelivery,
-                              notes: notes
-                            };
-                            setCurrentOrder(tempOrder);
-                            setShowPrintModal(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Print Preview
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                <OrderCheckoutActions className="mt-4 border-0 pt-0">
                   {!editData?.isEditMode && purchaseItems.length > 0 && (
-                    <label className="flex items-center space-x-2 px-2 text-sm font-medium text-gray-700 cursor-pointer">
+                    <div className="flex items-center space-x-2 px-2 mb-2">
                       <Input
                         type="checkbox"
+                        id="printLabelsAfterPurchase"
                         checked={printBarcodeLabelsAfterInvoice}
                         onChange={(e) => setPrintBarcodeLabelsAfterInvoice(e.target.checked)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
-                      <span>Print labels after purchase</span>
-                    </label>
+                      <label htmlFor="printLabelsAfterPurchase" className="text-sm font-medium text-gray-700 cursor-pointer">
+                        Print labels after purchase
+                      </label>
+                    </div>
                   )}
-                  <LoadingButton
-                    onClick={handleProcessPurchase}
-                    isLoading={false}
-                    variant="default"
-                    size="lg"
-                    className="flex-2"
-                  >
-                    <Truck className="h-4 w-4 mr-2" />
-                    {editData?.isEditMode ? 'Update Purchase Invoice' : 'Complete Purchase & Update Inventory'}
-                  </LoadingButton>
                 </OrderCheckoutActions>
               </OrderSummaryContent>
             </OrderCheckoutCard>
@@ -1915,4 +1912,3 @@ export const Purchase = ({ tabId, editData }) => {
     </AsyncErrorBoundary>
   );
 };
-

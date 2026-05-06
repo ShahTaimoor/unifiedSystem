@@ -23,7 +23,7 @@ import {
 import { useGetWarehousesQuery } from '../store/services/warehousesApi';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { LoadingSpinner, LoadingButton, LoadingPage } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
+import { Button } from '@/pos/components/ui/button';
 import { useResponsive, ResponsiveContainer } from '../components/ResponsiveContainer';
 import ResponsiveTable from '../components/ResponsiveTable';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';

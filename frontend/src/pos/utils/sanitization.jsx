@@ -338,4 +338,3 @@ export default {
   sanitizeObjectWithRules,
   SANITIZATION_RULES
 };
-

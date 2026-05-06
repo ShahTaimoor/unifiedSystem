@@ -677,4 +677,3 @@ const InventoryReportDetailModal = ({ report, onClose, onDelete, onToggleFavorit
 };
 
 export default InventoryReportDetailModal;
-

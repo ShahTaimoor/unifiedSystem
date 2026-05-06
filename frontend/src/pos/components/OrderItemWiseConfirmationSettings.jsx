@@ -18,9 +18,9 @@ import {
 } from 'lucide-react';
 import { useGetCompanySettingsQuery, useUpdateCompanySettingsMutation } from '../store/services/settingsApi';
 import { handleApiError } from '../utils/errorHandler';
-import { Checkbox } from '@pos/components/ui/checkbox';
-import { Label } from '@pos/components/ui/label';
-import { Input } from '@pos/components/ui/input';
+import { Checkbox } from '@/pos/components/ui/checkbox';
+import { Label } from '@/pos/components/ui/label';
+import { Input } from '@/pos/components/ui/input';
 
 export function OrderItemWiseConfirmationSettings() {
   const { data: settingsResponse } = useGetCompanySettingsQuery();
@@ -345,4 +345,3 @@ export function OrderItemWiseConfirmationSettings() {
     </div>
   );
 }
-

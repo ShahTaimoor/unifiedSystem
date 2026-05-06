@@ -110,4 +110,3 @@ class SyncManager {
 }
 
 export default new SyncManager();
-

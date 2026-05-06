@@ -87,4 +87,3 @@ export const FilterChips = ({ filters, onRemove, onClearAll, className = '' }) =
 
 export default FilterChips;
 
-

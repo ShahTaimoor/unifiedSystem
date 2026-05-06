@@ -11,9 +11,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
-import { Textarea } from '@pos/components/ui/textarea';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
+import { Textarea } from '@/pos/components/ui/textarea';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 
@@ -469,5 +469,4 @@ export const Cities = () => {
 };
 
 export default Cities;
-
 

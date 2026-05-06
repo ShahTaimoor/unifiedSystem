@@ -1,4 +1,4 @@
-import axiosInstance from '@/redux/slices/auth/axiosInstance';
+import axiosInstance from '@/storefront/redux/slices/auth/axiosInstance';
 
 /**
  * Media Service

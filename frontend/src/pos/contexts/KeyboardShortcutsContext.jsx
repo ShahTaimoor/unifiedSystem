@@ -306,4 +306,3 @@ export const KeyboardShortcutsProvider = ({ children, customShortcuts = {} }) =>
   );
 };
 
-

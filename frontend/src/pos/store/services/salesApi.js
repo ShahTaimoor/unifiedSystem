@@ -230,4 +230,3 @@ export const {
   useSyncSalesLedgerMutation,
 } = salesApi;
 
-

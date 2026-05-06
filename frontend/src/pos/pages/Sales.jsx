@@ -53,12 +53,13 @@ import {
 } from '../utils/dualUnitUtils';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { toast } from 'sonner';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
 import {
   OrderCheckoutCard,
   OrderDetailsSection,
   OrderSummaryContent,
+  OrderSummaryBar,
   OrderInsetPanel,
   OrderCheckoutActions,
 } from '../components/order/OrderCheckoutLayout';
@@ -76,12 +77,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@pos/components/ui/dropdown-menu';
+} from '@/pos/components/ui/dropdown-menu';
 import { useResponsive, ResponsiveGrid } from '../components/ResponsiveContainer';
 import RecommendationSection from '../components/RecommendationSection';
 import useBehaviorTracking from '../hooks/useBehaviorTracking';
 import { useTab } from '../contexts/TabContext';
-import { getComponentInfo } from '../components/ComponentRegistry';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 
@@ -163,7 +163,7 @@ export const Sales = ({ tabId, editData }) => {
 
   const { isMobile, isTablet } = useResponsive();
   const { trackAddToCart, trackProductView, trackPageView } = useBehaviorTracking();
-  const { activeTabId, updateTabTitle, getActiveTab, openTab } = useTab();
+  const { activeTabId, updateTabTitle, getActiveTab } = useTab();
   const { hasPermission, user } = useAuth();
   const { companyInfo: companySettings } = useCompanyInfo();
 
@@ -472,12 +472,10 @@ export const Sales = ({ tabId, editData }) => {
   );
 
   useEffect(() => {
-    if (paymentMethod === 'bank' && !selectedBankAccount) {
-      const defaultBank = activeBanks.find((bank) => bank?.isDefault) || activeBanks[0];
-      if (defaultBank?._id) {
-        setSelectedBankAccount(defaultBank._id);
-      }
-    }
+    if (paymentMethod !== 'bank' || selectedBankAccount) return;
+    const first = activeBanks[0];
+    const id = first?._id || first?.id;
+    if (id) setSelectedBankAccount(id);
   }, [paymentMethod, selectedBankAccount, activeBanks]);
 
   // Update selected customer when customers data changes (e.g., after cash receipt updates balance)
@@ -1430,181 +1428,127 @@ export const Sales = ({ tabId, editData }) => {
   return (
     <AsyncErrorBoundary>
       <div className="space-y-4 lg:space-y-6">
-        <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-start justify-between'}`}>
-          <div>
-            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>Point of Sales</h1>
-            <p className="text-gray-600">Process sales transactions</p>
-          </div>
-          <div className="flex items-center space-x-2">
-
-            <Button
-              onClick={() => {
-                const componentInfo = getComponentInfo('/sales');
-                if (componentInfo) {
-                  const newTabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                  openTab({
-                    title: 'Sales',
-                    path: '/sales',
-                    component: componentInfo.component,
-                    icon: componentInfo.icon,
-                    allowMultiple: true,
-                    props: { tabId: newTabId }
-                  });
-                }
-              }}
-              variant="default"
-              size="default"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Sales
-            </Button>
-          </div>
-        </div>
-
-        {/* Customer Selection and Information Row */}
-        <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'items-start space-x-12'}`}>
-          {/* Customer Selection */}
-          <div className={`${isMobile ? 'w-full' : 'w-full max-w-3xl flex-shrink-0'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Select Customer
-                </label>
-                {selectedCustomer && (
-                  <button
-                    onClick={() => {
-                      setSelectedCustomer(null);
-                      setCustomerSearchTerm('');
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-800 underline"
-                    title="Change customer"
-                  >
-                    Change Customer
-                  </button>
-                )}
+        {/* Modern Header Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+            {/* Title & Customer Selection */}
+            <div className="flex flex-col sm:flex-row sm:items-center flex-1 gap-3">
+              <div className="flex-shrink-0">
+                <h1 className={`${isMobile ? 'text-base' : 'text-xl'} font-bold text-gray-900`}>Point of Sales</h1>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center space-x-2">
-                  <label className="text-xs font-normal text-gray-400">Price Type:</label>
-                  <select
-                    value={priceType}
-                    onChange={(e) => setPriceType(e.target.value)}
-                    className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
-                  >
-                    <option value="wholesale">Wholesale</option>
-                    <option value="retail">Retail</option>
-                    <option value="distributor">Distributor</option>
-                    <option value="custom">Custom</option>
-                  </select>
+              <div className="hidden sm:block h-7 w-px bg-gray-200"></div>
+              <div className="flex-1 min-w-0 sm:min-w-[300px]">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      Select Customer
+                    </label>
+                    {selectedCustomer && (
+                      <button
+                        onClick={() => {
+                          setSelectedCustomer(null);
+                          setCustomerSearchTerm('');
+                        }}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold uppercase tracking-wider underline"
+                      >
+                        Change
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Price Type:</label>
+                    <select
+                      value={priceType}
+                      onChange={(e) => setPriceType(e.target.value)}
+                      className="bg-gray-50 border-none text-[11px] font-bold text-gray-700 rounded-md py-0 px-2 h-5 focus:ring-0 cursor-pointer"
+                    >
+                      <option value="wholesale">Wholesale</option>
+                      <option value="retail">Retail</option>
+                      <option value="distributor">Distributor</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
                 </div>
+                <SearchableDropdown
+                  className="[&_input]:h-8"
+                  placeholder="Search customers by name, email, or business..."
+                  items={customers || []}
+                  onSelect={handleCustomerSelect}
+                  onSearch={setCustomerSearchTerm}
+                  selectedItem={selectedCustomer}
+                  rightContentKey="city"
+                  displayKey={(customer) => {
+                    const name = customer?.displayName ?? customer?.display_name ?? customer?.businessName ?? customer?.business_name ?? customer?.name ?? 'Customer';
+                    const totalBalance = customer?.currentBalance !== undefined && customer?.currentBalance !== null
+                      ? Number(customer.currentBalance)
+                      : (Number(customer?.pendingBalance ?? 0) - Number(customer?.advanceBalance ?? 0));
+                    const hasBalance = totalBalance !== 0 && !Number.isNaN(totalBalance);
+                    const isPayable = totalBalance < 0;
+                    const isReceivable = totalBalance > 0;
+
+                    return (
+                      <div>
+                        <div className="font-medium">{name}</div>
+                        {hasBalance ? (
+                          <div className={`text-sm ${isPayable ? 'text-red-600' : 'text-green-600'}`}>
+                            Total Balance: {isPayable ? '-' : '+'}{Math.abs(totalBalance).toFixed(2)}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }}
+                  loading={customersLoading || customersFetching}
+                  emptyMessage="No customers found"
+                />
               </div>
             </div>
-            <SearchableDropdown
-              placeholder="Search customers by name, email, or business..."
-              items={customers || []}
-              onSelect={handleCustomerSelect}
-              onSearch={setCustomerSearchTerm}
-              selectedItem={selectedCustomer}
-              rightContentKey="city"
-              displayKey={(customer) => {
-                const name = customer?.displayName ?? customer?.display_name ?? customer?.businessName ?? customer?.business_name ?? customer?.name ?? 'Customer';
-                const totalBalance = customer?.currentBalance !== undefined && customer?.currentBalance !== null
-                  ? Number(customer.currentBalance)
-                  : (Number(customer?.pendingBalance ?? 0) - Number(customer?.advanceBalance ?? 0));
-                const hasBalance = totalBalance !== 0 && !Number.isNaN(totalBalance);
-                const isPayable = totalBalance < 0;
-                const isReceivable = totalBalance > 0;
+
+            {/* Customer Information - Right Side */}
+            <div className="lg:w-auto w-full lg:max-w-md lg:self-end">
+              {selectedCustomer ? (() => {
+                const balanceSource = selectedCustomer ?? customerWithBalance;
+                const creditLimitNum = Math.max(0, Number(selectedCustomer?.creditLimit ?? selectedCustomer?.credit_limit ?? balanceSource?.creditLimit ?? balanceSource?.credit_limit ?? 0) || 0);
+                const availableCreditNum = Math.max(0, creditLimitNum - currentBalanceNum);
+                const isPayable = currentBalanceNum < 0;
+                const isReceivable = currentBalanceNum > 0;
 
                 return (
-                  <div>
-                    <div className="font-medium">{name}</div>
-                    {hasBalance ? (
-                      <div className={`text-sm ${isPayable ? 'text-red-600' : 'text-green-600'}`}>
-                        Total Balance: {isPayable ? '-' : '+'}{Math.abs(totalBalance).toFixed(2)}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              }}
-              loading={customersLoading || customersFetching}
-              emptyMessage="No customers found"
-            />
-          </div>
-
-          {/* Customer Information - Right Side */}
-          <div className={`${isMobile ? 'w-full' : 'flex-1'}`}>
-            {selectedCustomer ? (() => {
-              // Prioritize balance from selectedCustomer (from list with bulk balances - already correct)
-              // Then fallback to customerWithBalance (from detail query) if needed
-              const balanceSource = selectedCustomer ?? customerWithBalance;
-              const creditLimitNum = Math.max(0, Number(selectedCustomer?.creditLimit ?? selectedCustomer?.credit_limit ?? balanceSource?.creditLimit ?? balanceSource?.credit_limit ?? 0) || 0);
-              const availableCreditNum = Math.max(0, creditLimitNum - currentBalanceNum);
-              return (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <div className="flex items-center space-x-3">
-                    <User className="h-5 w-5 text-gray-400" />
-                    <div className="flex-1">
-                      <p className="font-medium">{selectedCustomer.businessName || selectedCustomer.business_name || selectedCustomer.displayName || selectedCustomer.name}</p>
-                      <p className="text-sm text-gray-600 capitalize">
-                        {selectedCustomer.businessType ?? '—'} • {selectedCustomer.phone || 'No phone'}
-                      </p>
-                      <div className="flex items-center space-x-4 mt-2 flex-wrap gap-y-1">
-                        {(() => {
-                          const isPayable = currentBalanceNum < 0;
-                          const isReceivable = currentBalanceNum > 0;
-                          return (
-                            <div className="flex items-center space-x-1">
-                              <span className="text-xs text-gray-500">Balance:</span>
-                              <span className={`text-sm font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'}`}>
-                                {isPayable ? '-' : ''}{Math.abs(currentBalanceNum).toFixed(2)}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs text-gray-500">Credit Limit:</span>
-                          <span className={`text-sm font-medium ${(creditLimitNum > 0) ? (
-                            currentBalanceNum >= creditLimitNum * 0.9
-                              ? 'text-red-600'
-                              : currentBalanceNum >= creditLimitNum * 0.7
-                                ? 'text-yellow-600'
-                                : 'text-blue-600'
-                          ) : 'text-gray-600'
-                            }`}>
-                            {creditLimitNum.toFixed(2)}
-                          </span>
-                          {creditLimitNum > 0 && currentBalanceNum >= creditLimitNum * 0.9 && (
-                            <span className="text-xs text-red-600 font-bold ml-1">⚠️</span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-xs text-gray-500">Available Credit:</span>
-                          <span className={`text-sm font-medium ${creditLimitNum > 0 ? (
-                            availableCreditNum <= creditLimitNum * 0.1
-                              ? 'text-red-600'
-                              : availableCreditNum <= creditLimitNum * 0.3
-                                ? 'text-yellow-600'
-                                : 'text-green-600'
-                          ) : 'text-gray-600'
-                            }`}>
-                            {availableCreditNum.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl h-8 px-2 flex items-center">
+                    <div className="flex items-center gap-2 text-xs whitespace-nowrap overflow-hidden">
+                      <span className="text-gray-500 uppercase font-semibold">Balance</span>
+                      <span className={`font-bold ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'}`}>
+                        {isPayable ? '-' : ''}{Math.abs(currentBalanceNum).toFixed(2)}
+                      </span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-gray-500 uppercase font-semibold">Credit</span>
+                      <span className={`font-bold ${(creditLimitNum > 0) ? (
+                        currentBalanceNum >= creditLimitNum * 0.9 ? 'text-red-600' : currentBalanceNum >= creditLimitNum * 0.7 ? 'text-yellow-600' : 'text-blue-600'
+                      ) : 'text-gray-600'}`}>
+                        {creditLimitNum.toFixed(2)}
+                        {creditLimitNum > 0 && currentBalanceNum >= creditLimitNum * 0.9 && <span className="ml-1">⚠️</span>}
+                      </span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-gray-500 uppercase font-semibold">Available</span>
+                      <span className={`font-bold ${creditLimitNum > 0 ? (
+                        availableCreditNum <= creditLimitNum * 0.1 ? 'text-red-600' : availableCreditNum <= creditLimitNum * 0.3 ? 'text-yellow-600' : 'text-green-600'
+                      ) : 'text-gray-600'}`}>
+                        {availableCreditNum.toFixed(2)}
+                      </span>
                     </div>
                   </div>
+                );
+              })() : (
+                <div className="hidden lg:flex items-center justify-center h-full px-8 border-2 border-dashed border-gray-100 rounded-xl">
+                  <span className="text-gray-400 text-sm font-medium italic">No customer selected</span>
                 </div>
-              );
-            })() : (
-              <div className="hidden lg:block">
-                {/* Empty space to maintain layout consistency */}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
         {/* Combined Product Selection and Cart Section */}
         <ProductSelectionCartSection
+          searchSectionClassName="mb-2"
           headerActions={
             <>
               <div className="flex flex-wrap items-center gap-2">
@@ -1724,6 +1668,7 @@ export const Sales = ({ tabId, editData }) => {
           emptyText="No items in cart"
         >
           <CartItemsTableSection
+            className="pt-2"
             topContent={isLastPricesApplied && Object.keys(priceStatus).length > 0 ? (
               <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 mb-3 text-xs">
                 <span className="text-gray-600 font-medium">Price Status:</span>
@@ -1741,33 +1686,7 @@ export const Sales = ({ tabId, editData }) => {
                 </div>
               </div>
             ) : null}
-            desktopHeader={(
-              <CartTableHeader
-                className={`hidden md:grid gap-x-1 items-center pb-2 border-b border-gray-300 mb-2 ${dualUnitShowBoxInputEnabled
-                  ? (
-                    showCostPrice && hasPermission(PERMISSIONS.VIEW_PRODUCT_COSTS)
-                      ? 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5rem_5.35rem_5.35rem_2.25rem]'
-                      : 'grid-cols-[2.25rem_minmax(0,1fr)_4.75rem_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-                  )
-                  : (
-                    showCostPrice && hasPermission(PERMISSIONS.VIEW_PRODUCT_COSTS)
-                      ? 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5rem_5.35rem_5.35rem_2.25rem]'
-                      : 'grid-cols-[2.25rem_minmax(0,1fr)_5.35rem_5.35rem_5.35rem_5.35rem_2.25rem]'
-                  )
-                  }`}
-                columns={[
-                  { key: 'sno', label: 'S.NO', labelClassName: 'text-xs font-semibold text-gray-600 uppercase text-left' },
-                  { key: 'product', label: 'Product' },
-                  ...(dualUnitShowBoxInputEnabled ? [{ key: 'box', label: 'Box' }] : []),
-                  { key: 'stock', label: 'Stock' },
-                  { key: 'qty', label: 'Qty' },
-                  ...(showCostPrice && hasPermission(PERMISSIONS.VIEW_PRODUCT_COSTS) ? [{ key: 'cost', label: 'Cost' }] : []),
-                  { key: 'rate', label: 'Rate' },
-                  { key: 'total', label: 'Total', labelClassName: 'text-xs font-semibold text-gray-600 uppercase block text-center' },
-                  { key: 'action', label: 'Action', wrapperClassName: 'min-w-0 flex justify-end', labelClassName: 'text-xs font-semibold text-gray-600 uppercase text-right' },
-                ]}
-              />
-            )}
+            desktopHeader={null}
           >
             <div
               ref={cartScrollRef}
@@ -1821,8 +1740,8 @@ export const Sales = ({ tabId, editData }) => {
                               <div className="flex items-center gap-2 mb-1">
                                 <span
                                   className={`text-xs font-semibold px-2 py-0.5 rounded transition-colors duration-300 ${serialHighlight
-                                      ? 'bg-green-100 text-green-800 border border-green-400 ring-2 ring-green-300/80'
-                                      : 'text-gray-500 bg-gray-100'
+                                    ? 'bg-green-100 text-green-800 border border-green-400 ring-2 ring-green-300/80'
+                                    : 'text-gray-500 bg-gray-100'
                                     }`}
                                 >
                                   #{index + 1}
@@ -1993,8 +1912,8 @@ export const Sales = ({ tabId, editData }) => {
                           <div className="min-w-0 flex justify-start">
                             <span
                               className={`text-sm font-medium px-0.5 py-1 rounded border block w-8 text-center h-8 flex items-center justify-center transition-colors duration-300 ${serialHighlight
-                                  ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
-                                  : 'text-gray-700 bg-gray-50 border-gray-200'
+                                ? 'bg-green-100 text-green-800 border-green-400 ring-2 ring-green-300/80'
+                                : 'text-gray-700 bg-gray-50 border-gray-200'
                                 }`}
                             >
                               {index + 1}
@@ -2483,6 +2402,140 @@ export const Sales = ({ tabId, editData }) => {
             </OrderCheckoutCard>
 
             <OrderCheckoutCard className={`mt-0 ml-0 max-w-none min-w-0 w-full border-slate-200 bg-none bg-slate-50 shadow-sm ring-0 ${showSalesDetailsFields ? 'order-2' : 'order-1'}`}>
+              <OrderSummaryBar>
+                <div className="flex items-center gap-3">
+                  <LoadingButton
+                    onClick={handleCheckout}
+                    isLoading={isSubmitting || isCreatingSale || isUpdatingOrder}
+                    disabled={isSubmitting || isCreatingSale || isUpdatingOrder}
+                    variant="default"
+                    size="sm"
+                    className="bg-slate-900 hover:bg-slate-800 text-white border-none h-8 px-4 font-bold"
+                  >
+                    <Receipt className="h-4 w-4 mr-2" />
+                    {editData?.isEditMode
+                      ? (amountPaid === 0 ? 'Update Invoice' : 'Update Sale')
+                      : (amountPaid === 0 ? 'Create Invoice' : 'Complete Sale')
+                    }
+                  </LoadingButton>
+
+                  <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+                    {cart.length > 0 && (
+                      <LoadingButton
+                        onClick={handleClearCart}
+                        isLoading={isClearingCart}
+                        variant="ghost"
+                        size="icon-sm"
+                        className="h-8 w-8 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        title="Clear Cart"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </LoadingButton>
+                    )}
+                    {cart.length > 0 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-8 w-8 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                            title="Print Options"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              let customerAddress = '';
+                              if (selectedCustomer?.addresses?.length) {
+                                const addr = selectedCustomer.addresses.find(a => a.isDefault) || selectedCustomer.addresses.find(a => a.type === 'billing' || a.type === 'both') || selectedCustomer.addresses[0];
+                                if (addr) customerAddress = [addr.street, addr.city, addr.state, addr.country, addr.zipCode || addr.zip].filter(Boolean).join(', ');
+                              } else if (selectedCustomer?.address) customerAddress = selectedCustomer.address;
+                              const tempOrder = {
+                                orderNumber: `TEMP-${Date.now()}`,
+                                orderType: mapBusinessTypeToOrderType(selectedCustomer?.businessType),
+                                customer: selectedCustomer ?? undefined,
+                                customerInfo: selectedCustomer ? {
+                                  name: selectedCustomer.businessName || selectedCustomer.business_name || selectedCustomer.displayName || selectedCustomer.name,
+                                  email: selectedCustomer.email,
+                                  phone: selectedCustomer.phone,
+                                  businessName: selectedCustomer.businessName || selectedCustomer.business_name,
+                                  address: customerAddress || undefined,
+                                  currentBalance: selectedCustomer.currentBalance,
+                                  pendingBalance: selectedCustomer.pendingBalance,
+                                  advanceBalance: selectedCustomer.advanceBalance
+                                } : null,
+                                items: mapCartItemsForInvoicePrint(cart),
+                                pricing: { subtotal, discountAmount: totalDiscountAmount, taxAmount: tax, isTaxExempt: !taxSystemEnabled, total },
+                                payment: {
+                                  method: paymentMethod,
+                                  bankAccount: paymentMethod === 'bank' ? selectedBankAccount : null,
+                                  amountPaid,
+                                  remainingBalance: total - amountPaid,
+                                  isPartialPayment: amountPaid < total,
+                                  isAdvancePayment,
+                                  advanceAmount: isAdvancePayment ? (amountPaid - total) : 0
+                                },
+                                createdAt: new Date(),
+                                createdBy: user ? { firstName: user.firstName, lastName: user.lastName, name: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin' } : { name: 'Admin' },
+                                invoiceNumber
+                              };
+                              setDirectPrintOrder(tempOrder);
+                            }}
+                          >
+                            <Printer className="h-4 w-4 mr-2" />
+                            Print
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              let customerAddress = '';
+                              if (selectedCustomer?.addresses?.length) {
+                                const addr = selectedCustomer.addresses.find(a => a.isDefault) || selectedCustomer.addresses.find(a => a.type === 'billing' || a.type === 'both') || selectedCustomer.addresses[0];
+                                if (addr) customerAddress = [addr.street, addr.city, addr.state, addr.country, addr.zipCode || addr.zip].filter(Boolean).join(', ');
+                              } else if (selectedCustomer?.address) customerAddress = selectedCustomer.address;
+                              const tempOrder = {
+                                orderNumber: `TEMP-${Date.now()}`,
+                                orderType: mapBusinessTypeToOrderType(selectedCustomer?.businessType),
+                                customer: selectedCustomer ?? undefined,
+                                customerInfo: selectedCustomer ? {
+                                  name: selectedCustomer.businessName || selectedCustomer.business_name || selectedCustomer.displayName || selectedCustomer.name,
+                                  email: selectedCustomer.email,
+                                  phone: selectedCustomer.phone,
+                                  businessName: selectedCustomer.businessName || selectedCustomer.business_name,
+                                  address: customerAddress || undefined,
+                                  currentBalance: selectedCustomer.currentBalance,
+                                  pendingBalance: selectedCustomer.pendingBalance,
+                                  advanceBalance: selectedCustomer.advanceBalance
+                                } : null,
+                                items: mapCartItemsForInvoicePrint(cart),
+                                pricing: { subtotal, discountAmount: totalDiscountAmount, taxAmount: tax, isTaxExempt: !taxSystemEnabled, total },
+                                payment: {
+                                  method: paymentMethod,
+                                  bankAccount: paymentMethod === 'bank' ? selectedBankAccount : null,
+                                  amountPaid,
+                                  remainingBalance: total - amountPaid,
+                                  isPartialPayment: amountPaid < total,
+                                  isAdvancePayment,
+                                  advanceAmount: isAdvancePayment ? (amountPaid - total) : 0
+                                },
+                                createdAt: new Date(),
+                                createdBy: user ? { firstName: user.firstName, lastName: user.lastName, name: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin' } : { name: 'Admin' },
+                                invoiceNumber
+                              };
+                              setCurrentOrder(tempOrder);
+                              setShowPrintModal(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Print Preview
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </div>
+              </OrderSummaryBar>
               <OrderSummaryContent className="bg-none bg-slate-50">
                 <div className="space-y-2">
                   {totalDiscountAmount > 0 && (
@@ -2514,28 +2567,121 @@ export const Sales = ({ tabId, editData }) => {
 
                     return (
                       <div className="mt-2">
-                        <div className="grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-4">
-                          <div className="flex items-center justify-between md:block">
-                            <span className="text-sm font-medium text-muted-foreground">Subtotal:</span>
-                            <div className="text-2xl font-semibold tabular-nums text-foreground md:mt-1">{Math.round(subtotal)}</div>
-                          </div>
-                          <div className="flex items-center justify-between md:block">
-                            <span className="text-sm font-medium text-muted-foreground">Net Amount:</span>
-                            <div className="text-2xl font-bold tabular-nums text-primary md:mt-1">{Number(total.toFixed(2))}</div>
-                          </div>
-                          {(previousBalance !== 0 || editData?.isEditMode) && (
-                            <div className="flex items-center justify-between md:block">
-                              <span className="text-sm font-medium text-muted-foreground">Previous Balance:</span>
-                              <div className={`text-2xl font-semibold tabular-nums md:mt-1 ${previousBalance < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                {previousBalance < 0 ? '-' : '+'}{Math.abs(Number(previousBalance.toFixed(2)))}
-                              </div>
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
+                          {/* 1. Subtotal */}
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Subtotal</span>
+                            <div className="h-8 flex items-center px-2 bg-slate-50 border border-gray-200 rounded-md text-xl font-semibold tabular-nums text-foreground">
+                              {Math.round(subtotal)}
                             </div>
-                          )}
-                          <div className="flex items-center justify-between md:block">
-                            <span className={`text-sm font-semibold ${totalReceivables < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                              Total Receivables:
+                          </div>
+
+                          {/* 2. Manual Discount */}
+                          <div className="flex flex-col">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Discount</label>
+                              <select
+                                value={directDiscount.type}
+                                onChange={(e) => {
+                                  const nextType = e.target.value;
+                                  setDirectDiscount((prev) => {
+                                    const raw = Number(prev.value) || 0;
+                                    const nextValue = nextType === 'percentage'
+                                      ? Math.min(Math.max(raw, 0), 100)
+                                      : Math.min(Math.max(raw, 0), Math.max(0, Math.round(subtotal)));
+                                    return { ...prev, type: nextType, value: nextValue };
+                                  });
+                                }}
+                                className="border-none bg-transparent p-0 text-[10px] font-bold text-primary-600 focus:ring-0 cursor-pointer"
+                              >
+                                <option value="amount">Amt</option>
+                                <option value="percentage">%</option>
+                              </select>
+                            </div>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={directDiscount.value || ''}
+                              onChange={(e) => {
+                                const raw = parseInt(e.target.value, 10) || 0;
+                                const value = directDiscount.type === 'percentage'
+                                  ? Math.min(Math.max(raw, 0), 100)
+                                  : Math.min(Math.max(raw, 0), Math.max(0, Math.round(subtotal)));
+                                setDirectDiscount((prev) => ({ ...prev, value }));
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="w-full h-8 px-2 border-gray-200 rounded-md bg-white focus:ring-1 focus:ring-primary-400 text-sm font-medium shadow-none"
+                            />
+                          </div>
+
+                          {/* 3. Net Amount */}
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Net Amount</span>
+                            <div className="h-8 flex items-center px-2 bg-slate-50 border border-gray-200 rounded-md text-xl font-bold tabular-nums text-primary">
+                              {Number(total.toFixed(2))}
+                            </div>
+                          </div>
+
+                          {/* 4. Previous Balance */}
+                          <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Prev. Bal</span>
+                            <div className="h-8 flex items-center px-2 bg-slate-50 border border-gray-200 rounded-md text-xl font-semibold tabular-nums text-foreground">
+                              {previousBalance < 0 ? '-' : '+'}{Math.abs(Number(previousBalance.toFixed(2)))}
+                            </div>
+                          </div>
+
+                          {/* 5. Payment Method & Amount Paid */}
+                          <div className="flex flex-col">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[10px] uppercase tracking-wider font-bold text-gray-500">Payment</label>
+                              <select
+                                value={paymentMethod === 'bank' && selectedBankAccount ? `bank:${selectedBankAccount}` : paymentMethod}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  if (v.startsWith('bank:')) {
+                                    setPaymentMethod('bank');
+                                    setSelectedBankAccount(v.slice(5));
+                                  } else {
+                                    setPaymentMethod(v);
+                                    setSelectedBankAccount('');
+                                  }
+                                }}
+                                className="border-none bg-transparent p-0 text-[10px] font-bold text-primary-600 focus:ring-0 cursor-pointer max-w-[60px] overflow-hidden text-ellipsis"
+                              >
+                                <option value="cash">Cash</option>
+                                <optgroup label="Banks">
+                                  {activeBanks.map((bank) => {
+                                    const bid = bank._id || bank.id;
+                                    if (!bid) return null;
+                                    const label = [bank.bankName, bank.accountNumber].filter(Boolean).join(' - ');
+                                    return <option key={bid} value={`bank:${bid}`}>{label}</option>;
+                                  })}
+                                </optgroup>
+                                <option value="credit_card">Card</option>
+                                <option value="debit_card">Debit</option>
+                                <option value="check">Check</option>
+                                <option value="account">Acc</option>
+                                <option value="split">Split</option>
+                              </select>
+                            </div>
+                            <Input
+                              type="number"
+                              step="1"
+                              autoComplete="off"
+                              value={Math.round(amountPaid)}
+                              onChange={(e) => setAmountPaid(parseInt(e.target.value) || 0)}
+                              onFocus={(e) => e.target.select()}
+                              className="w-full h-8 px-2 border-gray-200 rounded-md bg-white focus:ring-1 focus:ring-primary-400 text-sm font-medium shadow-none"
+                              placeholder="0"
+                            />
+                          </div>
+
+                          {/* 6. Total Receivables */}
+                          <div className="flex flex-col">
+                            <span className={`text-[10px] uppercase tracking-wider font-bold mb-1 ${totalReceivables < 0 ? 'text-red-700' : 'text-green-700'}`}>
+                              Receivables
                             </span>
-                            <div className={`text-2xl font-bold tabular-nums md:mt-1 ${totalReceivables < 0 ? 'text-red-700' : 'text-green-700'}`}>
+                            <div className={`h-8 flex items-center px-2 bg-slate-50 border border-gray-200 rounded-md text-xl font-bold tabular-nums ${totalReceivables < 0 ? 'text-red-700' : 'text-green-700'}`}>
                               {totalReceivables < 0 ? '-' : '+'}{Math.abs(Number(totalReceivables.toFixed(2)))}
                             </div>
                           </div>
@@ -2552,9 +2698,9 @@ export const Sales = ({ tabId, editData }) => {
                 </div>
 
                 {/* Payment and Discount Section - One Row */}
-                <OrderInsetPanel>
-                  {/* Discount code (from Discount Management) */}
-                  {showSalesDiscountCodeEnabled && (
+                {showSalesDiscountCodeEnabled && (
+                  <OrderInsetPanel>
+                    {/* Discount code (from Discount Management) */}
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Discount code
@@ -2620,249 +2766,10 @@ export const Sales = ({ tabId, editData }) => {
                         </div>
                       )}
                     </div>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 items-start">
-                    {/* Manual discount (amount or %) */}
-                    <div className="flex flex-col">
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Apply Discount (manual)
-                      </label>
-                      <div className="flex space-x-2">
-                        <select
-                          value={directDiscount.type}
-                          onChange={(e) => {
-                            const nextType = e.target.value;
-                            setDirectDiscount((prev) => {
-                              const raw = Number(prev.value) || 0;
-                              const nextValue = nextType === 'percentage'
-                                ? Math.min(Math.max(raw, 0), 100)
-                                : Math.min(Math.max(raw, 0), Math.max(0, Math.round(subtotal)));
-                              return { ...prev, type: nextType, value: nextValue };
-                            });
-                          }}
-                          className="h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium"
-                        >
-                          <option value="amount">Amount</option>
-                          <option value="percentage">%</option>
-                        </select>
-                        <Input
-                          type="number"
-                          placeholder={directDiscount.type === 'amount' ? 'Enter amount...' : 'Enter percentage...'}
-                          value={directDiscount.value || ''}
-                          onChange={(e) => {
-                            const raw = parseInt(e.target.value, 10) || 0;
-                            const value = directDiscount.type === 'percentage'
-                              ? Math.min(Math.max(raw, 0), 100)
-                              : Math.min(Math.max(raw, 0), Math.max(0, Math.round(subtotal)));
-                            setDirectDiscount((prev) => ({ ...prev, value }));
-                          }}
-                          onFocus={(e) => e.target.select()}
-                          className="flex-1 h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium text-foreground"
-                          min="0"
-                          step={directDiscount.type === 'percentage' ? '1' : '1'}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Payment Method */}
-                    <div className="flex flex-col md:col-start-2 md:row-start-1 w-full">
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Payment Method
-                      </label>
-                      <select
-                        value={paymentMethod}
-                        onChange={(e) => {
-                          const method = e.target.value;
-                          setPaymentMethod(method);
-                          if (method !== 'bank') {
-                            setSelectedBankAccount('');
-                          }
-                        }}
-                        className="w-full h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium text-foreground"
-                      >
-                        <option value="cash">Cash</option>
-                        <option value="bank">Bank Transfer</option>
-                        <option value="credit_card">Credit Card</option>
-                        <option value="debit_card">Debit Card</option>
-                        <option value="check">Check</option>
-                        <option value="account">Account</option>
-                        <option value="split">Split Payment</option>
-                      </select>
-                      {paymentMethod === 'bank' && (
-                        <div className="mt-3">
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Bank Account
-                          </label>
-                          <select
-                            value={selectedBankAccount}
-                            onChange={(e) => setSelectedBankAccount(e.target.value)}
-                            className="w-full h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium text-foreground"
-                          >
-                            <option value="">Select bank account...</option>
-                            {activeBanks.map((bank) => (
-                              <option key={bank._id} value={bank._id}>
-                                {bank.bankName} - {bank.accountNumber}
-                                {bank.accountName ? ` (${bank.accountName})` : ''}
-                              </option>
-                            ))}
-                          </select>
-                          {banksLoading && (
-                            <p className="text-xs text-gray-500 mt-1">Loading bank accounts...</p>
-                          )}
-                          {!banksLoading && activeBanks.length === 0 && (
-                            <p className="text-xs text-red-500 mt-1">
-                              No bank accounts available. Add one in Banks.
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Amount Paid */}
-                    <div className="flex flex-col">
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Amount Paid
-                      </label>
-                      <Input
-                        type="number"
-                        step="1"
-                        value={Math.round(amountPaid)}
-                        onChange={(e) => setAmountPaid(parseInt(e.target.value) || 0)}
-                        onFocus={(e) => e.target.select()}
-                        className="w-full h-10 px-3 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring font-medium text-foreground text-lg"
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-
-                </OrderInsetPanel>
+                  </OrderInsetPanel>
+                )}
 
                 {/* Action Buttons */}
-                <OrderCheckoutActions>
-                  {cart.length > 0 && (
-                    <LoadingButton
-                      onClick={handleClearCart}
-                      isLoading={isClearingCart}
-                      variant="secondary"
-                      className="flex-1"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear Cart
-                    </LoadingButton>
-                  )}
-                  {cart.length > 0 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" className="flex-1">
-                          <Printer className="h-4 w-4 mr-2" />
-                          Print
-                          <ChevronDown className="h-4 w-4 ml-2" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            let customerAddress = '';
-                            if (selectedCustomer?.addresses?.length) {
-                              const addr = selectedCustomer.addresses.find(a => a.isDefault) || selectedCustomer.addresses.find(a => a.type === 'billing' || a.type === 'both') || selectedCustomer.addresses[0];
-                              if (addr) customerAddress = [addr.street, addr.city, addr.state, addr.country, addr.zipCode || addr.zip].filter(Boolean).join(', ');
-                            } else if (selectedCustomer?.address) customerAddress = selectedCustomer.address;
-                            const tempOrder = {
-                              orderNumber: `TEMP-${Date.now()}`,
-                              orderType: mapBusinessTypeToOrderType(selectedCustomer?.businessType),
-                              customer: selectedCustomer ?? undefined,
-                              customerInfo: selectedCustomer ? {
-                                name: selectedCustomer.businessName || selectedCustomer.business_name || selectedCustomer.displayName || selectedCustomer.name,
-                                email: selectedCustomer.email,
-                                phone: selectedCustomer.phone,
-                                businessName: selectedCustomer.businessName || selectedCustomer.business_name,
-                                address: customerAddress || undefined,
-                                currentBalance: selectedCustomer.currentBalance,
-                                pendingBalance: selectedCustomer.pendingBalance,
-                                advanceBalance: selectedCustomer.advanceBalance
-                              } : null,
-                              items: mapCartItemsForInvoicePrint(cart),
-                              pricing: { subtotal, discountAmount: totalDiscountAmount, taxAmount: tax, isTaxExempt: !taxSystemEnabled, total },
-                              payment: {
-                                method: paymentMethod,
-                                bankAccount: paymentMethod === 'bank' ? selectedBankAccount : null,
-                                amountPaid,
-                                remainingBalance: total - amountPaid,
-                                isPartialPayment: amountPaid < total,
-                                isAdvancePayment,
-                                advanceAmount: isAdvancePayment ? (amountPaid - total) : 0
-                              },
-                              createdAt: new Date(),
-                              createdBy: user ? { firstName: user.firstName, lastName: user.lastName, name: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin' } : { name: 'Admin' },
-                              invoiceNumber
-                            };
-                            setDirectPrintOrder(tempOrder);
-                          }}
-                        >
-                          <Printer className="h-4 w-4 mr-2" />
-                          Print
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            let customerAddress = '';
-                            if (selectedCustomer?.addresses?.length) {
-                              const addr = selectedCustomer.addresses.find(a => a.isDefault) || selectedCustomer.addresses.find(a => a.type === 'billing' || a.type === 'both') || selectedCustomer.addresses[0];
-                              if (addr) customerAddress = [addr.street, addr.city, addr.state, addr.country, addr.zipCode || addr.zip].filter(Boolean).join(', ');
-                            } else if (selectedCustomer?.address) customerAddress = selectedCustomer.address;
-                            const tempOrder = {
-                              orderNumber: `TEMP-${Date.now()}`,
-                              orderType: mapBusinessTypeToOrderType(selectedCustomer?.businessType),
-                              customer: selectedCustomer ?? undefined,
-                              customerInfo: selectedCustomer ? {
-                                name: selectedCustomer.businessName || selectedCustomer.business_name || selectedCustomer.displayName || selectedCustomer.name,
-                                email: selectedCustomer.email,
-                                phone: selectedCustomer.phone,
-                                businessName: selectedCustomer.businessName || selectedCustomer.business_name,
-                                address: customerAddress || undefined,
-                                currentBalance: selectedCustomer.currentBalance,
-                                pendingBalance: selectedCustomer.pendingBalance,
-                                advanceBalance: selectedCustomer.advanceBalance
-                              } : null,
-                              items: mapCartItemsForInvoicePrint(cart),
-                              pricing: { subtotal, discountAmount: totalDiscountAmount, taxAmount: tax, isTaxExempt: !taxSystemEnabled, total },
-                              payment: {
-                                method: paymentMethod,
-                                bankAccount: paymentMethod === 'bank' ? selectedBankAccount : null,
-                                amountPaid,
-                                remainingBalance: total - amountPaid,
-                                isPartialPayment: amountPaid < total,
-                                isAdvancePayment,
-                                advanceAmount: isAdvancePayment ? (amountPaid - total) : 0
-                              },
-                              createdAt: new Date(),
-                              createdBy: user ? { firstName: user.firstName, lastName: user.lastName, name: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin' } : { name: 'Admin' },
-                              invoiceNumber
-                            };
-                            setCurrentOrder(tempOrder);
-                            setShowPrintModal(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Print Preview
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                  <LoadingButton
-                    onClick={handleCheckout}
-                    isLoading={isSubmitting || isCreatingSale || isUpdatingOrder}
-                    disabled={isSubmitting || isCreatingSale || isUpdatingOrder}
-                    variant="default"
-                    size="lg"
-                    className="flex-2"
-                  >
-                    <Receipt className="h-4 w-4 mr-2" />
-                    {editData?.isEditMode
-                      ? (amountPaid === 0 ? 'Update Invoice' : 'Update Sale')
-                      : (amountPaid === 0 ? 'Create Invoice' : 'Complete Sale')
-                    }
-                  </LoadingButton>
-                </OrderCheckoutActions>
               </OrderSummaryContent>
             </OrderCheckoutCard>
           </div>
@@ -2964,4 +2871,3 @@ export const Sales = ({ tabId, editData }) => {
     </AsyncErrorBoundary>
   );
 };
-

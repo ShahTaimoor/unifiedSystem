@@ -193,4 +193,3 @@ export const {
   useBulkCreateProductsMutation,
   useUploadProductImageMutation,
 } = productsApi;
-

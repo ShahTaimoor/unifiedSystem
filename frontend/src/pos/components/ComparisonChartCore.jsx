@@ -96,4 +96,3 @@ const ComparisonChartCore = ({
 };
 
 export default ComparisonChartCore;
-

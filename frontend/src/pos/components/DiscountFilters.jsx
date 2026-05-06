@@ -285,4 +285,3 @@ const DiscountFilters = ({ filters, onFilterChange, isLoading }) => {
 };
 
 export default DiscountFilters;
-

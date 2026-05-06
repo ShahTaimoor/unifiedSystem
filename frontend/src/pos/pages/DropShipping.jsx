@@ -19,9 +19,9 @@ import { useLazySearchSuppliersQuery, useGetActiveSuppliersQuery } from '../stor
 import { useDebouncedCustomerSearch } from '../hooks/useDebouncedCustomerSearch';
 import { useGetProductsQuery } from '../store/services/productsApi';
 import { SearchableDropdown } from '../components/SearchableDropdown';
-import { Button } from '@pos/components/ui/button';
-import { Input } from '@pos/components/ui/input';
-import { Textarea } from '@pos/components/ui/textarea';
+import { Button } from '@/pos/components/ui/button';
+import { Input } from '@/pos/components/ui/input';
+import { Textarea } from '@/pos/components/ui/textarea';
 import { LoadingButton } from '../components/LoadingSpinner';
 import { toast } from 'sonner';
 
@@ -772,5 +772,4 @@ const DropShipping = () => {
 };
 
 export default DropShipping;
-
 

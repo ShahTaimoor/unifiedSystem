@@ -27,7 +27,7 @@ import { getComponentInfo } from '../components/ComponentRegistry';
 import DateFilter from '../components/DateFilter';
 import PrintModal from '../components/PrintModal';
 import BaseModal from '../components/BaseModal';
-import { Button } from '@pos/components/ui/button';
+import { Button } from '@/pos/components/ui/button';
 import { formatDateForInput, getCurrentDatePakistan, getLocalDateString } from '../utils/dateUtils';
 import ExcelExportButton from '../components/ExcelExportButton';
 import PdfExportButton from '../components/PdfExportButton';
@@ -554,7 +554,6 @@ export const Orders = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Sales Invoices</h1>
-          <p className="text-sm sm:text-base text-gray-600">View and manage sales invoices</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -733,18 +732,35 @@ export const Orders = () => {
                       <button onClick={() => handleView(order)} className="p-1 text-primary-600 hover:text-primary-800" title="View"><Eye className="h-4 w-4" /></button>
                       <button onClick={() => handlePrint(order)} className="p-1 text-green-600 hover:text-green-800" title="Print"><Printer className="h-4 w-4" /></button>
                       <ExcelExportButton
-                        getData={() => {
-                          const payload = getInvoicePdfPayload(order, companySettings, 'Sales Invoice', 'Customer');
-                          return {
-                            ...payload,
-                            filename: `Invoice_${order.order_number ?? order.orderNumber}.xlsx`
-                          };
+                        getData={async () => {
+                          try {
+                            const result = await fetchOrderById(order._id || order.id).unwrap();
+                            const freshOrder = result?.order || result?.data?.order || result || order;
+                            const payload = getInvoicePdfPayload(freshOrder, companySettings, 'Sales Invoice', 'Customer');
+                            return {
+                              ...payload,
+                              filename: `Invoice_${order.order_number ?? order.orderNumber}.xlsx`
+                            };
+                          } catch (err) {
+                            return {
+                              ...getInvoicePdfPayload(order, companySettings, 'Sales Invoice', 'Customer'),
+                              filename: `Invoice_${order.order_number ?? order.orderNumber}.xlsx`
+                            };
+                          }
                         }}
                         label=""
                         className="p-1 bg-transparent border-none shadow-none hover:bg-transparent text-green-600 hover:text-green-800 px-1 py-1"
                       />
                       <PdfExportButton
-                        getData={() => getInvoicePdfPayload(order, companySettings, 'Sales Invoice', 'Customer')}
+                        getData={async () => {
+                          try {
+                            const result = await fetchOrderById(order._id || order.id).unwrap();
+                            const freshOrder = result?.order || result?.data?.order || result || order;
+                            return getInvoicePdfPayload(freshOrder, companySettings, 'Sales Invoice', 'Customer');
+                          } catch (err) {
+                            return getInvoicePdfPayload(order, companySettings, 'Sales Invoice', 'Customer');
+                          }
+                        }}
                         label=""
                         className="p-1 bg-transparent border-none shadow-none hover:bg-transparent text-red-600 hover:text-red-800 px-1 py-1"
                       />
@@ -1051,4 +1067,3 @@ export const Orders = () => {
     </div>
   );
 };
-
