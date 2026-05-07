@@ -3,7 +3,7 @@
  * Fetches and compares data between two periods
  */
 
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
 import {
   getCurrentMonth,

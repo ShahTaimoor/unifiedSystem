@@ -18,6 +18,17 @@ const slugify = (value) => {
     .replace(/-+/g, '-');
 };
 
+const decodeHtmlEntities = (value) => {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/&#x2F;/g, '/')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+};
+
 const adaptCategory = (category) => {
   if (!category) return category;
   const adapted = {
@@ -36,11 +47,12 @@ const adaptCategory = (category) => {
 
 const adaptProduct = (product) => {
   if (!product) return product;
+  const imageSource = product.image || product.imageUrl || product.picture?.secure_url || null;
   const adapted = {
     ...product,
     price: product.price != null ? product.price : product.pricing?.retail ?? product.pricing?.wholesale ?? 0,
     stock: product.stock != null ? product.stock : product.inventory?.availableStock ?? product.inventory?.currentStock ?? 0,
-    image: product.image || product.imageUrl || product.picture?.secure_url || null,
+    image: decodeHtmlEntities(imageSource),
   };
 
   if (adapted.category) {
@@ -68,7 +80,6 @@ const handleValidation = (req, res, next) => {
 // @desc  Product listing for e-commerce
 router.get(
   '/get-products',
-  auth,
   [
     query('page').optional().isInt({ min: 1 }),
     query('limit').optional().isInt({ min: 1, max: 10000 }),
@@ -114,7 +125,6 @@ router.get(
 // @desc  Single product fetch for e-commerce
 router.get(
   '/single-product/:id',
-  auth,
   [param('id').isUUID(4).withMessage('Valid product ID is required')],
   handleValidation,
   async (req, res, next) => {
@@ -131,7 +141,6 @@ router.get(
 // @desc  Category list for e-commerce
 router.get(
   '/all-category',
-  auth,
   [query('search').optional().trim()],
   handleValidation,
   async (req, res, next) => {
@@ -160,7 +169,6 @@ const resolveCategoryBySlugOrId = async (slug) => {
 // @desc  Single category details for e-commerce
 router.get(
   '/single-category/:slug',
-  auth,
   [param('slug').trim().notEmpty().withMessage('Category slug is required')],
   handleValidation,
   async (req, res, next) => {
@@ -180,7 +188,6 @@ router.get(
 // @desc    Search products for e-commerce
 router.get(
   '/search',
-  auth,
   [
     query('q').trim().notEmpty().withMessage('Search query is required'),
     query('limit').optional().isInt({ min: 1, max: 100 }),
@@ -213,7 +220,6 @@ router.get(
 // @desc    Suggest product search results for e-commerce
 router.get(
   '/search-suggestions',
-  auth,
   [
     query('q').trim().notEmpty().withMessage('Search query is required'),
     query('limit').optional().isInt({ min: 1, max: 50 })
