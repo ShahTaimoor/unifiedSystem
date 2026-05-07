@@ -2,8 +2,35 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { auth, getUserId } = require('../middleware/auth');
 const authService = require('../services/authService');
+const userRepository = require('../repositories/postgres/UserRepository');
 
 const router = express.Router();
+
+const normalizeShopName = (value) => String(value || '').trim();
+const aliasEmailFromShopName = (shopName) => {
+  const normalized = String(shopName || '').trim().toLowerCase();
+  if (!normalized) return '';
+  const alias = normalized.replace(/[^a-z0-9._-]+/g, '');
+  return alias ? `${alias}@storefront.invalid` : `storefront${Date.now()}@storefront.invalid`;
+};
+
+const findUserByShopName = async (shopName) => {
+  const normalizedName = normalizeShopName(shopName);
+  if (!normalizedName) return null;
+
+  if (normalizedName.includes('@')) {
+    return userRepository.findByEmailWithPassword(normalizedName.toLowerCase());
+  }
+
+  const phoneCandidate = normalizedName.replace(/\D/g, '');
+  if (phoneCandidate.length >= 7) {
+    const user = await userRepository.findByPhone(phoneCandidate, { includePassword: true });
+    if (user) return user;
+  }
+
+  const aliasEmail = aliasEmailFromShopName(normalizedName);
+  return userRepository.findByEmailWithPassword(aliasEmail);
+};
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -101,6 +128,123 @@ router.post('/login', [
       return res.status(503).json({ message: error.message });
     }
 
+    return next(error);
+  }
+});
+
+// @route   POST /api/auth/signup-or-login
+// @desc    Storefront-compatible shop name login or signup endpoint
+// @access  Public
+router.post('/signup-or-login', [
+  body('shopName').trim().notEmpty().withMessage('Shop name is required'),
+  body('password').trim().notEmpty().withMessage('Password is required'),
+  body('phone').optional().trim(),
+  body('address').optional().trim(),
+  body('city').optional().trim(),
+  body('username').optional().trim(),
+], async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { shopName, password, phone, address, city, username } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+    const userAgent = req.get('User-Agent');
+
+    const isSignup = !!(phone || address || city || username);
+    const normalizedShopName = normalizeShopName(shopName);
+
+    if (!normalizedShopName) {
+      return res.status(400).json({ message: 'Shop name is required' });
+    }
+
+    if (isSignup) {
+      const existingUser = await findUserByShopName(normalizedShopName);
+      if (existingUser) {
+        return res.status(400).json({ message: 'Shop name already exists. Please login instead.' });
+      }
+
+      const email = normalizedShopName.includes('@')
+        ? normalizedShopName.toLowerCase()
+        : aliasEmailFromShopName(normalizedShopName);
+
+      const firstName = username || normalizedShopName;
+      await authService.register({
+        firstName,
+        lastName: '',
+        email,
+        password,
+        phone: phone || null,
+        role: 'cashier',
+        status: 'active',
+        preferences: {
+          shopName: normalizedShopName,
+          storefrontSignup: true,
+          address: address || null,
+          city: city || null
+        }
+      }, null);
+
+      const result = await authService.login(email, password, ipAddress, userAgent);
+      res.cookie('token', result.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 8 * 60 * 60 * 1000,
+        path: '/'
+      });
+      return res.status(201).json({ message: 'Account created successfully', token: result.token, user: result.user, success: true });
+    }
+
+    const existingUser = await findUserByShopName(normalizedShopName);
+    if (!existingUser) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    if (!existingUser.isActive) {
+      return res.status(403).json({ message: 'Account is inactive' });
+    }
+
+    if (existingUser.isLocked) {
+      return res.status(423).json({ message: 'Account is temporarily locked due to too many failed login attempts' });
+    }
+
+    const isMatch = await existingUser.comparePassword(password);
+    if (!isMatch) {
+      await userRepository.incrementLoginAttempts(existingUser.id);
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    if (existingUser.loginAttempts > 0) {
+      await userRepository.resetLoginAttempts(existingUser.id);
+    }
+
+    await userRepository.trackLogin(existingUser.id, ipAddress, userAgent);
+    const token = authService.createAuthToken(existingUser);
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 8 * 60 * 60 * 1000,
+      path: '/'
+    });
+
+    return res.json({ message: 'Login successful', token, user: existingUser.toSafeObject(), success: true });
+  } catch (error) {
+    if (error.message === 'User already exists' || error.message.includes('already exists')) {
+      return res.status(400).json({ message: 'Shop name already exists. Please login instead.' });
+    }
+    if (error.message === 'Invalid credentials') {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+    if (error.message.includes('locked')) {
+      return res.status(423).json({ message: 'Account is temporarily locked due to too many failed login attempts' });
+    }
+    if (error.message.includes('JWT_SECRET')) {
+      return res.status(500).json({ message: 'Server configuration error: JWT_SECRET is missing' });
+    }
     return next(error);
   }
 });

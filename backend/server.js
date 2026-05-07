@@ -115,20 +115,6 @@ app.use((req, res, next) => {
 const requestLogger = require('./middleware/requestLogger');
 app.use(requestLogger);
 
-// Global rate limiting - protect all API endpoints
-const { createRateLimiter } = require('./middleware/rateLimit');
-// General API rate limiter: 500 requests per minute per IP (increased to prevent dashboard 429s)
-app.use('/api', createRateLimiter({
-  windowMs: 60000, // 1 minute
-  max: 500 // 500 requests per minute
-}));
-// Auth endpoints: allow normal use (user list, profile, update). Login brute-force still limited by global /api limit.
-app.use('/api/auth', createRateLimiter({
-  windowMs: 60000, // 1 minute
-  max: 120 // 120 per minute so loading/updating users and profile don't hit 429
-}));
-
-
 // CORS configuration - include env origins plus local dev defaults
 const defaultOrigins = [
   'https://sa.wiserconsulting.info',
@@ -153,6 +139,19 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key', 'Idempotency-Key', 'idempotency-key'],
   credentials: true
+}));
+
+// Global rate limiting - protect all API endpoints
+const { createRateLimiter } = require('./middleware/rateLimit');
+// General API rate limiter: 500 requests per minute per IP (increased to prevent dashboard 429s)
+app.use('/api', createRateLimiter({
+  windowMs: 60000, // 1 minute
+  max: 500 // 500 requests per minute
+}));
+// Auth endpoints: allow normal use (user list, profile, update). Login brute-force still limited by global /api limit.
+app.use('/api/auth', createRateLimiter({
+  windowMs: 60000, // 1 minute
+  max: 120 // 120 per minute so loading/updating users and profile don't hit 429
 }));
 
 // Body parsing middleware
@@ -201,6 +200,7 @@ app.use('/exports', express.static(path.join(__dirname, 'exports')));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auth/users', require('./routes/users'));
+app.use('/api', require('./routes/authCompat'));
 app.use('/api', require('./routes/ecommerceBridge'));
 
 app.use('/api/products', require('./routes/products'));

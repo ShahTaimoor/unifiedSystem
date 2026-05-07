@@ -13,19 +13,27 @@ import {
   DrawerClose,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from '@/storefront/components/ui/drawer';
+import { loginSchema, signupSchema } from '@/storefront/schemas/authSchemas';
 
 const AuthDrawer = () => {
-  const { open, setOpen } = useAuthDrawer();
+  const { open, setOpen, initialMode } = useAuthDrawer();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const toast = useToast();
   
+  const [mode, setMode] = useState(initialMode || 'login');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState({ shopName: '', password: '' });
+  const [errorMsg, setErrorMsg] = useState({
+    shopName: '',
+    password: '',
+    phone: '',
+    address: '',
+    city: '',
+    username: ''
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [inputValue, setInputValues] = useState({
     shopName: '',
@@ -47,19 +55,29 @@ const AuthDrawer = () => {
   useEffect(() => {
     if (!open) {
       setInputValues({ shopName: '', password: '', phone: '', address: '', city: '', username: '' });
-      setErrorMsg({ shopName: '', password: '' });
+      setErrorMsg({ shopName: '', password: '', phone: '', address: '', city: '', username: '' });
       setShowPassword(false);
     }
   }, [open]);
 
+  useEffect(() => {
+    if (open) {
+      setMode(initialMode || 'login');
+      setErrorMsg({ shopName: '', password: '', phone: '', address: '', city: '', username: '' });
+    }
+  }, [open, initialMode]);
+
   // Validation function using Zod
   const validateForm = useCallback(async () => {
-    const { authSchema } = await import('@/storefront/schemas/authSchemas');
-    const result = authSchema.safeParse(inputValue);
+    const schema = mode === 'signup' ? signupSchema : loginSchema;
+    const dataToValidate = mode === 'signup'
+      ? inputValue
+      : { shopName: inputValue.shopName, password: inputValue.password };
+
+    const result = schema.safeParse(dataToValidate);
     
     if (!result.success) {
       const errors = { shopName: '', password: '', phone: '', address: '', city: '', username: '' };
-      // Safely access error.errors
       if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
         result.error.errors.forEach((err) => {
           if (err && err.path && Array.isArray(err.path) && err.path.length > 0 && err.message) {
@@ -74,7 +92,7 @@ const AuthDrawer = () => {
     }
     
     return { shopName: '', password: '', phone: '', address: '', city: '', username: '' };
-  }, [inputValue]);
+  }, [inputValue, mode]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -89,7 +107,6 @@ const AuthDrawer = () => {
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
-    // Client-side validation with Zod
     const validationErrors = await validateForm();
     if (validationErrors.shopName || validationErrors.password || validationErrors.phone || validationErrors.address || validationErrors.city || validationErrors.username) {
       setErrorMsg(validationErrors);
@@ -97,46 +114,67 @@ const AuthDrawer = () => {
     }
 
     setLoading(true);
-    setErrorMsg({ shopName: '', password: '' });
+    setErrorMsg({ shopName: '', password: '', phone: '', address: '', city: '', username: '' });
+
+    const payload = {
+      shopName: inputValue.shopName.trim(),
+      password: inputValue.password,
+    };
+
+    if (mode === 'signup') {
+      payload.phone = inputValue.phone.trim();
+      payload.address = inputValue.address.trim() || undefined;
+      payload.city = inputValue.city.trim() || undefined;
+      payload.username = inputValue.username.trim() || undefined;
+    }
 
     try {
-      const response = await dispatch(signupOrLogin({
-        shopName: inputValue.shopName.trim(),
-        password: inputValue.password,
-        phone: inputValue.phone.trim() || undefined,
-        address: inputValue.address.trim() || undefined,
-        city: inputValue.city.trim() || undefined,
-        username: inputValue.username.trim() || undefined,
-      })).unwrap();
+      const response = await dispatch(signupOrLogin(payload)).unwrap();
       
       if (response?.success && response?.user) {
         setInputValues({ shopName: '', password: '', phone: '', address: '', city: '', username: '' });
         setOpen(false);
-        // Determine if it's login or signup based on whether user already exists
-        const isLogin = !inputValue.phone && !inputValue.address && !inputValue.city && !inputValue.username;
-        if (isLogin) {
-          toast.success('Login successful!');
-        } else {
-          toast.success('Account created successfully!');
-        }
+        toast.success(mode === 'signup' ? 'Account created successfully!' : 'Login successful!');
       } else {
-        setErrorMsg({ shopName: 'Authentication failed', password: 'Authentication failed' });
-        toast.error('Authentication failed. Please try again.');
+        const failedMessage = response?.message || 'Authentication failed';
+        setErrorMsg({ shopName: failedMessage, password: failedMessage, phone: failedMessage });
+        toast.error(failedMessage);
       }
     } catch (error) {
-      let errorMessage = error || 'Invalid shop name or password';
+      let errorMessage = error?.response?.data?.message || error?.message || 'Invalid shop name or password';
       
-      // Check if it's an admin login error
+      if (typeof errorMessage === 'object' && errorMessage.message) {
+        errorMessage = errorMessage.message;
+      }
+      
       if (errorMessage.includes('admin login') || errorMessage.includes('Admin accounts')) {
         errorMessage = 'Admin accounts must use the admin login page';
       }
-      
-      setErrorMsg({ shopName: errorMessage, password: errorMessage });
+
+      const fieldErrors = {
+        shopName: '',
+        password: '',
+        phone: '',
+        address: '',
+        city: '',
+        username: ''
+      };
+
+      if (mode === 'signup') {
+        fieldErrors.shopName = errorMessage;
+        fieldErrors.password = errorMessage;
+        fieldErrors.phone = errorMessage;
+      } else {
+        fieldErrors.shopName = errorMessage;
+        fieldErrors.password = errorMessage;
+      }
+
+      setErrorMsg(fieldErrors);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [dispatch, inputValue, validateForm, setOpen]);
+  }, [dispatch, inputValue, mode, validateForm, setOpen]);
 
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword((prev) => !prev);
@@ -148,10 +186,12 @@ const AuthDrawer = () => {
         <div className="mx-auto w-full max-w-md h-full flex flex-col">
           <DrawerHeader className="relative flex-shrink-0">
             <DrawerTitle className="text-2xl font-bold text-gray-900 uppercase">
-              SIGN IN
+              {mode === 'signup' ? 'SIGN UP' : 'SIGN IN'}
             </DrawerTitle>
-            <DrawerDescription className="sr-only">
-              Enter your shop name and password to continue
+            <DrawerDescription className="text-sm text-gray-500">
+              {mode === 'signup'
+                ? 'Create a storefront account with shop details.'
+                : 'Enter your shop name and password to continue.'}
             </DrawerDescription>
             <DrawerClose asChild>
               <button
@@ -162,6 +202,25 @@ const AuthDrawer = () => {
               </button>
             </DrawerClose>
           </DrawerHeader>
+
+          <div className="px-6 pt-4">
+            <div className="flex items-center gap-2 rounded-full bg-gray-100 p-1">
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'login' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('signup')}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${mode === 'signup' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Sign Up
+              </button>
+            </div>
+          </div>
           
           <form 
             onSubmit={handleSubmit}
@@ -226,88 +285,105 @@ const AuthDrawer = () => {
               )}
             </div>
 
-            {/* Optional Fields Section */}
-            <div className="border-t border-gray-200 pt-4">
-              <p className="text-xs text-gray-500 mb-4 italic">
-                Optional fields (fill these only when creating a new account)
-              </p>
+            {mode === 'signup' && (
+              <div className="border-t border-gray-200 pt-4 space-y-4">
+                <p className="text-xs text-gray-500 mb-2 italic">
+                  Fill in these details to create your account.
+                </p>
 
-              {/* Username Field - Optional */}
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="username" className="text-sm font-semibold text-gray-900">
-                  Username
-                </Label>
-                <Input
-                  id="username"
-                  type="text"
-                  name="username"
-                  placeholder="Enter your username (optional)"
-                  value={inputValue.username}
-                  onChange={handleChange}
-                  disabled={loading}
-                  autoComplete="username"
-                  className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-semibold text-gray-900">
+                    Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    name="phone"
+                    placeholder="Enter your phone number (11 digits)"
+                    value={inputValue.phone}
+                    onChange={handleChange}
+                    disabled={loading}
+                    autoComplete="tel"
+                    maxLength={11}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    required
+                    className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                  {errorMsg.phone && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errorMsg.phone}
+                    </p>
+                  )}
+                </div>
 
-              {/* Phone Field - Required */}
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="phone" className="text-sm font-semibold text-gray-900">
-                  Phone Number <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  name="phone"
-                  placeholder="Enter your phone number (11 digits)"
-                  value={inputValue.phone}
-                  onChange={handleChange}
-                  disabled={loading}
-                  autoComplete="tel"
-                  maxLength={11}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  required
-                  className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username" className="text-sm font-semibold text-gray-900">
+                    Username
+                  </Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    name="username"
+                    placeholder="Enter your username (optional)"
+                    value={inputValue.username}
+                    onChange={handleChange}
+                    disabled={loading}
+                    autoComplete="username"
+                    className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                  {errorMsg.username && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errorMsg.username}
+                    </p>
+                  )}
+                </div>
 
-              {/* Address Field - Optional */}
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="address" className="text-sm font-semibold text-gray-900">
-                  Address
-                </Label>
-                <Input
-                  id="address"
-                  type="text"
-                  name="address"
-                  placeholder="Enter your address (optional)"
-                  value={inputValue.address}
-                  onChange={handleChange}
-                  disabled={loading}
-                  autoComplete="street-address"
-                  className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address" className="text-sm font-semibold text-gray-900">
+                    Address
+                  </Label>
+                  <Input
+                    id="address"
+                    type="text"
+                    name="address"
+                    placeholder="Enter your address (optional)"
+                    value={inputValue.address}
+                    onChange={handleChange}
+                    disabled={loading}
+                    autoComplete="street-address"
+                    className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                  {errorMsg.address && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errorMsg.address}
+                    </p>
+                  )}
+                </div>
 
-              {/* City Field - Optional */}
-              <div className="space-y-2">
-                <Label htmlFor="city" className="text-sm font-semibold text-gray-900">
-                  City
-                </Label>
-                <Input
-                  id="city"
-                  type="text"
-                  name="city"
-                  placeholder="Enter your city (optional)"
-                  value={inputValue.city}
-                  onChange={handleChange}
-                  disabled={loading}
-                  autoComplete="address-level2"
-                  className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="city" className="text-sm font-semibold text-gray-900">
+                    City
+                  </Label>
+                  <Input
+                    id="city"
+                    type="text"
+                    name="city"
+                    placeholder="Enter your city (optional)"
+                    value={inputValue.city}
+                    onChange={handleChange}
+                    disabled={loading}
+                    autoComplete="address-level2"
+                    className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                  {errorMsg.city && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errorMsg.city}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Submit Button */}
             <Button
@@ -321,7 +397,7 @@ const AuthDrawer = () => {
                   <span>Processing...</span>
                 </div>
               ) : (
-                <span>Sign In</span>
+                <span>{mode === 'signup' ? 'Sign Up' : 'Sign In'}</span>
               )}
             </Button>
           </form>
