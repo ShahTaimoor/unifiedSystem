@@ -153,7 +153,7 @@ export const Dashboard = () => {
       const result = await getPeriodSummary(params).unwrap();
       return {
         data: {
-          data: result.data || result
+          data: result
         }
       };
     } catch (error) {
@@ -274,26 +274,11 @@ export const Dashboard = () => {
   const { data: companySettingsData } = useGetCompanySettingsQuery();
   const { data: companyData } = useFetchCompanyQuery();
 
-  // Handle different response structures from RTK Query
-  // RTK Query wraps responses in 'data', but some APIs return data directly
-  const summary = todaySummary?.data?.summary || todaySummary?.summary || {};
-  const inventorySummary =
-    inventoryData?.data?.summary ??
-    inventoryData?.data ??
-    inventoryData?.summary ??
-    inventoryData ??
-    {};
-  const inventoryAlertsSummary =
-    alertSummaryData?.data?.data ??
-    alertSummaryData?.data ??
-    alertSummaryData ??
-    {};
-  const customersPagination = customersData?.pagination ?? customersData?.data?.pagination;
-  const activeCustomersCount =
-    customersPagination?.total ??
-    customersData?.data?.customers?.length ??
-    customersData?.customers?.length ??
-    0;
+  const summary = todaySummary || {};
+  const inventorySummary = inventoryData || {};
+  const inventoryAlertsSummary = alertSummaryData || {};
+  const customersPagination = customersData?.pagination;
+  const activeCustomersCount = customersPagination?.total ?? 0;
 
   const agg = rangeSummaryRes?.data ?? rangeSummaryRes ?? {};
 

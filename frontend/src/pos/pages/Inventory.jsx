@@ -100,7 +100,7 @@ export const Inventory = () => {
 
   // Extract warehouses array from RTK Query response
   const warehouseList = useMemo(() => {
-    return warehousesData?.data?.warehouses || warehousesData?.warehouses || warehousesData?.data || warehousesData || [];
+    return warehousesData?.warehouses || warehousesData?.data || warehousesData || [];
   }, [warehousesData]);
 
   const handleLimitChange = (e) => {
@@ -536,7 +536,7 @@ export const Inventory = () => {
       {/* Inventory Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden min-w-0">
         <ResponsiveTable
-          data={inventoryData?.inventory ?? inventoryData?.data?.inventory ?? inventoryData?.data?.items ?? []}
+          data={inventoryData?.items || []}
           columns={columns}
           onRowClick={handleRowClick}
           onEdit={handleEdit}
@@ -549,11 +549,11 @@ export const Inventory = () => {
       </div>
 
       {/* Pagination */}
-      {(inventoryData?.pagination || inventoryData?.data?.pagination) && (
+      {inventoryData?.pagination && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="text-xs sm:text-sm text-gray-700">
             {(() => {
-              const pagination = inventoryData?.pagination || inventoryData?.data?.pagination;
+              const pagination = inventoryData?.pagination;
               const total = pagination?.total || 0;
               const start = ((currentPage - 1) * itemsPerPage) + 1;
               const end = Math.min(currentPage * itemsPerPage, total);
@@ -562,7 +562,7 @@ export const Inventory = () => {
           </div>
           <div className="flex space-x-2 w-full sm:w-auto">
             {(() => {
-              const pagination = inventoryData?.pagination || inventoryData?.data?.pagination;
+              const pagination = inventoryData?.pagination;
               return (
                 <>
                   <Button

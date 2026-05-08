@@ -20,12 +20,15 @@ export const customersApi = api.injectEndpoints({
         };
       },
       keepUnusedDataFor: 60,
+      transformResponse: (response) => {
+        const result = response.data || response;
+        return {
+          customers: result.customers || result.items || [],
+          pagination: result.pagination || {}
+        };
+      },
       providesTags: (result) => {
-        const list =
-          result?.data?.customers ||
-          result?.customers ||
-          result?.items ||
-          [];
+        const list = result?.customers || [];
         return list.length
           ? [
               ...list.map(({ _id, id }) => ({ type: 'Customers', id: _id || id })),
@@ -39,6 +42,7 @@ export const customersApi = api.injectEndpoints({
         url: `customers/${id}`,
         method: 'get',
       }),
+      transformResponse: (response) => response.data?.customer || response.customer || response.data || response,
       providesTags: (_res, _err, id) => [{ type: 'Customers', id }],
     }),
     createCustomer: builder.mutation({

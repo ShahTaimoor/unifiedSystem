@@ -854,8 +854,8 @@ export const Suppliers = () => {
     setCurrentPage(1);
   };
 
-  const allSuppliers = suppliers?.data?.suppliers || suppliers?.suppliers || [];
-  const pagination = suppliers?.data?.pagination || suppliers?.pagination || {};
+  const allSuppliers = suppliers?.suppliers || [];
+  const pagination = suppliers?.pagination || {};
   const filteredSuppliers = useFuzzySearch(
     allSuppliers,
     searchTerm,

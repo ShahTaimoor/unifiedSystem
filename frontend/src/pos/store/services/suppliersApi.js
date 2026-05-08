@@ -20,10 +20,17 @@ export const suppliersApi = api.injectEndpoints({
         };
       },
       keepUnusedDataFor: 60,
+      transformResponse: (response) => {
+        const result = response.data || response;
+        return {
+          suppliers: result.suppliers || result.items || [],
+          pagination: result.pagination || {}
+        };
+      },
       providesTags: (result) =>
-        result?.data?.suppliers
+        result?.suppliers
           ? [
-              ...result.data.suppliers.map(({ _id, id }) => ({
+              ...result.suppliers.map(({ _id, id }) => ({
                 type: 'Suppliers',
                 id: _id || id,
               })),
@@ -124,6 +131,7 @@ export const suppliersApi = api.injectEndpoints({
         url: `suppliers/${id}`,
         method: 'get',
       }),
+      transformResponse: (response) => response.data?.supplier || response.supplier || response.data || response,
       providesTags: (_r, _e, id) => [{ type: 'Suppliers', id }],
     }),
     searchSuppliers: builder.query({

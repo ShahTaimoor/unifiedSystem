@@ -409,9 +409,8 @@ export const Categories = () => {
     );
   }
 
-  // Backend returns: { categories: [], pagination: {} }
-  const categories = data?.categories || data?.data?.categories || [];
-  const pagination = data?.pagination || data?.data?.pagination || {};
+  const categories = data?.categories || [];
+  const pagination = data?.pagination || {};
 
   if (isLoading && !data) {
     return <LoadingPage />;
