@@ -1,4 +1,4 @@
-const { query } = require('../../config/postgres');
+const { query } = require("../../config/postgres");
 
 function rowToEmployee(row) {
   if (!row) return null;
@@ -38,14 +38,14 @@ function rowToEmployee(row) {
 class EmployeeRepository {
   async findById(id) {
     const result = await query(
-      'SELECT * FROM employees WHERE id = $1 AND deleted_at IS NULL',
-      [id]
+      "SELECT * FROM employees WHERE id = $1 AND deleted_at IS NULL",
+      [id],
     );
     return rowToEmployee(result.rows[0]);
   }
 
   async findOne(filters = {}) {
-    let sql = 'SELECT * FROM employees WHERE deleted_at IS NULL';
+    let sql = "SELECT * FROM employees WHERE deleted_at IS NULL";
     const params = [];
     let paramCount = 1;
     if (filters.employeeId) {
@@ -60,13 +60,13 @@ class EmployeeRepository {
       sql += ` AND user_account = $${paramCount++}`;
       params.push(filters.userAccount);
     }
-    sql += ' LIMIT 1';
+    sql += " LIMIT 1";
     const result = await query(sql, params);
     return rowToEmployee(result.rows[0]);
   }
 
   async findAll(filters = {}, options = {}) {
-    let sql = 'SELECT * FROM employees WHERE deleted_at IS NULL';
+    let sql = "SELECT * FROM employees WHERE deleted_at IS NULL";
     const params = [];
     let paramCount = 1;
 
@@ -88,7 +88,7 @@ class EmployeeRepository {
       paramCount++;
     }
 
-    sql += ' ORDER BY created_at DESC';
+    sql += " ORDER BY created_at DESC";
     if (options.limit) {
       sql += ` LIMIT $${paramCount++}`;
       params.push(options.limit);
@@ -103,11 +103,11 @@ class EmployeeRepository {
   }
 
   async findByEmployeeId(employeeId, options = {}) {
-    return this.findOne({ employeeId: (employeeId || '').toUpperCase() });
+    return this.findOne({ employeeId: (employeeId || "").toUpperCase() });
   }
 
   async findByEmail(email, options = {}) {
-    return this.findOne({ email: (email || '').toLowerCase().trim() });
+    return this.findOne({ email: (email || "").toLowerCase().trim() });
   }
 
   async findWithPagination(filter = {}, options = {}) {
@@ -116,7 +116,7 @@ class EmployeeRepository {
     const offset = (page - 1) * limit;
     const getAll = options.getAll === true;
 
-    let countSql = 'SELECT COUNT(*) FROM employees WHERE deleted_at IS NULL';
+    let countSql = "SELECT COUNT(*) FROM employees WHERE deleted_at IS NULL";
     const countParams = [];
     let paramCount = 1;
     if (filter.status) {
@@ -141,13 +141,15 @@ class EmployeeRepository {
 
     const employees = await this.findAll(filter, {
       limit: getAll ? total : limit,
-      offset: getAll ? 0 : offset
+      offset: getAll ? 0 : offset,
     });
 
     return {
       employees,
       total,
-      pagination: getAll ? { page: 1, limit: total, total, pages: 1 } : { page, limit, total, pages: Math.ceil(total / limit) }
+      pagination: getAll
+        ? { page: 1, limit: total, total, pages: 1 }
+        : { page, limit, total, pages: Math.ceil(total / limit) },
     };
   }
 
@@ -159,25 +161,25 @@ class EmployeeRepository {
         first_name ILIKE $1 OR last_name ILIKE $1 OR employee_id ILIKE $1 OR
         email ILIKE $1 OR phone ILIKE $1 OR position ILIKE $1 OR department ILIKE $1
       ) ORDER BY created_at DESC LIMIT $2`,
-      [term, options.limit || 100]
+      [term, options.limit || 100],
     );
     return result.rows.map(rowToEmployee);
   }
 
   async getDistinctDepartments() {
     const result = await query(
-      'SELECT DISTINCT department FROM employees WHERE deleted_at IS NULL AND department IS NOT NULL AND TRIM(department) != \'\' ORDER BY department',
-      []
+      "SELECT DISTINCT department FROM employees WHERE deleted_at IS NULL AND department IS NOT NULL AND TRIM(department) != '' ORDER BY department",
+      [],
     );
-    return result.rows.map(r => r.department).filter(Boolean);
+    return result.rows.map((r) => r.department).filter(Boolean);
   }
 
   async getDistinctPositions() {
     const result = await query(
-      'SELECT DISTINCT position FROM employees WHERE deleted_at IS NULL AND position IS NOT NULL AND TRIM(position) != \'\' ORDER BY position',
-      []
+      "SELECT DISTINCT position FROM employees WHERE deleted_at IS NULL AND position IS NOT NULL AND TRIM(position) != '' ORDER BY position",
+      [],
     );
-    return result.rows.map(r => r.position).filter(Boolean);
+    return result.rows.map((r) => r.position).filter(Boolean);
   }
 
   async findByStatus(status, options = {}) {
@@ -194,26 +196,28 @@ class EmployeeRepository {
 
   async employeeIdExists(employeeId, excludeId = null) {
     if (!employeeId) return false;
-    let sql = 'SELECT 1 FROM employees WHERE employee_id = $1 AND deleted_at IS NULL';
-    const params = [(employeeId || '').toUpperCase()];
+    let sql =
+      "SELECT 1 FROM employees WHERE employee_id = $1 AND deleted_at IS NULL";
+    const params = [(employeeId || "").toUpperCase()];
     if (excludeId) {
-      sql += ' AND id != $2';
+      sql += " AND id != $2";
       params.push(excludeId);
     }
-    sql += ' LIMIT 1';
+    sql += " LIMIT 1";
     const result = await query(sql, params);
     return result.rows.length > 0;
   }
 
   async emailExists(email, excludeId = null) {
     if (!email) return false;
-    let sql = 'SELECT 1 FROM employees WHERE LOWER(email) = LOWER($1) AND deleted_at IS NULL';
+    let sql =
+      "SELECT 1 FROM employees WHERE LOWER(email) = LOWER($1) AND deleted_at IS NULL";
     const params = [String(email).trim()];
     if (excludeId) {
-      sql += ' AND id != $2';
+      sql += " AND id != $2";
       params.push(excludeId);
     }
-    sql += ' LIMIT 1';
+    sql += " LIMIT 1";
     const result = await query(sql, params);
     return result.rows.length > 0;
   }
@@ -226,14 +230,20 @@ class EmployeeRepository {
   async findLatest() {
     // We include soft-deleted records for ID generation to avoid unique constraint violations
     const result = await query(
-      'SELECT * FROM employees ORDER BY created_at DESC, employee_id DESC LIMIT 1',
-      []
+      "SELECT * FROM employees WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 1",
+      [],
     );
     return rowToEmployee(result.rows[0]);
   }
 
   async create(data) {
-    const employeeId = (data.employeeId || data.employee_id || `EMP${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`).toUpperCase();
+    const employeeId = (
+      data.employeeId ||
+      data.employee_id ||
+      `EMP${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0")}`
+    ).toUpperCase();
     const result = await query(
       `INSERT INTO employees (
         employee_id, first_name, last_name, email, phone, alternate_phone, address,
@@ -254,20 +264,20 @@ class EmployeeRepository {
         data.department || null,
         data.hireDate || data.hire_date || new Date(),
         data.terminationDate || data.termination_date || null,
-        data.employmentType || data.employment_type || 'full_time',
+        data.employmentType || data.employment_type || "full_time",
         data.salary ?? null,
         data.hourlyRate ?? data.hourly_rate ?? null,
-        data.payFrequency || data.pay_frequency || 'monthly',
-        data.workSchedule || data.work_schedule || 'fixed',
-        data.shift || 'morning',
+        data.payFrequency || data.pay_frequency || "monthly",
+        data.workSchedule || data.work_schedule || "fixed",
+        data.shift || "morning",
         data.emergencyContact ? JSON.stringify(data.emergencyContact) : null,
         data.dateOfBirth || data.date_of_birth || null,
         data.gender || null,
         data.notes || null,
         data.userAccount || data.user_account || null,
-        data.status || 'active',
-        data.documents ? JSON.stringify(data.documents) : '[]'
-      ]
+        data.status || "active",
+        data.documents ? JSON.stringify(data.documents) : "[]",
+      ],
     );
     return rowToEmployee(result.rows[0]);
   }
@@ -277,37 +287,61 @@ class EmployeeRepository {
     const params = [];
     let paramCount = 1;
     const map = {
-      firstName: 'first_name', lastName: 'last_name', email: 'email', phone: 'phone',
-      alternatePhone: 'alternate_phone', address: 'address', position: 'position', department: 'department',
-      hireDate: 'hire_date', terminationDate: 'termination_date', employmentType: 'employment_type',
-      salary: 'salary', hourlyRate: 'hourly_rate', payFrequency: 'pay_frequency',
-      workSchedule: 'work_schedule', shift: 'shift', emergencyContact: 'emergency_contact',
-      dateOfBirth: 'date_of_birth', gender: 'gender', notes: 'notes', userAccount: 'user_account',
-      status: 'status', documents: 'documents'
+      firstName: "first_name",
+      lastName: "last_name",
+      email: "email",
+      phone: "phone",
+      alternatePhone: "alternate_phone",
+      address: "address",
+      position: "position",
+      department: "department",
+      hireDate: "hire_date",
+      terminationDate: "termination_date",
+      employmentType: "employment_type",
+      salary: "salary",
+      hourlyRate: "hourly_rate",
+      payFrequency: "pay_frequency",
+      workSchedule: "work_schedule",
+      shift: "shift",
+      emergencyContact: "emergency_contact",
+      dateOfBirth: "date_of_birth",
+      gender: "gender",
+      notes: "notes",
+      userAccount: "user_account",
+      status: "status",
+      documents: "documents",
     };
     for (const [k, col] of Object.entries(map)) {
       if (data[k] !== undefined) {
         updates.push(`${col} = $${paramCount++}`);
-        const value = typeof data[k] === 'object' && data[k] !== null && (col === 'address' || col === 'emergency_contact' || col === 'documents') 
-          ? JSON.stringify(data[k]) 
-          : (data[k] === undefined ? null : data[k]);
-        params.push(value);
+        params.push(
+          typeof data[k] === "object" &&
+            (col === "address" ||
+              col === "emergency_contact" ||
+              col === "documents")
+            ? JSON.stringify(data[k])
+            : data[k],
+        );
       }
     }
     if (updates.length === 0) return this.findById(id);
-    updates.push('updated_at = CURRENT_TIMESTAMP');
+    updates.push("updated_at = CURRENT_TIMESTAMP");
     params.push(id);
     const result = await query(
-      `UPDATE employees SET ${updates.join(', ')} WHERE id = $${paramCount} AND deleted_at IS NULL RETURNING *`,
-      params
+      `UPDATE employees SET ${updates.join(", ")} WHERE id = $${paramCount} AND deleted_at IS NULL RETURNING *`,
+      params,
     );
     return rowToEmployee(result.rows[0]);
   }
 
+  async delete(id) {
+    return this.softDelete(id);
+  }
+
   async softDelete(id) {
     const result = await query(
-      'UPDATE employees SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
-      [id]
+      "UPDATE employees SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *",
+      [id],
     );
     return rowToEmployee(result.rows[0]);
   }

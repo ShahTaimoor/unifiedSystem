@@ -1,5 +1,5 @@
-const employeeRepository = require('../repositories/EmployeeRepository');
-const userRepository = require('../repositories/UserRepository');
+const employeeRepository = require("../repositories/EmployeeRepository");
+const userRepository = require("../repositories/UserRepository");
 
 class EmployeeService {
   /**
@@ -10,21 +10,57 @@ class EmployeeService {
   buildFilter(queryParams) {
     const filter = {};
 
+    // Search filter
+    if (
+      queryParams.search &&
+      typeof queryParams.search === "string" &&
+      queryParams.search.trim() !== ""
+    ) {
+      try {
+        const searchRegex = new RegExp(queryParams.search.trim(), "i");
+        filter.$or = [
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { employeeId: searchRegex },
+          { email: searchRegex },
+          { phone: searchRegex },
+          { position: searchRegex },
+          { department: searchRegex },
+        ];
+      } catch (regexError) {
+        // Continue without search filter if regex fails
+      }
+    }
+
     // Status filter
-    if (queryParams.status && typeof queryParams.status === 'string' && queryParams.status.trim() !== '') {
+    if (
+      queryParams.status &&
+      typeof queryParams.status === "string" &&
+      queryParams.status.trim() !== ""
+    ) {
       const statusValue = queryParams.status.trim();
-      if (['active', 'inactive', 'terminated', 'on_leave'].includes(statusValue)) {
+      if (
+        ["active", "inactive", "terminated", "on_leave"].includes(statusValue)
+      ) {
         filter.status = statusValue;
       }
     }
 
     // Department filter
-    if (queryParams.department && typeof queryParams.department === 'string' && queryParams.department.trim() !== '') {
+    if (
+      queryParams.department &&
+      typeof queryParams.department === "string" &&
+      queryParams.department.trim() !== ""
+    ) {
       filter.department = queryParams.department.trim();
     }
 
     // Position filter
-    if (queryParams.position && typeof queryParams.position === 'string' && queryParams.position.trim() !== '') {
+    if (
+      queryParams.position &&
+      typeof queryParams.position === "string" &&
+      queryParams.position.trim() !== ""
+    ) {
       filter.position = queryParams.position.trim();
     }
 
@@ -50,7 +86,14 @@ class EmployeeService {
     const result = await employeeRepository.findWithPagination(filter, {
       page,
       limit,
-      sort: { createdAt: -1 }
+      sort: { createdAt: -1 },
+      populate: [
+        {
+          path: "userAccount",
+          select: "firstName lastName email role",
+          options: { strictPopulate: false },
+        },
+      ],
     });
 
     return result;
@@ -63,14 +106,10 @@ class EmployeeService {
    */
   async getEmployeeById(id) {
     const employee = await employeeRepository.findById(id);
-    
-    if (!employee) {
-      throw new Error('Employee not found');
-    }
 
-    // In Postgres/Repository pattern, we don't use Mongoose .populate()
-    // If user account details are needed, they should be fetched or joined in repo
-    return employee;
+    if (!employee) {
+      throw new Error("Employee not found");
+    }
 
     return employee;
   }
@@ -103,9 +142,11 @@ class EmployeeService {
   async createEmployee(employeeData) {
     // Check if employee ID already exists
     if (employeeData.employeeId) {
-      const idExists = await this.checkEmployeeIdExists(employeeData.employeeId);
+      const idExists = await this.checkEmployeeIdExists(
+        employeeData.employeeId,
+      );
       if (idExists) {
-        throw new Error('Employee ID already exists');
+        throw new Error("Employee ID already exists");
       }
     }
 
@@ -113,7 +154,7 @@ class EmployeeService {
     if (employeeData.email) {
       const emailExists = await this.checkEmailExists(employeeData.email);
       if (emailExists) {
-        throw new Error('Email already exists');
+        throw new Error("Email already exists");
       }
     }
 
@@ -124,9 +165,6 @@ class EmployeeService {
 
     // Create employee
     const employee = await employeeRepository.create(employeeData);
-
-    // Population not supported on raw objects
-    return employee;
 
     return employee;
   }
@@ -139,16 +177,22 @@ class EmployeeService {
    */
   async updateEmployee(id, updateData) {
     const employee = await employeeRepository.findById(id);
-    
+
     if (!employee) {
-      throw new Error('Employee not found');
+      throw new Error("Employee not found");
     }
 
     // Check if employee ID already exists (excluding current employee)
-    if (updateData.employeeId && updateData.employeeId !== employee.employeeId) {
-      const idExists = await this.checkEmployeeIdExists(updateData.employeeId, id);
+    if (
+      updateData.employeeId &&
+      updateData.employeeId !== employee.employeeId
+    ) {
+      const idExists = await this.checkEmployeeIdExists(
+        updateData.employeeId,
+        id,
+      );
       if (idExists) {
-        throw new Error('Employee ID already exists');
+        throw new Error("Employee ID already exists");
       }
     }
 
@@ -156,16 +200,12 @@ class EmployeeService {
     if (updateData.email && updateData.email !== employee.email) {
       const emailExists = await this.checkEmailExists(updateData.email, id);
       if (emailExists) {
-        throw new Error('Email already exists');
+        throw new Error("Email already exists");
       }
     }
 
     // Update employee
     const updatedEmployee = await employeeRepository.updateById(id, updateData);
-
-    // Population not supported on raw objects
-    return updatedEmployee;
-
     return updatedEmployee;
   }
 
@@ -176,17 +216,17 @@ class EmployeeService {
    */
   async deleteEmployee(id) {
     const employee = await employeeRepository.findById(id);
-    
+
     if (!employee) {
-      throw new Error('Employee not found');
+      throw new Error("Employee not found");
     }
 
     // Delete employee
     await employeeRepository.delete(id);
 
     return {
-      message: 'Employee deleted successfully',
-      employee
+      message: "Employee deleted successfully",
+      employee,
     };
   }
 
@@ -197,16 +237,16 @@ class EmployeeService {
   async generateEmployeeId() {
     // Get the latest employee ID
     const latestEmployee = await employeeRepository.findLatest();
-    
+
     if (!latestEmployee || !latestEmployee.employeeId) {
-      return 'EMP001';
+      return "EMP001";
     }
 
     // Extract number from employee ID (e.g., EMP001 -> 1)
     const match = latestEmployee.employeeId.match(/\d+$/);
     if (match && match[0]) {
       const nextNumber = parseInt(match[0]) + 1;
-      return `EMP${String(nextNumber).padStart(3, '0')}`;
+      return `EMP${String(nextNumber).padStart(3, "0")}`;
     }
 
     // Fallback: use timestamp-based ID
@@ -215,4 +255,3 @@ class EmployeeService {
 }
 
 module.exports = new EmployeeService();
-
