@@ -10,24 +10,6 @@ class EmployeeService {
   buildFilter(queryParams) {
     const filter = {};
 
-    // Search filter
-    if (queryParams.search && typeof queryParams.search === 'string' && queryParams.search.trim() !== '') {
-      try {
-        const searchRegex = new RegExp(queryParams.search.trim(), 'i');
-        filter.$or = [
-          { firstName: searchRegex },
-          { lastName: searchRegex },
-          { employeeId: searchRegex },
-          { email: searchRegex },
-          { phone: searchRegex },
-          { position: searchRegex },
-          { department: searchRegex }
-        ];
-      } catch (regexError) {
-        // Continue without search filter if regex fails
-      }
-    }
-
     // Status filter
     if (queryParams.status && typeof queryParams.status === 'string' && queryParams.status.trim() !== '') {
       const statusValue = queryParams.status.trim();
@@ -44,6 +26,11 @@ class EmployeeService {
     // Position filter
     if (queryParams.position && typeof queryParams.position === 'string' && queryParams.position.trim() !== '') {
       filter.position = queryParams.position.trim();
+    }
+
+    // Search term (passed separately to repo if needed)
+    if (queryParams.search && typeof queryParams.search === 'string' && queryParams.search.trim() !== '') {
+      filter.search = queryParams.search.trim();
     }
 
     return filter;
@@ -63,12 +50,7 @@ class EmployeeService {
     const result = await employeeRepository.findWithPagination(filter, {
       page,
       limit,
-      sort: { createdAt: -1 },
-      populate: [{
-        path: 'userAccount',
-        select: 'firstName lastName email role',
-        options: { strictPopulate: false }
-      }]
+      sort: { createdAt: -1 }
     });
 
     return result;
@@ -86,12 +68,9 @@ class EmployeeService {
       throw new Error('Employee not found');
     }
 
-    // Populate related fields
-    await employee.populate({
-      path: 'userAccount',
-      select: 'firstName lastName email role status',
-      options: { strictPopulate: false }
-    });
+    // In Postgres/Repository pattern, we don't use Mongoose .populate()
+    // If user account details are needed, they should be fetched or joined in repo
+    return employee;
 
     return employee;
   }
@@ -146,12 +125,8 @@ class EmployeeService {
     // Create employee
     const employee = await employeeRepository.create(employeeData);
 
-    // Populate related fields
-    await employee.populate({
-      path: 'userAccount',
-      select: 'firstName lastName email role',
-      options: { strictPopulate: false }
-    });
+    // Population not supported on raw objects
+    return employee;
 
     return employee;
   }
@@ -188,12 +163,8 @@ class EmployeeService {
     // Update employee
     const updatedEmployee = await employeeRepository.updateById(id, updateData);
 
-    // Populate related fields
-    await updatedEmployee.populate({
-      path: 'userAccount',
-      select: 'firstName lastName email role status',
-      options: { strictPopulate: false }
-    });
+    // Population not supported on raw objects
+    return updatedEmployee;
 
     return updatedEmployee;
   }
@@ -233,7 +204,7 @@ class EmployeeService {
 
     // Extract number from employee ID (e.g., EMP001 -> 1)
     const match = latestEmployee.employeeId.match(/\d+$/);
-    if (match) {
+    if (match && match[0]) {
       const nextNumber = parseInt(match[0]) + 1;
       return `EMP${String(nextNumber).padStart(3, '0')}`;
     }

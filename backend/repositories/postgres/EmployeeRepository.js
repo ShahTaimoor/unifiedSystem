@@ -1,12 +1,47 @@
 const { query } = require('../../config/postgres');
 
+function rowToEmployee(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    _id: row.id,
+    employeeId: row.employee_id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    email: row.email,
+    phone: row.phone,
+    alternatePhone: row.alternate_phone,
+    address: row.address, // jsonb is already an object
+    position: row.position,
+    department: row.department,
+    hireDate: row.hire_date,
+    terminationDate: row.termination_date,
+    employmentType: row.employment_type,
+    salary: row.salary,
+    hourlyRate: row.hourly_rate,
+    payFrequency: row.pay_frequency,
+    workSchedule: row.work_schedule,
+    shift: row.shift,
+    emergencyContact: row.emergency_contact,
+    dateOfBirth: row.date_of_birth,
+    gender: row.gender,
+    notes: row.notes,
+    userAccount: row.user_account,
+    status: row.status,
+    documents: row.documents,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deletedAt: row.deleted_at
+  };
+}
+
 class EmployeeRepository {
   async findById(id) {
     const result = await query(
       'SELECT * FROM employees WHERE id = $1 AND deleted_at IS NULL',
       [id]
     );
-    return result.rows[0] || null;
+    return rowToEmployee(result.rows[0]);
   }
 
   async findOne(filters = {}) {
@@ -27,7 +62,7 @@ class EmployeeRepository {
     }
     sql += ' LIMIT 1';
     const result = await query(sql, params);
-    return result.rows[0] || null;
+    return rowToEmployee(result.rows[0]);
   }
 
   async findAll(filters = {}, options = {}) {
@@ -47,6 +82,11 @@ class EmployeeRepository {
       sql += ` AND position = $${paramCount++}`;
       params.push(filters.position);
     }
+    if (filters.search) {
+      sql += ` AND (first_name ILIKE $${paramCount} OR last_name ILIKE $${paramCount} OR employee_id ILIKE $${paramCount} OR email ILIKE $${paramCount} OR phone ILIKE $${paramCount} OR position ILIKE $${paramCount} OR department ILIKE $${paramCount})`;
+      params.push(`%${filters.search}%`);
+      paramCount++;
+    }
 
     sql += ' ORDER BY created_at DESC';
     if (options.limit) {
@@ -59,7 +99,7 @@ class EmployeeRepository {
     }
 
     const result = await query(sql, params);
-    return result.rows;
+    return result.rows.map(rowToEmployee);
   }
 
   async findByEmployeeId(employeeId, options = {}) {
@@ -87,6 +127,15 @@ class EmployeeRepository {
       countSql += ` AND department = $${paramCount++}`;
       countParams.push(filter.department);
     }
+    if (filter.position) {
+      countSql += ` AND position = $${paramCount++}`;
+      countParams.push(filter.position);
+    }
+    if (filter.search) {
+      countSql += ` AND (first_name ILIKE $${paramCount} OR last_name ILIKE $${paramCount} OR employee_id ILIKE $${paramCount} OR email ILIKE $${paramCount} OR phone ILIKE $${paramCount} OR position ILIKE $${paramCount} OR department ILIKE $${paramCount})`;
+      countParams.push(`%${filter.search}%`);
+      paramCount++;
+    }
     const countResult = await query(countSql, countParams);
     const total = parseInt(countResult.rows[0].count, 10);
 
@@ -112,7 +161,7 @@ class EmployeeRepository {
       ) ORDER BY created_at DESC LIMIT $2`,
       [term, options.limit || 100]
     );
-    return result.rows;
+    return result.rows.map(rowToEmployee);
   }
 
   async getDistinctDepartments() {
@@ -175,11 +224,12 @@ class EmployeeRepository {
   }
 
   async findLatest() {
+    // We include soft-deleted records for ID generation to avoid unique constraint violations
     const result = await query(
-      'SELECT * FROM employees WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 1',
+      'SELECT * FROM employees ORDER BY created_at DESC, employee_id DESC LIMIT 1',
       []
     );
-    return result.rows[0] || null;
+    return rowToEmployee(result.rows[0]);
   }
 
   async create(data) {
@@ -194,13 +244,13 @@ class EmployeeRepository {
       RETURNING *`,
       [
         employeeId,
-        data.firstName || data.first_name,
-        data.lastName || data.last_name,
+        data.firstName || data.first_name || null,
+        data.lastName || data.last_name || null,
         data.email ? String(data.email).toLowerCase() : null,
         data.phone || null,
         data.alternatePhone || data.alternate_phone || null,
         data.address ? JSON.stringify(data.address) : null,
-        data.position,
+        data.position || null,
         data.department || null,
         data.hireDate || data.hire_date || new Date(),
         data.terminationDate || data.termination_date || null,
@@ -219,7 +269,7 @@ class EmployeeRepository {
         data.documents ? JSON.stringify(data.documents) : '[]'
       ]
     );
-    return result.rows[0];
+    return rowToEmployee(result.rows[0]);
   }
 
   async updateById(id, data) {
@@ -238,7 +288,10 @@ class EmployeeRepository {
     for (const [k, col] of Object.entries(map)) {
       if (data[k] !== undefined) {
         updates.push(`${col} = $${paramCount++}`);
-        params.push(typeof data[k] === 'object' && (col === 'address' || col === 'emergency_contact' || col === 'documents') ? JSON.stringify(data[k]) : data[k]);
+        const value = typeof data[k] === 'object' && data[k] !== null && (col === 'address' || col === 'emergency_contact' || col === 'documents') 
+          ? JSON.stringify(data[k]) 
+          : (data[k] === undefined ? null : data[k]);
+        params.push(value);
       }
     }
     if (updates.length === 0) return this.findById(id);
@@ -248,7 +301,7 @@ class EmployeeRepository {
       `UPDATE employees SET ${updates.join(', ')} WHERE id = $${paramCount} AND deleted_at IS NULL RETURNING *`,
       params
     );
-    return result.rows[0] || null;
+    return rowToEmployee(result.rows[0]);
   }
 
   async softDelete(id) {
@@ -256,7 +309,7 @@ class EmployeeRepository {
       'UPDATE employees SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
       [id]
     );
-    return result.rows[0] || null;
+    return rowToEmployee(result.rows[0]);
   }
 }
 

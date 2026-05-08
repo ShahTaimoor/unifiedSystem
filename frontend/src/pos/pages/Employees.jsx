@@ -262,7 +262,7 @@ const Employees = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Personnel</p>
-          <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{pagination.total || 0}</h3>
+          <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{pagination?.total || 0}</h3>
           <div className="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-tight">Active workforce</div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -386,12 +386,14 @@ const Employees = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {employees.map((employee) => (
-                  <tr key={employee._id} className="hover:bg-slate-50 transition-colors group">
+                {employees.map((employee) => {
+                  if (!employee) return null;
+                  return (
+                    <tr key={employee._id || employee.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">
                         <div className="h-10 w-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-bold uppercase tracking-tight">
-                          {employee.firstName[0]}{employee.lastName[0]}
+                          {employee.firstName?.[0] || ''}{employee.lastName?.[0] || ''}
                         </div>
                         <div>
                           <div className="text-sm font-bold text-slate-900">{employee.firstName} {employee.lastName}</div>
@@ -427,7 +429,7 @@ const Employees = () => {
                         <span className="text-sm font-bold text-slate-700">{formatDate(employee.hireDate)}</span>
                       </div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">
-                        Tenure: {Math.floor((new Date() - new Date(employee.hireDate)) / (1000 * 60 * 60 * 24 * 365))} Years
+                        Tenure: {employee.hireDate ? Math.floor((new Date() - new Date(employee.hireDate)) / (1000 * 60 * 60 * 24 * 365)) : 0} Years
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -443,7 +445,7 @@ const Employees = () => {
                               : 'bg-slate-100 text-slate-600'
                           }`}
                         >
-                          {employee.status.replace('_', ' ')}
+                          {(employee.status || 'unknown').replace('_', ' ')}
                         </span>
                       </div>
                     </td>
@@ -466,7 +468,8 @@ const Employees = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           )}
