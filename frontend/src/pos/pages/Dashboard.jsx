@@ -673,8 +673,8 @@ export const Dashboard = () => {
   const companyName = companyInfo.companyName || companyInfo.businessName || companyFromApi.companyName || '';
   const dashboardLogoSizeRaw = Number(companyInfo?.orderSettings?.dashboardLogoSize);
   const dashboardLogoSize = Number.isFinite(dashboardLogoSizeRaw)
-    ? Math.min(900, Math.max(120, dashboardLogoSizeRaw))
-    : 500;
+    ? Math.min(900, Math.max(80, dashboardLogoSizeRaw))
+    : 300;
 
   const getRowOrderId = (row) => row?.id || row?._id;
 
@@ -914,23 +914,34 @@ export const Dashboard = () => {
       </div>
 
       {dashboardHidden ? (
-        <div className="min-h-[70vh] flex flex-col items-center justify-center bg-white rounded-xl border border-gray-200 shadow-sm p-8">
-          <div className="flex flex-col items-center gap-8 w-full text-center">
+        <div className="min-h-[75vh] flex flex-col items-center justify-center bg-gradient-to-br from-white via-gray-50/30 to-blue-50/10 rounded-2xl border border-gray-100 shadow-xl p-12 relative overflow-hidden group">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100/20 rounded-full blur-3xl -mr-32 -mt-32 transition-all duration-1000 group-hover:bg-blue-100/30" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-100/20 rounded-full blur-3xl -ml-32 -mb-32 transition-all duration-1000 group-hover:bg-primary-100/30" />
+          
+          <div className="flex flex-col items-center gap-10 w-full text-center relative z-10 animate-in fade-in zoom-in duration-700">
             {companyLogo ? (
-              <img
-                src={companyLogo}
-                alt={companyName || 'Company logo'}
-                crossOrigin="anonymous"
-                className="w-auto max-w-full object-contain transition-all duration-500 hover:scale-105"
-                style={{ height: `${dashboardLogoSize}px` }}
-              />
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-100 to-primary-100 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <img
+                  src={companyLogo}
+                  alt={companyName || 'Company logo'}
+                  className="w-auto max-w-full object-contain relative transition-all duration-700 hover:scale-105 active:scale-95 drop-shadow-sm"
+                  style={{ height: `${dashboardLogoSize}px` }}
+                />
+              </div>
             ) : (
-              <div className="w-60 h-60 rounded-2xl bg-gray-100 flex items-center justify-center">
-                <Building className="h-32 w-32 text-gray-400" />
+              <div className="w-64 h-64 rounded-3xl bg-white shadow-inner flex items-center justify-center border border-gray-100 animate-pulse">
+                <Building className="h-36 w-36 text-gray-200" />
               </div>
             )}
             {companyName ? (
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">{companyName}</h2>
+              <div className="space-y-3">
+                <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-gray-900 to-gray-600">
+                  {companyName}
+                </h2>
+                <div className="h-1 w-20 bg-blue-500 mx-auto rounded-full opacity-50" />
+              </div>
             ) : null}
           </div>
         </div>
