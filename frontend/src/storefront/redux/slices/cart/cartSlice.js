@@ -30,6 +30,15 @@ export const addToCart = createAsyncThunk(
   },
 );
 
+const isCartApiUnavailable = (error) => {
+  const message =
+    error?.response?.data?.message || error?.message || String(error || "");
+  return (
+    error?.response?.status === 404 ||
+    /not found|404|network error|failed to fetch/i.test(message)
+  );
+};
+
 // Remove item from cart
 export const removeFromCart = createAsyncThunk(
   "removeFromCart",
@@ -37,9 +46,17 @@ export const removeFromCart = createAsyncThunk(
     try {
       return await cartService.removeFromCart(productId);
     } catch (err) {
-      return thunkAPI.rejectWithValue(
-        err.response?.data?.message || err.message,
-      );
+      const message = err.response?.data?.message || err.message;
+      if (isCartApiUnavailable(err) && productId) {
+        const state = thunkAPI.getState();
+        const existingItems = state.cart.items || [];
+        const updatedItems = existingItems.filter(
+          (item) =>
+            item.product?._id !== productId && item.product !== productId,
+        );
+        return { items: updatedItems };
+      }
+      return thunkAPI.rejectWithValue(message);
     }
   },
 );
