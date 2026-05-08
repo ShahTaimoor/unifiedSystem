@@ -544,7 +544,7 @@ const Employees = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end space-x-2 opacity-100 transition-opacity">
                         <button
                           onClick={() => handleEdit(employee)}
                           className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-primary-600 hover:border-primary-200 rounded-lg shadow-sm transition-all"
