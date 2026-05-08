@@ -71,27 +71,24 @@ const CartProduct = ({ product, quantity }) => {
   };
 
   return (
-    <div className={`flex items-center justify-between p-4 border-b transition-colors ${
-      isOutOfStock 
-        ? 'bg-red-50 hover:bg-red-100 opacity-75 border-red-200' 
+    <div className={`flex items-center justify-between p-4 border-b transition-colors ${isOutOfStock
+        ? 'bg-red-50 hover:bg-red-100 opacity-75 border-red-200'
         : 'border-gray-100 hover:bg-gray-50'
-    }`}>
+      }`}>
       <div className="flex items-center space-x-3 flex-1">
         <CartImage
           src={image}
           alt={title}
-          className={`w-12 h-12 rounded-md border object-cover ${
-            isOutOfStock 
-              ? 'border-red-200 opacity-50' 
+          className={`w-12 h-12 rounded-md border object-cover ${isOutOfStock
+              ? 'border-red-200 opacity-50'
               : 'border-gray-200'
-          }`}
+            }`}
           fallback="/fallback.jpg"
           quality={80}
         />
         <div className="min-w-0 flex-1">
-          <h4 className={`font-medium text-sm line-clamp-2 ${
-            isOutOfStock ? 'text-gray-500' : 'text-gray-900'
-          }`}>
+          <h4 className={`font-medium text-sm line-clamp-2 ${isOutOfStock ? 'text-gray-500' : 'text-gray-900'
+            }`}>
             {title}
           </h4>
           {isOutOfStock && (
@@ -151,15 +148,15 @@ const ProductList = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Read initial values from URL params
   const urlCategorySlug = searchParams.get('category') || 'all'; // Now using slug instead of ID
   const urlPage = parseInt(searchParams.get('page') || '1', 10);
   const urlSearchQuery = searchParams.get('search') || '';
-  
+
   // Redux selectors - get categories first
   const { categories, status: categoriesStatus } = useSelector((s) => s.categories);
-  
+
   // Convert category slug to ID
   // Find category by slug from Redux state
   const categoryBySlug = useMemo(() => {
@@ -215,15 +212,15 @@ const ProductList = () => {
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   const isCategoryChangingRef = useRef(false);
   const isSyncingFromURLRef = useRef(false);
-  
+
   const dispatch = useDispatch();
   const { openDrawer } = useAuthDrawer();
   const toast = useToast();
-  
+
   // Update URL params when category changes
   const updateURLParams = useCallback((updates) => {
     const newParams = new URLSearchParams(searchParams);
-    
+
     Object.entries(updates).forEach(([key, value]) => {
       if (value === null || value === '' || value === 'all' || value === undefined) {
         newParams.delete(key);
@@ -231,17 +228,17 @@ const ProductList = () => {
         newParams.set(key, value.toString());
       }
     });
-    
+
     // Reset page to 1 when category changes (unless explicitly set)
     if (updates.category !== undefined) {
       if (updates.page === undefined) {
         newParams.set('page', '1');
       }
     }
-    
+
     setSearchParams(newParams, { replace: true });
   }, [searchParams, setSearchParams]);
-  
+
   // Find category slug from ID (outside useEffect)
   const categorySlug = useMemo(() => {
     if (category === 'all') return 'all';
@@ -255,37 +252,37 @@ const ProductList = () => {
     if (isSearchMode) {
       return;
     }
-    
+
     // Skip sync if we're manually changing category
     if (isCategoryChangingRef.current) {
       isCategoryChangingRef.current = false;
       return;
     }
-    
+
     // Skip sync if we're currently syncing from URL to prevent loops
     if (isSyncingFromURLRef.current) {
       return;
     }
-    
+
     const currentCategorySlug = searchParams.get('category') || 'all';
     const currentPage = searchParams.get('page') || '1';
-    
+
     // Only sync if categorySlug (from state) doesn't match URL AND doesn't match categoryBySlug (from URL)
     // This prevents syncing when we're in the middle of updating from URL
     if (categorySlug === urlCategorySlug) {
       // Already in sync with URL, no need to update
       return;
     }
-    
+
     const updates = {};
     let hasUpdates = false;
-    
+
     // Compare slug instead of ID
     if (categorySlug !== currentCategorySlug) {
       updates.category = categorySlug === 'all' ? null : categorySlug;
       hasUpdates = true;
     }
-    
+
     if (page.toString() !== currentPage && page > 1) {
       updates.page = page.toString();
       hasUpdates = true;
@@ -293,18 +290,18 @@ const ProductList = () => {
       updates.page = null;
       hasUpdates = true;
     }
-    
+
     if (hasUpdates) {
       updateURLParams(updates);
     }
   }, [category, page, categorySlug, updateURLParams, searchParams, isSearchMode, urlCategorySlug]);
 
   // Categories already fetched above
-  const { 
-    products: productList = [], 
-    status, 
-    totalItems, 
-    currentPage, 
+  const {
+    products: productList = [],
+    status,
+    totalItems,
+    currentPage,
     totalPages,
     searchResults,
     searchStatus,
@@ -312,7 +309,7 @@ const ProductList = () => {
   } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
-  
+
   // Use search pagination if in search mode
   const displayPagination = useMemo(() => {
     if (isSearchMode && searchPagination) {
@@ -325,10 +322,10 @@ const ProductList = () => {
       totalPages: totalPages
     };
   }, [isSearchMode, searchPagination, totalItems, currentPage, limit, totalPages]);
-  
+
   // Calculate total quantity
-  const totalQuantity = useMemo(() => 
-    cartItems.reduce((sum, item) => sum + item.quantity, 0), 
+  const totalQuantity = useMemo(() =>
+    cartItems.reduce((sum, item) => sum + item.quantity, 0),
     [cartItems]
   );
 
@@ -380,10 +377,10 @@ const ProductList = () => {
   useEffect(() => {
     if (isSearchMode && urlSearchQuery.trim().length > 0) {
       // Fetch search results immediately - search doesn't need categories
-      dispatch(searchProducts({ 
-        query: urlSearchQuery.trim(), 
-        limit: limit, 
-        page: page 
+      dispatch(searchProducts({
+        query: urlSearchQuery.trim(),
+        limit: limit,
+        page: page
       }));
     } else if (!isSearchMode) {
       // For "all" category, fetch immediately without waiting
@@ -391,10 +388,10 @@ const ProductList = () => {
       if (urlCategorySlug !== 'all' && !isInitialized) {
         return; // Wait for categories to load
       }
-      
+
       // Use categoryBySlug to determine what to fetch (source of truth from URL)
       const categoryToFetch = categoryBySlug === 'all' ? null : categoryBySlug;
-      
+
       // Fetch regular products
       const params = {
         page,
@@ -430,7 +427,7 @@ const ProductList = () => {
       setQuantities((prev) => {
         const updatedQuantities = { ...prev };
         let hasChanges = false;
-        
+
         cartItems.forEach((item) => {
           const productId = item.product?._id || item.product;
           if (productId && item.quantity) {
@@ -441,7 +438,7 @@ const ProductList = () => {
             }
           }
         });
-        
+
         return hasChanges ? updatedQuantities : prev;
       });
     }
@@ -453,7 +450,7 @@ const ProductList = () => {
       setQuantities((prev) => {
         const updatedQuantities = { ...prev };
         let hasChanges = false;
-        
+
         sortedProducts.filter(product => product && product._id).forEach((product) => {
           // Only initialize if not already set (preserve cart quantities and user input)
           if (updatedQuantities[product._id] === undefined) {
@@ -467,7 +464,7 @@ const ProductList = () => {
             hasChanges = true;
           }
         });
-        
+
         // Only update state if there are new products to initialize
         return hasChanges ? updatedQuantities : prev;
       });
@@ -481,7 +478,7 @@ const ProductList = () => {
     };
 
     checkMobile();
-    
+
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 100);
     };
@@ -511,7 +508,7 @@ const ProductList = () => {
 
     // Get quantity from state, default to 0 if not set
     const qty = parseInt(quantities[product._id]) || 0;
-    
+
     // Ensure quantity is valid and within stock limits
     if (qty <= 0 || qty > product.stock) {
       toast.error(`Please select a valid quantity. Available stock: ${product.stock}`);
@@ -532,21 +529,21 @@ const ProductList = () => {
         toast.error(error || 'Failed to add item to cart');
       }
     }).finally(() => setAddingProductId(null));
-      }, [dispatch, navigate, quantities, user, openDrawer, toast]);
+  }, [dispatch, navigate, quantities, user, openDrawer, toast]);
 
   // Memoized handlers for child components
   const handleCategorySelect = useCallback((categoryId) => {
     // Set flag to prevent sync useEffect from interfering
     isCategoryChangingRef.current = true;
-    
+
     // Find category slug from ID
-    const categorySlug = categoryId === 'all' ? 'all' : 
+    const categorySlug = categoryId === 'all' ? 'all' :
       (categories?.find(cat => cat._id === categoryId)?.slug || 'all');
-    
+
     // Update category and page
     setCategory(categoryId);
     setPage(1);
-    
+
     // Create new URL params from current URL and explicitly remove search
     const currentParams = new URLSearchParams(window.location.search);
     currentParams.delete('search'); // Explicitly remove search parameter
@@ -556,14 +553,14 @@ const ProductList = () => {
       currentParams.set('category', categorySlug);
     }
     currentParams.delete('page'); // Remove page to reset to 1
-    
+
     // Build new URL
     const newSearch = currentParams.toString();
     const newUrl = newSearch ? `/products?${newSearch}` : '/products';
-    
+
     // Update URL using navigate to ensure it updates properly
     navigate(newUrl, { replace: true });
-    
+
     // Scroll to top when selecting a category
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -583,7 +580,7 @@ const ProductList = () => {
     // Update URL params for page
     updateURLParams({ page: newPage === 1 ? null : newPage.toString() });
   }, [updateURLParams]);
-  
+
   const handlePreviewImage = useCallback((image) => {
     setPreviewImage(image);
   }, []);
@@ -598,9 +595,9 @@ const ProductList = () => {
     }
     setOpenCheckoutDialog(true);
   }, [user, cartItems.length, navigate]);
-  
+
   const loadingProducts = isSearchMode ? searchStatus === 'loading' : status === 'loading';
-  
+
   return (
     <div className="max-w-7xl lg:mx-auto lg:px-4 py-2 lg:py-8">
       {/* Mobile Header - Only visible on mobile */}
@@ -628,7 +625,7 @@ const ProductList = () => {
 
         </>
       )}
-      
+
       {/* Fixed Categories Container */}
       <div className={getStickyHeaderClassName(isMobile, isScrolled)}>
         <div className="max-w-7xl lg:mx-auto">
@@ -642,7 +639,7 @@ const ProductList = () => {
               />
             </div>
           )}
-          
+
           {/* Category Swiper */}
           {combinedCategories && combinedCategories.length > 0 ? (
             <CategorySwiper

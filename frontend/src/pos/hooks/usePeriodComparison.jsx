@@ -116,24 +116,24 @@ export const usePeriodComparison = (fetchFunction, periodType = 'month', customR
     previousData,
     currentValue,
     previousValue,
-    
+
     // Date ranges
     currentPeriod: dateRanges.current,
     previousPeriod: dateRanges.previous,
-    
+
     // Comparison
     comparison,
-    
+
     // Loading states
     isLoading: currentLoading || previousLoading,
     currentLoading,
     previousLoading,
-    
+
     // Errors
     error: currentError || previousError,
     currentError,
     previousError,
-    
+
     // Controls
     comparisonPeriod,
     setComparisonPeriod

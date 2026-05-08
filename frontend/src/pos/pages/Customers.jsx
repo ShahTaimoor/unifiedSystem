@@ -80,12 +80,10 @@ export const Customers = () => {
     setCurrentPage(1);
   };
 
-  const customers = useMemo(() => {
-    return data?.data?.customers || data?.customers || [];
-  }, [data]);
+  const customers = useMemo(() => data?.customers || [], [data]);
 
   const pagination = useMemo(() => {
-    const raw = data?.pagination || data?.data?.pagination || {};
+    const raw = data?.pagination || {};
     return {
       current: raw.current ?? raw.page ?? 1,
       pages: raw.pages ?? 1,

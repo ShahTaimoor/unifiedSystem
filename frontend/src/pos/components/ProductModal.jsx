@@ -173,7 +173,7 @@ export const ProductModal = ({ product, isOpen, onClose, onSave, isSubmitting, a
 
     try {
       const response = await uploadImage(form).unwrap();
-      
+
       if (response.success && response.data?.urls?.optimized) {
         setFormData(prev => ({
           ...prev,

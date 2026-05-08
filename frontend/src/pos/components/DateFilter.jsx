@@ -146,22 +146,24 @@ const DateFilter = ({
               <Button
                 variant="outline"
                 className={cn(
-                  'w-full justify-start text-left font-normal border-gray-300 bg-white hover:bg-gray-50',
-                  compact ? 'h-10 text-sm' : 'h-11',
-                  !startDate && !endDate && 'text-gray-500'
+                  'w-full justify-start text-left font-medium border-gray-200 bg-white shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-[0.98]',
+                  compact ? 'h-9 text-xs px-3' : 'h-11 px-4',
+                  !startDate && !endDate && 'text-gray-400'
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4 text-gray-400 shrink-0" />
-                {startDate && endDate && dateFrom && dateTo ? (
-                  <span className="truncate">
-                    {format(dateFrom, compact ? 'dd MMM yy' : 'LLL dd, y')} – {format(dateTo, compact ? 'dd MMM yy' : 'LLL dd, y')}
-                  </span>
-                ) : startDate && dateFrom ? (
-                  format(dateFrom, compact ? 'dd MMM yy' : 'LLL dd, y')
-                ) : (
-                  <span>Pick a date range</span>
-                )}
-                <ChevronDown className="ml-auto h-4 w-4 text-gray-400 shrink-0" />
+                <div className="flex items-center w-full">
+                  <CalendarIcon className={cn("mr-2 text-primary-500 shrink-0", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
+                  {startDate && endDate && dateFrom && dateTo ? (
+                    <span className="truncate flex-1">
+                      {format(dateFrom, compact ? 'dd MMM yy' : 'MMM dd, yyyy')} – {format(dateTo, compact ? 'dd MMM yy' : 'MMM dd, yyyy')}
+                    </span>
+                  ) : startDate && dateFrom ? (
+                    <span className="flex-1">{format(dateFrom, compact ? 'dd MMM yy' : 'MMM dd, yyyy')}</span>
+                  ) : (
+                    <span className="flex-1">Select date range</span>
+                  )}
+                  <ChevronDown className={cn("ml-2 text-gray-400 shrink-0 transition-transform duration-200", popoverOpen && "rotate-180", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
+                </div>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 border-gray-200 shadow-lg" align="start">
@@ -187,11 +189,15 @@ const DateFilter = ({
             <Button
               onClick={handleClear}
               variant="secondary"
-              className={compact ? 'h-10 w-10 p-0 flex items-center justify-center border-gray-300' : 'w-full sm:w-auto h-11 flex items-center justify-center gap-2 px-4 border-gray-300'}
+              className={cn(
+                "border-gray-200 bg-white text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-all shadow-sm",
+                compact ? 'h-9 w-9 p-0' : 'w-full sm:w-auto h-11 px-4'
+              )}
               type="button"
+              title="Clear date range"
             >
-              <X className="h-4 w-4" />
-              {!compact && <span className="hidden sm:inline">Clear</span>}
+              <X className={cn("shrink-0", compact ? "h-3.5 w-3.5" : "h-4 w-4 mr-2")} />
+              {!compact && <span className="font-medium">Clear</span>}
             </Button>
           </div>
         )}
@@ -199,56 +205,17 @@ const DateFilter = ({
 
       {/* Preset Buttons - hidden in compact mode */}
       {showPresets && !compact && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => handlePresetSelect(presets.today)}
-            className="px-3 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            type="button"
-          >
-            Today
-          </button>
-          <button
-            onClick={() => handlePresetSelect(presets.yesterday)}
-            className="px-3 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            type="button"
-          >
-            Yesterday
-          </button>
-          <button
-            onClick={() => handlePresetSelect(presets.last7Days)}
-            className="px-3 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            type="button"
-          >
-            Last 7 Days
-          </button>
-          <button
-            onClick={() => handlePresetSelect(presets.last30Days)}
-            className="px-3 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            type="button"
-          >
-            Last 30 Days
-          </button>
-          <button
-            onClick={() => handlePresetSelect(presets.thisMonth)}
-            className="px-3 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            type="button"
-          >
-            This Month
-          </button>
-          <button
-            onClick={() => handlePresetSelect(presets.lastMonth)}
-            className="px-3 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            type="button"
-          >
-            Last Month
-          </button>
-          <button
-            onClick={() => handlePresetSelect(presets.thisYear)}
-            className="px-3 py-1.5 text-xs sm:text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            type="button"
-          >
-            This Year
-          </button>
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {Object.entries(presets).map(([key, preset]) => (
+            <button
+              key={key}
+              onClick={() => handlePresetSelect(preset)}
+              className="px-2.5 py-1 text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 rounded-md hover:bg-primary-50 hover:text-primary-700 hover:border-primary-200 transition-all"
+              type="button"
+            >
+              {preset.label || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+            </button>
+          ))}
         </div>
       )}
     </div>

@@ -57,10 +57,10 @@ const LazyImage = ({
   // Generate WebP URL - memoized to avoid recreation
   const getWebPUrl = useMemo(() => (originalUrl) => {
     if (!originalUrl) return null;
-    
+
     // If it's already a WebP URL, return as is
     if (originalUrl.includes('.webp')) return originalUrl;
-    
+
     // If it's a Cloudinary URL, add WebP transformation
     if (originalUrl.includes('cloudinary.com')) {
       const parts = originalUrl.split('/');
@@ -70,7 +70,7 @@ const LazyImage = ({
         return parts.join('/');
       }
     }
-    
+
     // For other URLs, replace extension with .webp
     return originalUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
   }, [quality]);
@@ -119,20 +119,20 @@ const LazyImage = ({
   // Generate responsive sizes
   const getResponsiveSizes = () => {
     if (sizes) return sizes;
-    
+
     const defaultSizes = [
       '(max-width: 640px) 100vw',
       '(max-width: 1024px) 50vw',
       '25vw'
     ].join(', ');
-    
+
     return defaultSizes;
   };
 
   // Generate srcSet for responsive images
   const generateSrcSet = (baseUrl) => {
     if (!baseUrl || imageError) return null;
-    
+
     const sizes = [150, 300, 600, 1200];
     return sizes
       .map(size => {

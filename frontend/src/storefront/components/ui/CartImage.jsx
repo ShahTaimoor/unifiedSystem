@@ -37,38 +37,38 @@ const CartImage = ({
   // Generate optimized URL for cart images
   const getOptimizedUrl = (originalUrl) => {
     if (!originalUrl) return null;
-    
+
     // If it's already a WebP URL, return as is
     if (originalUrl.includes('.webp')) return originalUrl;
-    
+
     // If it's a Cloudinary URL, add WebP transformation for cart size
     if (originalUrl.includes('cloudinary.com')) {
       const parts = originalUrl.split('/');
       const uploadIndex = parts.findIndex(part => part === 'upload');
       if (uploadIndex !== -1 && uploadIndex < parts.length - 1) {
         let transformations = [];
-        
+
         if (supportsWebP()) {
           transformations.push('f_webp');
         }
-        
+
         transformations.push(`q_${quality}`);
         transformations.push('w_112'); // Match w-28 (28 * 4 = 112px)
         transformations.push('h_80');  // Match h-20 (20 * 4 = 80px)
         transformations.push('c_fill'); // Fill to maintain aspect ratio
         transformations.push('g_center'); // Center gravity for consistent cropping
         transformations.push('fl_progressive'); // Progressive loading
-        
+
         parts[uploadIndex + 1] = transformations.join(',');
         return parts.join('/');
       }
     }
-    
+
     // For other URLs, try to convert to WebP
     if (supportsWebP()) {
       return originalUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
     }
-    
+
     return originalUrl;
   };
 

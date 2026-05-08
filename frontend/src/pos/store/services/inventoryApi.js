@@ -20,10 +20,17 @@ export const inventoryApi = api.injectEndpoints({
         };
       },
       keepUnusedDataFor: 60,
+      transformResponse: (response) => {
+        const result = response.data || response;
+        return {
+          items: result.items || result.inventory || [],
+          pagination: result.pagination || {}
+        };
+      },
       providesTags: (result) =>
-        result?.data?.items
+        result?.items
           ? [
-              ...result.data.items.map(({ _id, id }) => ({ type: 'Inventory', id: _id || id })),
+              ...result.items.map(({ _id, id }) => ({ type: 'Inventory', id: _id || id })),
               { type: 'Inventory', id: 'LIST' },
             ]
           : [{ type: 'Inventory', id: 'LIST' }],
@@ -34,6 +41,7 @@ export const inventoryApi = api.injectEndpoints({
         method: 'get',
       }),
       keepUnusedDataFor: 120,
+      transformResponse: (response) => response.data?.summary || response.summary || response.data || response,
       providesTags: [{ type: 'Inventory', id: 'SUMMARY' }],
     }),
     getLowStockItems: builder.query({

@@ -52,6 +52,10 @@ export const BulkUpdateModal = ({
       newErrors.tier = 'Please select a tier';
     }
 
+    if (updateType === 'update' && Object.keys(formData).length === 0) {
+      newErrors.general = 'Please fill at least one field to update';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -137,9 +141,9 @@ export const BulkUpdateModal = ({
               }`}
             >
               <option value="">Select category</option>
-              {categories.map(cat => (
-                <option key={cat._id || cat.id} value={cat._id || cat.id}>
-                  {cat.name}
+              {Array.isArray(categories) && categories.map(cat => (
+                <option key={cat?._id || cat?.id || Math.random()} value={cat?._id || cat?.id}>
+                  {cat?.name || 'Unknown Category'}
                 </option>
               ))}
             </select>
@@ -163,9 +167,9 @@ export const BulkUpdateModal = ({
               }`}
             >
               <option value="">Select status</option>
-              {statusOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              {Array.isArray(statusOptions) && statusOptions.map(opt => (
+                <option key={opt?.value || Math.random()} value={opt?.value}>
+                  {opt?.label || 'Unknown Status'}
                 </option>
               ))}
             </select>
@@ -227,15 +231,73 @@ export const BulkUpdateModal = ({
               }`}
             >
               <option value="">Select tier</option>
-              {tierOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              {Array.isArray(tierOptions) && tierOptions.map(opt => (
+                <option key={opt?.value || Math.random()} value={opt?.value}>
+                  {opt?.label || 'Unknown Tier'}
                 </option>
               ))}
             </select>
             {errors.tier && (
               <p className="mt-1 text-sm text-red-600">{errors.tier}</p>
             )}
+          </div>
+        );
+
+      case 'update':
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Unit
+                </label>
+                <select
+                  value={formData.unit || ''}
+                  onChange={(e) => handleChange('unit', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">No change</option>
+                  <option value="PCS">Pieces (PCS)</option>
+                  <option value="BOX">Box</option>
+                  <option value="CTN">Carton (CTN)</option>
+                  <option value="SET">Set</option>
+                  <option value="KG">Kilogram (KG)</option>
+                  <option value="G">Gram (G)</option>
+                  <option value="L">Liter (L)</option>
+                  <option value="ML">Milliliter (ML)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  HS Code
+                </label>
+                <input
+                  type="text"
+                  value={formData.hsCode || ''}
+                  onChange={(e) => handleChange('hsCode', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="Enter HS Code"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Country of Origin
+              </label>
+              <input
+                type="text"
+                value={formData.countryOfOrigin || ''}
+                onChange={(e) => handleChange('countryOfOrigin', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                placeholder="Enter country"
+              />
+            </div>
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-xs text-yellow-800">
+                <AlertTriangle className="h-3 w-3 inline mr-1" />
+                Only fields you fill in will be updated. Empty fields will remain unchanged.
+              </p>
+            </div>
           </div>
         );
 
@@ -270,29 +332,35 @@ export const BulkUpdateModal = ({
       status: 'Bulk Change Status',
       stock: 'Bulk Adjust Stock',
       tier: 'Bulk Change Customer Tier',
-      tags: 'Bulk Update Tags'
+      tags: 'Bulk Update Tags',
+      update: 'Bulk Update Details'
     };
     return titles[updateType] || 'Bulk Update';
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-[100dvh] pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
+    <div className="fixed inset-0 z-[999] overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
 
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div className="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+          <div className="absolute top-0 right-0 pt-4 pr-4">
+            <button
+              type="button"
+              className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              onClick={onClose}
+            >
+              <span className="sr-only">Close</span>
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+          <div>
+            <div className="mt-3 text-center sm:mt-0 sm:text-left">
+              <h3 className="text-xl leading-6 font-bold text-gray-900 mb-4" id="modal-title">
                 {getTitle()}
               </h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="flex items-start">
@@ -304,6 +372,12 @@ export const BulkUpdateModal = ({
             </div>
 
             <form onSubmit={handleSubmit}>
+              {errors.general && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600 flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  {errors.general}
+                </div>
+              )}
               {renderForm()}
 
               <div className="mt-6 flex justify-end space-x-3">
@@ -329,7 +403,8 @@ export const BulkUpdateModal = ({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default BulkUpdateModal;

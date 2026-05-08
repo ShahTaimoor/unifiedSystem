@@ -156,7 +156,7 @@ class ProductServicePostgres {
       try {
         const arr = JSON.parse(queryParams.categories);
         if (Array.isArray(arr) && arr.length > 0) filters.categoryId = arr[0];
-      } catch (_) {}
+      } catch (_) { }
     }
     if (queryParams.status === 'active') filters.isActive = true;
     else if (queryParams.status === 'inactive') filters.isActive = false;
@@ -520,7 +520,7 @@ class ProductServicePostgres {
               // Ensure product has the required field from the repository update result
               const cost = Number(product.cost_price ?? product.costPrice ?? 0);
               const validatedUserId = isValidUuid(userId) ? userId : null;
-              
+
               await AccountingService.recordStockAdjustment(id, delta, cost, {
                 createdBy: validatedUserId,
                 reason: updateData.reason || 'Manual Adjustment'
@@ -687,9 +687,60 @@ class ProductServicePostgres {
     const results = { updated: 0, failed: 0 };
     for (const id of productIds) {
       try {
-        await this.updateProduct(id, updates, null);
+        let finalUpdates = { ...updates };
+
+        // Handle Price Updates (increase, decrease, percentage)
+        if (updates.priceType && updates.priceValue !== undefined) {
+          const current = await productRepository.findById(id);
+          if (current) {
+            const priceType = updates.priceType; // 'retail', 'wholesale', 'cost'
+            const method = updates.updateMethod || 'set';
+            const value = Number(updates.priceValue);
+            
+            let currentPrice = 0;
+            if (priceType === 'retail') currentPrice = Number(current.selling_price || 0);
+            else if (priceType === 'wholesale') currentPrice = Number(current.wholesale_price || current.selling_price || 0);
+            else if (priceType === 'cost') currentPrice = Number(current.cost_price || 0);
+
+            let newPrice = value;
+            if (method === 'increase') newPrice = currentPrice + value;
+            else if (method === 'decrease') newPrice = currentPrice - value;
+            else if (method === 'percentage') newPrice = currentPrice * (1 + value / 100);
+
+            finalUpdates = {
+              pricing: {
+                [priceType]: Math.max(0, newPrice)
+              }
+            };
+          }
+        }
+
+        // Handle Stock Adjustments (increase, decrease)
+        if (updates.stockAdjustment !== undefined) {
+          const current = await productRepository.findById(id);
+          if (current) {
+            const method = updates.stockMethod || 'set';
+            const value = Number(updates.stockAdjustment);
+            
+            const existingInv = await inventoryRepository.findOne({ productId: id, product: id });
+            const currentStock = Number(existingInv?.current_stock ?? existingInv?.currentStock ?? current.stock_quantity ?? 0);
+
+            let newStock = value;
+            if (method === 'increase') newStock = currentStock + value;
+            else if (method === 'decrease') newStock = currentStock - value;
+
+            finalUpdates = {
+              inventory: {
+                currentStock: Math.max(0, newStock)
+              }
+            };
+          }
+        }
+
+        await this.updateProduct(id, finalUpdates, null);
         results.updated++;
-      } catch (_) {
+      } catch (err) {
+        console.error(`Bulk update failed for product ${id}:`, err);
         results.failed++;
       }
     }
@@ -786,7 +837,7 @@ class ProductServicePostgres {
   async bulkCreateProducts(productsData, userId, req = null, options = {}) {
     const { autoCreateCategories = true } = options;
     const results = { created: 0, failed: 0, errors: [] };
-    
+
     for (const item of productsData) {
       try {
         // Map Excel-style fields to DB-style fields (handles both spaces and underscores)
@@ -823,13 +874,13 @@ class ProductServicePostgres {
         results.created++;
       } catch (error) {
         results.failed++;
-        results.errors.push({ 
-          name: item.name || 'Unknown', 
-          error: error.message 
+        results.errors.push({
+          name: item.name || 'Unknown',
+          error: error.message
         });
       }
     }
-    
+
     return results;
   }
 }

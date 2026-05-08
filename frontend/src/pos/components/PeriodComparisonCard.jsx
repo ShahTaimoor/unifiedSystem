@@ -117,8 +117,8 @@ export const PeriodComparisonCard = ({
               )}
               {isNegative && (
                 <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path d="M3 8c1.5 0 2.5 1 2.5 2.5S4.5 13 3 13m4 0c1.5 0 2.5 1 2.5 2.5S8.5 18 7 18m4 0c1.5 0 2.5 1 2.5 2.5S12.5 23 11 23" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M18 20l-2.5-2.5m2.5 2.5l-2.5 2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M3 8c1.5 0 2.5 1 2.5 2.5S4.5 13 3 13m4 0c1.5 0 2.5 1 2.5 2.5S8.5 18 7 18m4 0c1.5 0 2.5 1 2.5 2.5S12.5 23 11 23" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M18 20l-2.5-2.5m2.5 2.5l-2.5 2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               )}
               {isNeutral && (
@@ -148,21 +148,19 @@ export const PeriodComparisonCard = ({
           <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-gray-600">Target Achievement</span>
-              <span className={`text-xs font-medium ${
-                targetAchievement >= 100 ? 'text-green-600' :
+              <span className={`text-xs font-medium ${targetAchievement >= 100 ? 'text-green-600' :
                 targetAchievement >= 80 ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
+                  'text-red-600'
+                }`}>
                 {targetAchievement.toFixed(1)}%
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className={`h-2 rounded-full ${
-                  targetAchievement >= 100 ? 'bg-green-500' :
+                className={`h-2 rounded-full ${targetAchievement >= 100 ? 'bg-green-500' :
                   targetAchievement >= 80 ? 'bg-yellow-500' :
-                  'bg-red-500'
-                }`}
+                    'bg-red-500'
+                  }`}
                 style={{ width: `${Math.min(targetAchievement, 100)}%` }}
               />
             </div>
@@ -179,4 +177,5 @@ export const PeriodComparisonCard = ({
 };
 
 export default PeriodComparisonCard;
+
 
