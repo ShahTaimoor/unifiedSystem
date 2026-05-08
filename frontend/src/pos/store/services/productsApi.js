@@ -24,12 +24,15 @@ export const productsApi = api.injectEndpoints({
       },
       // Cache list queries to reduce refetch churn when navigating POS (~90s).
       keepUnusedDataFor: 90,
+      transformResponse: (response) => {
+        const result = response.data || response;
+        return {
+          products: result.products || result.items || [],
+          pagination: result.pagination || {}
+        };
+      },
       providesTags: (result) => {
-        const list =
-          result?.data?.products ||
-          result?.products ||
-          result?.items ||
-          [];
+        const list = result?.products || [];
         return list.length
           ? [
               ...list.map(({ _id, id }) => ({ type: 'Products', id: _id || id })),
@@ -43,6 +46,7 @@ export const productsApi = api.injectEndpoints({
         url: `products/${id}`,
         method: 'get',
       }),
+      transformResponse: (response) => response.data?.product || response.product || response.data || response,
       providesTags: (_res, _err, id) => [{ type: 'Products', id }],
     }),
     createProduct: builder.mutation({

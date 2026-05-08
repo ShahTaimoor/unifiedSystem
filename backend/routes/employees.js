@@ -114,10 +114,18 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create employee error:', error);
-    if (error.code === 11000) {
-      return res.status(400).json({ message: 'Employee ID or email already exists' });
+    // PostgreSQL unique_violation error code is '23505'
+    if (error.code === '23505' || error.message.includes('already exists')) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Employee ID or email already exists' 
+      });
     }
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
@@ -195,7 +203,7 @@ router.delete('/:id', [
 // @access  Private
 router.get('/departments/list', auth, async (req, res) => {
   try {
-    const departments = await Employee.distinct('department', { department: { $ne: null, $ne: '' } });
+    const departments = await EmployeeRepository.getDistinctDepartments();
     res.json({
       success: true,
       data: { departments: departments.sort() }

@@ -64,6 +64,11 @@ class EmployeeService {
       filter.position = queryParams.position.trim();
     }
 
+    // Search term (passed separately to repo if needed)
+    if (queryParams.search && typeof queryParams.search === 'string' && queryParams.search.trim() !== '') {
+      filter.search = queryParams.search.trim();
+    }
+
     return filter;
   }
 
@@ -239,7 +244,7 @@ class EmployeeService {
 
     // Extract number from employee ID (e.g., EMP001 -> 1)
     const match = latestEmployee.employeeId.match(/\d+$/);
-    if (match) {
+    if (match && match[0]) {
       const nextNumber = parseInt(match[0]) + 1;
       return `EMP${String(nextNumber).padStart(3, "0")}`;
     }

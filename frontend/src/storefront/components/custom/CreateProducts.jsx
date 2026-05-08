@@ -22,15 +22,15 @@ import {
 } from '../ui/select';
 import { AddProduct, importProductsFromExcel, fetchProducts } from '@/storefront/redux/slices/products/productSlice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { 
-  FileSpreadsheet, 
-  Upload, 
-  Download, 
-  ImageIcon, 
-  X, 
-  Search, 
-  Eye, 
-  Zap, 
+import {
+  FileSpreadsheet,
+  Upload,
+  Download,
+  ImageIcon,
+  X,
+  Search,
+  Eye,
+  Zap,
   Plus,
   Package,
   DollarSign,
@@ -70,7 +70,7 @@ const CreateProducts = () => {
     mediaLoading,
     fetchMedia,
   } = useMedia();
-  
+
   // Refs for file inputs
   const pictureInputRef = useRef(null);
   const excelFileInputRef = useRef(null);
@@ -88,7 +88,7 @@ const CreateProducts = () => {
 
   const [inputValues, setInputValues] = useState(initialValues);
   const [categorySearch, setCategorySearch] = useState('');
-  
+
   // Debounce category search to avoid too many API calls
   const debouncedCategorySearch = useDebounce(categorySearch, 300);
   // Debounce media search to avoid too many API calls
@@ -96,9 +96,9 @@ const CreateProducts = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setInputValues((values) => ({ 
-      ...values, 
-      [name]: type === 'checkbox' ? checked : value 
+    setInputValues((values) => ({
+      ...values,
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -128,7 +128,7 @@ const CreateProducts = () => {
     try {
       // Get original image info
       const originalInfo = await getImageInfo(file);
-      
+
       // Convert to WebP if it's JPEG or PNG
       let processedFile = file;
       if (file.type.match(/^image\/(jpeg|jpg|png)$/)) {
@@ -138,7 +138,7 @@ const CreateProducts = () => {
           maxHeight: 1200,
           maintainAspectRatio: true
         });
-        
+
         // Show conversion info
         const compressionRatio = ((1 - processedFile.size / file.size) * 100).toFixed(1);
         setConversionInfo({
@@ -186,7 +186,7 @@ const CreateProducts = () => {
     setImportLoading(true);
     try {
       const result = await dispatch(importProductsFromExcel(excelFile)).unwrap();
-      
+
       if (result.success) {
         setExcelFile(null);
         // Reset file input using ref
@@ -277,10 +277,10 @@ const CreateProducts = () => {
   useEffect(() => {
     if (showMediaPicker) {
       // Fetch ALL products for media picker (no limit)
-      dispatch(fetchProducts({ 
-        category: 'all', 
-        searchTerm: debouncedMediaSearchTerm, 
-        page: 1, 
+      dispatch(fetchProducts({
+        category: 'all',
+        searchTerm: debouncedMediaSearchTerm,
+        page: 1,
         limit: 1000, // Fetch all products
         stockFilter: 'active'
       }));
@@ -290,9 +290,9 @@ const CreateProducts = () => {
   }, [dispatch, showMediaPicker, debouncedMediaSearchTerm, fetchMedia]);
 
   // Filter products for media picker - only show products with images
-  const allProductsWithImages = products?.filter(product => 
-    product && 
-    product._id && 
+  const allProductsWithImages = products?.filter(product =>
+    product &&
+    product._id &&
     (product.picture?.secure_url || product.image)
   ) || [];
 
@@ -347,17 +347,17 @@ const CreateProducts = () => {
   const handleMediaSelect = async (product) => {
     setSelectedMediaImage(product);
     setShowMediaPicker(false);
-    
+
     const imageUrl = product.picture?.secure_url || product.image;
     if (imageUrl) {
       setIsConverting(true);
       setConversionInfo(null);
-      
+
       try {
         // Fetch the image
         const blob = await imageService.fetchImageBlob(imageUrl);
         const file = new File([blob], `${product.title}.jpg`, { type: blob.type });
-        
+
         // Convert to WebP if it's not already
         let processedFile = file;
         if (file.type.match(/^image\/(jpeg|jpg|png)$/)) {
@@ -367,7 +367,7 @@ const CreateProducts = () => {
             maxHeight: 1200,
             maintainAspectRatio: true
           });
-          
+
           // Show conversion info
           const compressionRatio = ((1 - processedFile.size / file.size) * 100).toFixed(1);
           setConversionInfo({
@@ -392,7 +392,7 @@ const CreateProducts = () => {
 
         // Update form state
         setInputValues(prev => ({ ...prev, picture: processedFile }));
-        
+
       } catch (error) {
         // Error processing selected image - handled silently, user can retry
       } finally {
@@ -414,16 +414,16 @@ const CreateProducts = () => {
                   <span className="whitespace-nowrap">Create New Products</span>
                 </CardTitle>
                 <TabsList className="grid grid-cols-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
-                  <TabsTrigger 
-                    value="single" 
+                  <TabsTrigger
+                    value="single"
                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm"
                   >
                     <Package className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span className="sm:hidden">Single</span>
                     <span className="hidden sm:inline">Single Product</span>
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="excel" 
+                  <TabsTrigger
+                    value="excel"
                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm"
                   >
                     <FileSpreadsheet className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -434,7 +434,7 @@ const CreateProducts = () => {
               </div>
             </CardHeader>
             <CardContent className="px-3 sm:px-4 md:px-6 pb-2">
-          
+
               <TabsContent value="single" className="mt-4">
                 <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-4">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -444,7 +444,7 @@ const CreateProducts = () => {
                         <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                         Basic Information
                       </h3>
-                      
+
                       {/* Title */}
                       <div className="space-y-2 mb-3 sm:mb-4">
                         <Label htmlFor="title" className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -467,8 +467,8 @@ const CreateProducts = () => {
                         {/* Price */}
                         <div className="space-y-2">
                           <Label htmlFor="price" className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-2">
-                          
-                            Price 
+
+                            Price
                           </Label>
                           <Input
                             value={inputValues.price}
@@ -508,7 +508,7 @@ const CreateProducts = () => {
                                   />
                                 </div>
                               </div>
-                              
+
                               {/* Category List */}
                               <div className="max-h-48 overflow-y-auto">
                                 {filteredCategories.length > 0 ? (
@@ -534,7 +534,7 @@ const CreateProducts = () => {
                         {/* Stock */}
                         <div className="space-y-2">
                           <Label htmlFor="stock" className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-2">
-                            
+
                             Quantity *
                           </Label>
                           <Input
@@ -552,7 +552,7 @@ const CreateProducts = () => {
                         {/* Featured Checkbox */}
                         <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                           <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-2">
-                           
+
                             Featured
                           </Label>
                           <div className="flex items-center h-10 sm:h-11 px-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -594,7 +594,7 @@ const CreateProducts = () => {
                         <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                         Product Image
                       </h3>
-                      
+
                       <div className="space-y-2 sm:space-y-3">
                         {/* Upload File Button */}
                         <div className="block w-full">
@@ -756,7 +756,7 @@ const CreateProducts = () => {
                   </div>
                 </form>
               </TabsContent>
-          
+
               <TabsContent value="excel" className="mt-4">
                 <div className="space-y-3 sm:space-y-4">
                   {/* Instructions */}
@@ -833,7 +833,7 @@ const CreateProducts = () => {
                       <Upload className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                       Upload Excel File
                     </h3>
-                    
+
                     <div className="space-y-3 sm:space-y-4">
                       {/* Upload Area */}
                       <div className="flex justify-center px-3 sm:px-4 pt-4 sm:pt-6 pb-4 sm:pb-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200 group">
@@ -931,130 +931,130 @@ const CreateProducts = () => {
           </Tabs>
         </Card>
 
-      {/* Media Picker Modal */}
-      {showMediaPicker && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-white rounded-xl sm:rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
-            <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                  <ImageIcon className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-base sm:text-xl font-semibold text-gray-800 truncate">Choose from Existing Images</h2>
-                  <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Select an image from your media library</p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowMediaPicker(false)}
-                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
-              >
-                <X className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
-            </div>
-
-            {/* Search */}
-            <div className="p-3 sm:p-4 border-b border-gray-200">
-              <div className="relative">
-                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
-                <Input
-                  placeholder="Search images..."
-                  value={mediaSearchTerm}
-                  onChange={handleMediaSearchChange}
-                  className="pl-9 sm:pl-12 h-10 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl text-sm"
-                />
-              </div>
-            </div>
-
-            
-
-            {/* Media Grid */}
-            <div className="p-2 sm:p-4 flex-1 overflow-y-auto">
-              {mediaLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary animate-spin" />
-                    <span className="text-sm sm:text-base text-gray-600 font-medium">Loading media...</span>
+        {/* Media Picker Modal */}
+        {showMediaPicker && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+            <div className="bg-white rounded-xl sm:rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
+              <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                    <ImageIcon className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base sm:text-xl font-semibold text-gray-800 truncate">Choose from Existing Images</h2>
+                    <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Select an image from your media library</p>
                   </div>
                 </div>
-              ) : filteredMediaProducts.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
-                  {filteredMediaProducts.map((product) => (
-                    <div
-                      key={product._id}
-                      className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-transparent hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white"
-                      onClick={() => handleMediaSelect(product)}
-                    >
-                      <div className="aspect-square bg-gray-50 relative">
-                        <LazyImage
-                          src={product.picture?.secure_url || product.image}
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                          fallback="/logo.jpeg"
-                          quality={85}
-                          loading="eager"
-                        />
-                        
-                        {/* Uploaded Media Indicator */}
-                        {product.isUploadedMedia && (
-                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium">
-                            <Upload className="h-3 w-3" />
-                            Uploaded
-                          </div>
-                        )}
-                        
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                          <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                            <Eye className="h-6 w-6 text-white" />
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Product title */}
-                      <div className="p-2 sm:p-3 bg-white">
-                        <p className="text-[10px] sm:text-xs text-gray-700 truncate font-medium" title={product.title}>
-                          {product.title}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 sm:py-12">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <ImageIcon className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No images found</h3>
-                  <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto px-4">
-                    {mediaSearchTerm 
-                      ? 'Try adjusting your search criteria or browse all available images'
-                      : 'No product images available in your media library'
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMediaPicker(false)}
+                  className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-gray-100 flex-shrink-0 ml-2"
+                >
+                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                </Button>
+              </div>
 
-            {/* Pagination - Bottom */}
-            {mediaTotalPages > 1 && (
-              <div className="px-2 sm:px-4 py-2 sm:py-3 border-t border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-center">
-                  <Pagination
-                    currentPage={mediaCurrentPage}
-                    totalPages={mediaTotalPages}
-                    onPageChange={handleMediaPageChange}
+              {/* Search */}
+              <div className="p-3 sm:p-4 border-b border-gray-200">
+                <div className="relative">
+                  <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+                  <Input
+                    placeholder="Search images..."
+                    value={mediaSearchTerm}
+                    onChange={handleMediaSearchChange}
+                    className="pl-9 sm:pl-12 h-10 sm:h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl text-sm"
                   />
                 </div>
               </div>
-            )}
 
-           
+
+
+              {/* Media Grid */}
+              <div className="p-2 sm:p-4 flex-1 overflow-y-auto">
+                {mediaLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary animate-spin" />
+                      <span className="text-sm sm:text-base text-gray-600 font-medium">Loading media...</span>
+                    </div>
+                  </div>
+                ) : filteredMediaProducts.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+                    {filteredMediaProducts.map((product) => (
+                      <div
+                        key={product._id}
+                        className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-transparent hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white"
+                        onClick={() => handleMediaSelect(product)}
+                      >
+                        <div className="aspect-square bg-gray-50 relative">
+                          <LazyImage
+                            src={product.picture?.secure_url || product.image}
+                            alt={product.title}
+                            className="w-full h-full object-cover"
+                            fallback="/logo.jpeg"
+                            quality={85}
+                            loading="eager"
+                          />
+
+                          {/* Uploaded Media Indicator */}
+                          {product.isUploadedMedia && (
+                            <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium">
+                              <Upload className="h-3 w-3" />
+                              Uploaded
+                            </div>
+                          )}
+
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                            <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                              <Eye className="h-6 w-6 text-white" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Product title */}
+                        <div className="p-2 sm:p-3 bg-white">
+                          <p className="text-[10px] sm:text-xs text-gray-700 truncate font-medium" title={product.title}>
+                            {product.title}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 sm:py-12">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <ImageIcon className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No images found</h3>
+                    <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto px-4">
+                      {mediaSearchTerm
+                        ? 'Try adjusting your search criteria or browse all available images'
+                        : 'No product images available in your media library'
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination - Bottom */}
+              {mediaTotalPages > 1 && (
+                <div className="px-2 sm:px-4 py-2 sm:py-3 border-t border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-center">
+                    <Pagination
+                      currentPage={mediaCurrentPage}
+                      totalPages={mediaTotalPages}
+                      onPageChange={handleMediaPageChange}
+                    />
+                  </div>
+                </div>
+              )}
+
+
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );

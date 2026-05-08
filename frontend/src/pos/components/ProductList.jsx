@@ -25,9 +25,9 @@ export const ProductList = ({
     () => localStorage.getItem('showProductSetting_expiryDate') === 'true'
   );
   const [showImportRefs, setShowImportRefs] = useState(
-    () => localStorage.getItem('showProductSetting_importRefNo') === 'true' || 
-          localStorage.getItem('showProductSetting_gdNumber') === 'true' || 
-          localStorage.getItem('showProductSetting_invoiceRef') === 'true'
+    () => localStorage.getItem('showProductSetting_importRefNo') === 'true' ||
+      localStorage.getItem('showProductSetting_gdNumber') === 'true' ||
+      localStorage.getItem('showProductSetting_invoiceRef') === 'true'
   );
 
 
@@ -55,8 +55,8 @@ export const ProductList = ({
     const handleVisibilitySettings = () => {
       setShowExpiryDate(localStorage.getItem('showProductSetting_expiryDate') === 'true');
       setShowImportRefs(
-        localStorage.getItem('showProductSetting_importRefNo') === 'true' || 
-        localStorage.getItem('showProductSetting_gdNumber') === 'true' || 
+        localStorage.getItem('showProductSetting_importRefNo') === 'true' ||
+        localStorage.getItem('showProductSetting_gdNumber') === 'true' ||
         localStorage.getItem('showProductSetting_invoiceRef') === 'true'
       );
     };

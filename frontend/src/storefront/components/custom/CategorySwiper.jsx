@@ -4,10 +4,10 @@ import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
-const CategorySwiper = React.memo(({ 
-  categories, 
-  selectedCategory, 
-  onCategorySelect 
+const CategorySwiper = React.memo(({
+  categories,
+  selectedCategory,
+  onCategorySelect
 }) => {
   const [chunkSize, setChunkSize] = useState(4);
 
@@ -16,7 +16,7 @@ const CategorySwiper = React.memo(({
       // Desktop/laptop: 8 categories, Mobile/tablet: 4 categories
       setChunkSize(window.innerWidth >= 1024 ? 8 : 4);
     };
-    
+
     handleResize(); // Set initial value
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -69,11 +69,10 @@ const CategorySwiper = React.memo(({
 
 const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
   <div
-    className={`flex flex-col items-center rounded-xl  ${
-      isSelected
+    className={`flex flex-col items-center rounded-xl  ${isSelected
         ? 'border border-primary shadow-md'
         : 'hover:shadow-sm'
-    } cursor-pointer text-center bg-white/80 backdrop-blur-sm transition-all hover:scale-105 active:scale-95`}
+      } cursor-pointer text-center bg-white/80 backdrop-blur-sm transition-all hover:scale-105 active:scale-95`}
     onClick={() => onSelect(category?._id)}
     role="button"
     tabIndex="0"

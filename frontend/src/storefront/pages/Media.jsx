@@ -15,7 +15,7 @@ import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, 
 const Media = () => {
   const dispatch = useDispatch();
   const { products, status, totalItems, searchResults, searchStatus, searchQuery: reduxSearchQuery } = useSelector((state) => state.products);
-  
+
   // Local state for filters
   const [category, setCategory] = useState('all');
   const [page, setPage] = useState(1);
@@ -56,13 +56,13 @@ const Media = () => {
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
-  
+
   // Separate state for uploaded media display in Upload tab
   const [filteredUploadedMedia, setFilteredUploadedMedia] = useState([]);
   const [uploadSearchTerm, setUploadSearchTerm] = useState(''); // Search term for uploaded media
   const [searchQuery, setSearchQuery] = useState(''); // Search term for gallery products
   const [hasSearched, setHasSearched] = useState(false);
-  
+
   // Pagination state for Upload tab
   const [uploadCurrentPage, setUploadCurrentPage] = useState(1);
   const [uploadPageSize, setUploadPageSize] = useState(24); // Set back to 24 per page as requested
@@ -82,10 +82,10 @@ const Media = () => {
   // Get deduplicated search results count for accurate display
   const uniqueSearchResultsCount = useMemo(() => {
     if (!hasSearched || !searchResults || searchResults.length === 0) return 0;
-    
+
     const seenIds = new Set();
     let count = 0;
-    
+
     for (const product of searchResults) {
       const productId = product._id?.toString();
       if (productId && !seenIds.has(productId)) {
@@ -93,7 +93,7 @@ const Media = () => {
         count++;
       }
     }
-    
+
     return count;
   }, [searchResults, hasSearched]);
 
@@ -101,20 +101,20 @@ const Media = () => {
   useEffect(() => {
     // For Gallery tab: Show only product images (no uploaded media)
     // Use search results if searching, otherwise use regular products
-    const productsToFilter = hasSearched && searchResults && searchResults.length > 0 
-      ? searchResults 
+    const productsToFilter = hasSearched && searchResults && searchResults.length > 0
+      ? searchResults
       : products;
-    
-    let filtered = productsToFilter.filter(product => 
-      product && 
-      product._id && 
+
+    let filtered = productsToFilter.filter(product =>
+      product &&
+      product._id &&
       (product.picture?.secure_url || product.image)
     );
 
     // Remove duplicates by _id to prevent React key warnings
     const uniqueProducts = [];
     const seenIds = new Set();
-    
+
     for (const product of filtered) {
       const productId = product._id?.toString();
       if (productId && !seenIds.has(productId)) {
@@ -128,22 +128,22 @@ const Media = () => {
 
   // Filter uploaded media for Upload tab with pagination and search
   useEffect(() => {
-    
+
     // First apply search filter
     let searchFiltered = uploadedMedia;
     if (uploadSearchTerm && uploadSearchTerm.trim()) {
       const searchLower = uploadSearchTerm.toLowerCase();
-      searchFiltered = uploadedMedia.filter(media => 
+      searchFiltered = uploadedMedia.filter(media =>
         media.name?.toLowerCase().includes(searchLower) ||
         media.originalName?.toLowerCase().includes(searchLower) ||
         media.url?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     // Remove duplicates by _id to prevent React key warnings
     const uniqueMedia = [];
     const seenIds = new Set();
-    
+
     for (const media of searchFiltered) {
       const mediaId = media._id?.toString();
       if (mediaId && !seenIds.has(mediaId)) {
@@ -151,7 +151,7 @@ const Media = () => {
         uniqueMedia.push(media);
       }
     }
-    
+
     if (showAllImages) {
       // Show all filtered images without pagination
       setFilteredUploadedMedia(uniqueMedia);
@@ -160,12 +160,12 @@ const Media = () => {
       // Calculate pagination
       const totalPages = Math.ceil(uniqueMedia.length / uploadPageSize);
       setUploadTotalPages(totalPages);
-      
+
       // Get current page items
       const startIndex = (uploadCurrentPage - 1) * uploadPageSize;
       const endIndex = startIndex + uploadPageSize;
       const paginatedMedia = uniqueMedia.slice(startIndex, endIndex);
-      
+
       setFilteredUploadedMedia(paginatedMedia);
     }
   }, [uploadedMedia, uploadCurrentPage, uploadPageSize, showAllImages, uploadSearchTerm]);
@@ -308,10 +308,10 @@ const Media = () => {
 
     // Get the URLs and names of selected items
     let imageData = [];
-    
+
     if (activeTab === 'gallery') {
       // For gallery, get product image URLs
-      const selectedProducts = filteredProducts.filter(product => 
+      const selectedProducts = filteredProducts.filter(product =>
         selectedItems.includes(product._id)
       );
       imageData = selectedProducts.map(product => ({
@@ -320,7 +320,7 @@ const Media = () => {
       })).filter(item => item.url);
     } else {
       // For upload tab, get uploaded media URLs
-      const selectedMedia = filteredUploadedMedia.filter(media => 
+      const selectedMedia = filteredUploadedMedia.filter(media =>
         selectedItems.includes(media._id)
       );
       imageData = selectedMedia.map(media => ({
@@ -344,14 +344,14 @@ const Media = () => {
             if (!mimeType.startsWith('image/')) {
               mimeType = 'image/jpeg';
             }
-            
+
             // Convert blob to File object with proper MIME type
             const fileName = `${item.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${index + 1}.${mimeType.split('/')[1] || 'jpg'}`;
-            const file = new File([blob], fileName, { 
+            const file = new File([blob], fileName, {
               type: mimeType,
               lastModified: Date.now()
             });
-            
+
             return file;
           } catch (error) {
             console.error(`Failed to fetch image ${item.url}:`, error);
@@ -375,11 +375,11 @@ const Media = () => {
         try {
           // Limit files to 10 for better compatibility with Windows Share
           const filesToShare = validFiles.slice(0, 10);
-          
+
           // Ensure files are valid File objects
           console.log('Attempting to share files:', filesToShare.length, 'files');
           console.log('File types:', filesToShare.map(f => ({ name: f.name, type: f.type, size: f.size })));
-          
+
           // Try sharing with files - Windows Share API should show all available apps including WhatsApp
           // Note: WhatsApp must be installed from Microsoft Store and registered as a share target
           await navigator.share({
@@ -392,17 +392,17 @@ const Media = () => {
           if (error.name === 'AbortError') {
             return;
           }
-          
+
           console.error('Share error:', error);
           console.log('Error details:', {
             name: error.name,
             message: error.message,
             canShare: navigator.canShare ? navigator.canShare({ files: validFiles }) : 'not supported'
           });
-          
+
           // If sharing files failed, check if canShare says it's not supported
           const canShareFiles = navigator.canShare && navigator.canShare({ files: validFiles });
-          
+
           if (!canShareFiles) {
             // Try sharing text with links as fallback
             try {
@@ -431,17 +431,17 @@ const Media = () => {
         // Create a ZIP file with all images
         const JSZip = (await import('jszip')).default;
         const zip = new JSZip();
-        
+
         validFiles.forEach((file) => {
           zip.file(file.name, file);
         });
 
-        const zipBlob = await zip.generateAsync({ 
+        const zipBlob = await zip.generateAsync({
           type: 'blob',
           compression: 'DEFLATE',
           compressionOptions: { level: 6 }
         });
-        
+
         const url = URL.createObjectURL(zipBlob);
         const link = document.createElement('a');
         link.href = url;
@@ -449,7 +449,7 @@ const Media = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Wait a bit for download to start, then open WhatsApp
         setTimeout(() => {
           URL.revokeObjectURL(url);
@@ -464,7 +464,7 @@ const Media = () => {
         window.open(whatsappUrl, '_blank');
         alert('Note: Sharing links instead of images. For image files, please use the share dialog on mobile devices.');
       }
-      
+
     } catch (error) {
       console.error('Error in share process:', error);
       alert('Failed to share images. Please try again.');
@@ -500,10 +500,10 @@ const Media = () => {
     try {
       // Get the image data for selected items
       let imageData = [];
-      
+
       if (activeTab === 'gallery') {
         // For gallery, get product image URLs and titles
-        const selectedProducts = filteredProducts.filter(product => 
+        const selectedProducts = filteredProducts.filter(product =>
           selectedItems.includes(product._id)
         );
         imageData = selectedProducts.map(product => ({
@@ -512,7 +512,7 @@ const Media = () => {
         })).filter(item => item.url);
       } else {
         // For upload tab, get uploaded media URLs and names
-        const selectedMedia = filteredUploadedMedia.filter(media => 
+        const selectedMedia = filteredUploadedMedia.filter(media =>
           selectedItems.includes(media._id)
         );
         imageData = selectedMedia.map(media => ({
@@ -540,7 +540,7 @@ const Media = () => {
       // Process images one by one
       for (let i = 0; i < imageData.length; i++) {
         const item = imageData[i];
-        
+
         // Add new page if needed (except for first item)
         if (i > 0 && yPosition + imageHeight + 30 > pageHeight - margin) {
           doc.addPage();
@@ -550,12 +550,12 @@ const Media = () => {
         try {
           // Get image as base64
           const imageBase64 = await getImageBase64(item.url);
-          
+
           if (imageBase64) {
             // Add title with border, ID number (wrap after 80 characters)
             const maxCharsPerLine = 80;
             let titleText = `${i + 1}. ${item.name}`;
-            
+
             // Split title into lines if longer than 80 characters
             const titleLines = [];
             if (titleText.length > maxCharsPerLine) {
@@ -579,13 +579,13 @@ const Media = () => {
             } else {
               titleLines.push(titleText);
             }
-            
+
             doc.setFontSize(12);
-            
+
             // Calculate title dimensions (for multi-line)
             const titlePadding = 2; // Reduced padding
             const lineHeight = 7;
-            
+
             // Calculate the maximum width needed for all lines
             let maxLineWidth = 0;
             titleLines.forEach(line => {
@@ -594,7 +594,7 @@ const Media = () => {
                 maxLineWidth = lineWidth;
               }
             });
-            
+
             // Add title text with ID number (bold, no border, centered)
             doc.setFont('helvetica', 'bold'); // Bold font
             doc.setTextColor(0, 0, 0); // Black color
@@ -605,7 +605,7 @@ const Media = () => {
               const textX = (pageWidth - textWidth) / 2; // Center horizontally
               doc.text(line, textX, textY);
             });
-            
+
             // Move position below the title text
             yPosition += (titleLines.length * lineHeight) + 5;
 
@@ -614,7 +614,7 @@ const Media = () => {
 
             // Add image below the title (centered)
             doc.addImage(imageBase64, 'JPEG', imageXPosition, yPosition, imageWidth, imageHeight);
-            
+
             // Draw border below the image - full width from margin to page edge
             doc.setDrawColor(0, 0, 0); // Black border
             doc.setLineWidth(0.3); // Thicker line for visibility
@@ -622,7 +622,7 @@ const Media = () => {
             const borderStartX = margin;
             const borderEndX = pageWidth - margin; // Full width from left margin to right margin
             doc.line(borderStartX, borderY, borderEndX, borderY);
-            
+
             yPosition += imageHeight + 15; // Add spacing after image
           }
         } catch (error) {
@@ -684,18 +684,18 @@ const Media = () => {
       try {
         const JSZip = (await import('jszip')).default;
         const zip = new JSZip();
-        
+
         // Fetch images in parallel batches for better performance
         const batchSize = 5; // Process 5 images at a time
         let processedCount = 0;
-        
+
         for (let i = 0; i < filteredUploadedMedia.length; i += batchSize) {
           const batch = filteredUploadedMedia.slice(i, i + batchSize);
-          
+
           // Process batch in parallel
           const batchPromises = batch.map(async (media, batchIndex) => {
             const imageUrl = media.url;
-            
+
             if (imageUrl) {
               try {
                 const blob = await imageService.fetchImageBlob(imageUrl, 30000);
@@ -708,29 +708,29 @@ const Media = () => {
             }
             return { fileName: null, blob: null, success: false };
           });
-          
+
           // Wait for batch to complete
           const batchResults = await Promise.all(batchPromises);
-          
+
           // Add successful results to zip
           batchResults.forEach(({ fileName, blob, success }) => {
             if (success && fileName && blob) {
               zip.file(fileName, blob);
             }
           });
-          
+
           processedCount += batch.length;
-          
+
           // Update progress
         }
 
         // Generate zip
-        const zipBlob = await zip.generateAsync({ 
+        const zipBlob = await zip.generateAsync({
           type: 'blob',
           compression: 'DEFLATE',
           compressionOptions: { level: 6 } // Balanced compression
         });
-        
+
         const url = URL.createObjectURL(zipBlob);
         const link = document.createElement('a');
         link.href = url;
@@ -742,11 +742,11 @@ const Media = () => {
       } catch (zipError) {
         // ZIP creation failed - fallback to individual downloads
         // Fallback: download images individually
-        
+
         for (let i = 0; i < filteredUploadedMedia.length; i++) {
           const media = filteredUploadedMedia[i];
           const imageUrl = media.url;
-          
+
           if (imageUrl) {
             try {
               const blob = await imageService.fetchImageBlob(imageUrl, 5000);
@@ -759,7 +759,7 @@ const Media = () => {
               link.click();
               document.body.removeChild(link);
               URL.revokeObjectURL(url);
-              
+
               // Show progress for individual downloads
             } catch (error) {
               // Failed to fetch image - skip and continue
@@ -783,18 +783,18 @@ const Media = () => {
       try {
         const JSZip = (await import('jszip')).default;
         const zip = new JSZip();
-        
+
         // Fetch images in parallel batches for better performance
         const batchSize = 5; // Process 5 images at a time
         let processedCount = 0;
-        
+
         for (let i = 0; i < filteredProducts.length; i += batchSize) {
           const batch = filteredProducts.slice(i, i + batchSize);
-          
+
           // Process batch in parallel
           const batchPromises = batch.map(async (product, batchIndex) => {
             const imageUrl = product.picture?.secure_url || product.image;
-            
+
             if (imageUrl) {
               try {
                 const blob = await imageService.fetchImageBlob(imageUrl, 30000);
@@ -807,29 +807,29 @@ const Media = () => {
             }
             return { fileName: null, blob: null, success: false };
           });
-          
+
           // Wait for batch to complete
           const batchResults = await Promise.all(batchPromises);
-          
+
           // Add successful results to zip
           batchResults.forEach(({ fileName, blob, success }) => {
             if (success && fileName && blob) {
               zip.file(fileName, blob);
             }
           });
-          
+
           processedCount += batch.length;
-          
+
           // Update progress
         }
 
         // Generate zip
-        const zipBlob = await zip.generateAsync({ 
+        const zipBlob = await zip.generateAsync({
           type: 'blob',
           compression: 'DEFLATE',
           compressionOptions: { level: 6 } // Balanced compression
         });
-        
+
         const url = URL.createObjectURL(zipBlob);
         const link = document.createElement('a');
         link.href = url;
@@ -841,11 +841,11 @@ const Media = () => {
       } catch (zipError) {
         // ZIP creation failed - fallback to individual downloads
         // Fallback: download images individually
-        
+
         for (let i = 0; i < filteredProducts.length; i++) {
           const product = filteredProducts[i];
           const imageUrl = product.picture?.secure_url || product.image;
-          
+
           if (imageUrl) {
             try {
               const blob = await imageService.fetchImageBlob(imageUrl, 5000);
@@ -858,7 +858,7 @@ const Media = () => {
               link.click();
               document.body.removeChild(link);
               URL.revokeObjectURL(url);
-              
+
               // Show progress for individual downloads
             } catch (error) {
               // Failed to fetch image - skip and continue
@@ -962,7 +962,7 @@ const Media = () => {
                   )}
                 </Button>
               </div>
-              
+
               {/* Search Results Info */}
               {hasSearched && searchQuery && (
                 <div className="text-xs sm:text-sm text-gray-600">
@@ -975,7 +975,7 @@ const Media = () => {
                   )}
                 </div>
               )}
-              
+
               {/* Action Buttons Row */}
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -987,7 +987,7 @@ const Media = () => {
                   <span className="hidden sm:inline">{selectMode ? 'Cancel Select' : 'Select'}</span>
                   <span className="sm:hidden">{selectMode ? 'Cancel' : 'Select'}</span>
                 </Button>
-                
+
                 {selectMode && selectedItems.length > 0 && (
                   <>
                     <Button
@@ -1079,8 +1079,8 @@ const Media = () => {
           {filteredProducts.length > 0 ? (
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
               {filteredProducts.map((product, index) => (
-                <div 
-                  key={product._id || `product-${index}`} 
+                <div
+                  key={product._id || `product-${index}`}
                   className="relative group transition-all duration-300 hover:scale-105"
                 >
                   {/* Selection Checkbox */}
@@ -1104,11 +1104,11 @@ const Media = () => {
 
                   {/* Product Image Only */}
                   <div className="relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 cursor-pointer w-full"
-                  onClick={() => {
-                    if (!selectMode) {
-                      handlePreviewImage(product.picture?.secure_url || product.image);
-                    }
-                  }}
+                    onClick={() => {
+                      if (!selectMode) {
+                        handlePreviewImage(product.picture?.secure_url || product.image);
+                      }
+                    }}
                   >
                     <LazyImage
                       src={product.picture?.secure_url || product.image}
@@ -1139,7 +1139,7 @@ const Media = () => {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        
+
                         <Button
                           variant="secondary"
                           size="sm"
@@ -1297,7 +1297,7 @@ const Media = () => {
 
             {/* Quick Upload Area */}
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                 onClick={() => setShowImportModal(true)}>
+              onClick={() => setShowImportModal(true)}>
               <div className="flex flex-col items-center gap-4">
                 <div className="bg-blue-100 rounded-full p-4">
                   <Upload className="h-8 w-8 text-blue-600" />
@@ -1370,9 +1370,8 @@ const Media = () => {
                           </span>
                         </button>
                         {selectedItems.length > 0 && (
-                          <span className={`text-xs sm:text-sm font-medium whitespace-nowrap ${
-                            selectMode ? 'text-blue-600' : 'text-red-600'
-                          }`}>
+                          <span className={`text-xs sm:text-sm font-medium whitespace-nowrap ${selectMode ? 'text-blue-600' : 'text-red-600'
+                            }`}>
                             {selectedItems.length} selected
                           </span>
                         )}
@@ -1403,11 +1402,11 @@ const Media = () => {
                       )}
 
                       <div className="aspect-square bg-gray-50 overflow-hidden rounded-lg cursor-pointer"
-                           onClick={() => {
-                             if (!selectMode && !deleteMode) {
-                               handlePreviewImage(media.url);
-                             }
-                           }}>
+                        onClick={() => {
+                          if (!selectMode && !deleteMode) {
+                            handlePreviewImage(media.url);
+                          }
+                        }}>
                         <LazyImage
                           src={media.url}
                           alt={media.name || 'Uploaded Image'}
@@ -1419,7 +1418,7 @@ const Media = () => {
                           <Upload className="h-3 w-3" />
                           Uploaded
                         </div>
-                        
+
                         {/* Hover overlay with actions */}
                         {!selectMode && !deleteMode && (
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
@@ -1434,7 +1433,7 @@ const Media = () => {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            
+
                             <Button
                               variant="secondary"
                               size="sm"
@@ -1467,7 +1466,7 @@ const Media = () => {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Upload Pagination */}
                 {!showAllImages && uploadTotalPages > 1 && (
                   <div className="mt-8">
@@ -1488,8 +1487,8 @@ const Media = () => {
                   {uploadSearchTerm ? 'No images found' : 'No uploaded images yet'}
                 </h3>
                 <p className="text-gray-500">
-                  {uploadSearchTerm 
-                    ? 'Try adjusting your search criteria' 
+                  {uploadSearchTerm
+                    ? 'Try adjusting your search criteria'
                     : 'Upload your first images to get started'
                   }
                 </p>
@@ -1584,11 +1583,10 @@ const Media = () => {
                       const sanitizedName = fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
                       const existingNames = uploadedMedia.map(media => media.name?.toLowerCase());
                       const isDuplicate = existingNames.includes(sanitizedName);
-                      
+
                       return (
-                        <div key={index} className={`text-xs truncate flex items-center gap-2 ${
-                          isDuplicate ? 'text-red-600' : 'text-gray-500'
-                        }`}>
+                        <div key={index} className={`text-xs truncate flex items-center gap-2 ${isDuplicate ? 'text-red-600' : 'text-gray-500'
+                          }`}>
                           {isDuplicate && <span className="text-red-500">⚠️</span>}
                           <span className={isDuplicate ? 'font-medium' : ''}>{file.name}</span>
                           {isDuplicate && <span className="text-red-500 text-xs">(already exists)</span>}
@@ -1602,10 +1600,10 @@ const Media = () => {
                     const existingNames = uploadedMedia.map(media => media.name?.toLowerCase());
                     return existingNames.includes(sanitizedName);
                   }) && (
-                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                      ⚠️ Some files have names that already exist. Please rename them or remove them from selection.
-                    </div>
-                  )}
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                        ⚠️ Some files have names that already exist. Please rename them or remove them from selection.
+                      </div>
+                    )}
                 </div>
               )}
 
@@ -1613,8 +1611,8 @@ const Media = () => {
                 <Button
                   onClick={handleImport}
                   disabled={
-                    isImporting || 
-                    selectedFiles.length === 0 || 
+                    isImporting ||
+                    selectedFiles.length === 0 ||
                     selectedFiles.some((file) => {
                       const fileName = file.name.replace(/\.[^/.]+$/, '');
                       const sanitizedName = fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
@@ -1626,7 +1624,7 @@ const Media = () => {
                 >
                   {isImporting ? 'Uploading...' : 'Upload to Cloudinary'}
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1663,7 +1661,7 @@ const Media = () => {
             <div className="space-y-4">
               <div className="text-sm text-gray-600">
                 <p>
-                  Export all {activeTab === 'gallery' ? filteredProducts.length : filteredUploadedMedia.length} 
+                  Export all {activeTab === 'gallery' ? filteredProducts.length : filteredUploadedMedia.length}
                   {activeTab === 'gallery' ? ' product images' : ' uploaded images'} as a ZIP file.
                 </p>
                 <p className="mt-2 text-xs text-gray-500">
@@ -1683,14 +1681,14 @@ const Media = () => {
                 <Button
                   onClick={activeTab === 'gallery' ? handleExport : handleUploadExport}
                   disabled={
-                    isExporting || 
+                    isExporting ||
                     (activeTab === 'gallery' ? filteredProducts.length === 0 : filteredUploadedMedia.length === 0)
                   }
                   className="flex-1 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isExporting ? 'Exporting...' : `Export All ${activeTab === 'gallery' ? 'Product' : 'Uploaded'} Images`}
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   onClick={() => setShowExportModal(false)}
@@ -1745,7 +1743,7 @@ const Media = () => {
                     </>
                   )}
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   onClick={() => setShowDeleteModal(false)}

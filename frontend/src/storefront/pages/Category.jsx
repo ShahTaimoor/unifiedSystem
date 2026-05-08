@@ -39,14 +39,14 @@ import {
   updateCategory,
   toggleCategoryActive,
 } from '@/storefront/redux/slices/categories/categoriesSlice';
-import { 
-  Loader2, 
-  PlusCircle, 
-  Trash2, 
-  Edit, 
-  X, 
-  Check, 
-  Search, 
+import {
+  Loader2,
+  PlusCircle,
+  Trash2,
+  Edit,
+  X,
+  Check,
+  Search,
   Filter,
   Grid3X3,
   List,
@@ -97,10 +97,10 @@ const Category = () => {
   const [activeStatusFilter, setActiveStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
   const [selectedCategories, setSelectedCategories] = useState([]); // Array of category IDs
   const { categories, status, error } = useSelector((state) => state.categories);
-  
+
   // Debounce search term to avoid too many API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  
+
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -136,7 +136,7 @@ const Category = () => {
       name: inputValues.name,
       picture: inputValues.picture
     });
-    
+
     if (!result.success) {
       const firstError = result.error?.issues?.[0] || result.error?.errors?.[0];
       if (firstError) {
@@ -181,20 +181,20 @@ const Category = () => {
 
     // Validate with Zod - only validate name, picture is optional for updates
     const { categorySchema } = await import('@/storefront/schemas/categorySchemas');
-    
+
     // Prepare validation data - handle picture properly
     // If picture is null or not a File, don't include it in validation (it's optional for updates)
     const validationData = {
       name: editingCategory.name.trim(),
     };
-    
+
     // Only validate picture if it's a File (new upload)
     if (editingCategory.picture instanceof File) {
       validationData.picture = editingCategory.picture;
     }
-    
+
     const result = categorySchema.safeParse(validationData);
-    
+
     if (!result.success) {
       const firstError = result.error?.issues?.[0] || result.error?.errors?.[0];
       if (firstError) {
@@ -210,18 +210,18 @@ const Category = () => {
       name: editingCategory.name.trim(),
       slug: editingCategory.slug,
     };
-    
+
     // Only include picture if it's a File (new upload)
     // If null/undefined, backend will keep existing picture
     if (editingCategory.picture instanceof File) {
       updateData.picture = editingCategory.picture;
     }
-    
+
     // Add position if it's provided
     if (editingCategory.position !== undefined && editingCategory.position !== '') {
       updateData.position = parseInt(editingCategory.position);
     }
-    
+
     // Add active status if it's provided - ensure it's a boolean
     if (editingCategory.active !== undefined) {
       updateData.active = Boolean(editingCategory.active);
@@ -295,8 +295,8 @@ const Category = () => {
 
   const startEditing = (category) => {
     // Store the existing image URL for preview
-    setEditingCategory({ 
-      ...category, 
+    setEditingCategory({
+      ...category,
       picture: null, // New file upload (null means no new file selected)
       existingImage: category.image || category.picture?.secure_url || null // Keep existing image URL for preview
     });
@@ -328,7 +328,7 @@ const Category = () => {
     })
     .sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'name':
           comparison = a.name.localeCompare(b.name);
@@ -342,7 +342,7 @@ const Category = () => {
         default:
           comparison = 0;
       }
-      
+
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
@@ -447,255 +447,255 @@ const Category = () => {
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
-                  onClick={startAdding} 
+                <Button
+                  onClick={startAdding}
                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base w-full sm:w-auto"
                 >
                   <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                   Add Category
                 </Button>
               </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
-            <DialogHeader className="pb-3 sm:pb-4 border-b border-gray-100">
-              <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">
-                {editingCategory ? 'Update Category' : 'Add New Category'}
-              </DialogTitle>
-              <DialogDescription className="text-gray-500 text-xs sm:text-sm">
-                {editingCategory
-                  ? 'Edit the selected category details and image'
-                  : 'Create a new product category with name and image'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form
-              encType="multipart/form-data"
-              onSubmit={handleSubmit}
-              className="space-y-4 sm:space-y-6 pt-3 sm:pt-4"
-            >
-              <div className="space-y-3">
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                  Category Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={editingCategory ? editingCategory.name : inputValues.name}
-                  onChange={handleChange}
-                  placeholder="e.g. Electronics, Clothing, Automotive"
-                  required
-                  disabled={loading}
-                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-lg"
-                />
-              </div>
+              <DialogContent className="sm:max-w-[600px] max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
+                <DialogHeader className="pb-3 sm:pb-4 border-b border-gray-100">
+                  <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">
+                    {editingCategory ? 'Update Category' : 'Add New Category'}
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-500 text-xs sm:text-sm">
+                    {editingCategory
+                      ? 'Edit the selected category details and image'
+                      : 'Create a new product category with name and image'}
+                  </DialogDescription>
+                </DialogHeader>
 
-              {editingCategory && (
-                <>
+                <form
+                  encType="multipart/form-data"
+                  onSubmit={handleSubmit}
+                  className="space-y-4 sm:space-y-6 pt-3 sm:pt-4"
+                >
                   <div className="space-y-3">
-                    <Label htmlFor="position" className="text-sm font-medium text-gray-700">
-                      Position (Optional)
+                    <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                      Category Name <span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      id="position"
-                      name="position"
-                      type="number"
-                      value={editingCategory.position || ''}
+                      id="name"
+                      name="name"
+                      value={editingCategory ? editingCategory.name : inputValues.name}
                       onChange={handleChange}
-                      placeholder="Enter position number (1, 2, 3...)"
-                      min="1"
+                      placeholder="e.g. Electronics, Clothing, Automotive"
+                      required
                       disabled={loading}
                       className="h-11 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-lg"
                     />
-                    <p className="text-sm text-gray-500">
-                      Lower numbers appear first. Leave empty to keep current position.
-                    </p>
                   </div>
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Status
-                    </Label>
-                    <div className="flex items-center gap-3">
-                      <Badge variant={editingCategory.active ? "default" : "secondary"} className={`text-sm px-3 py-1 ${editingCategory.active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600'}`}>
-                        {editingCategory.active ? (
-                          <>
-                            <Power className="h-3 w-3 mr-1" />
-                            Active
-                          </>
-                        ) : (
-                          <>
-                            <PowerOff className="h-3 w-3 mr-1" />
-                            Inactive
-                          </>
-                        )}
-                      </Badge>
+
+                  {editingCategory && (
+                    <>
+                      <div className="space-y-3">
+                        <Label htmlFor="position" className="text-sm font-medium text-gray-700">
+                          Position (Optional)
+                        </Label>
+                        <Input
+                          id="position"
+                          name="position"
+                          type="number"
+                          value={editingCategory.position || ''}
+                          onChange={handleChange}
+                          placeholder="Enter position number (1, 2, 3...)"
+                          min="1"
+                          disabled={loading}
+                          className="h-11 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-lg"
+                        />
+                        <p className="text-sm text-gray-500">
+                          Lower numbers appear first. Leave empty to keep current position.
+                        </p>
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-gray-700">
+                          Status
+                        </Label>
+                        <div className="flex items-center gap-3">
+                          <Badge variant={editingCategory.active ? "default" : "secondary"} className={`text-sm px-3 py-1 ${editingCategory.active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600'}`}>
+                            {editingCategory.active ? (
+                              <>
+                                <Power className="h-3 w-3 mr-1" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <PowerOff className="h-3 w-3 mr-1" />
+                                Inactive
+                              </>
+                            )}
+                          </Badge>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingCategory({ ...editingCategory, active: !editingCategory.active })}
+                            disabled={loading}
+                            className="h-9 border-gray-300 hover:bg-gray-50"
+                          >
+                            {editingCategory.active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          Active categories are visible to users. Inactive categories are hidden.
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <Label htmlFor="picture" className="text-sm font-medium text-gray-700">
+                        Category Image <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <div className="flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200 group bg-gray-50">
+                          <div className="space-y-3 text-center">
+                            <div className="mx-auto w-16 h-16 bg-white rounded-full flex items-center justify-center group-hover:bg-blue-50 transition-colors duration-200 shadow-sm border border-gray-100">
+                              <ImageIcon className="w-8 h-8 text-gray-400 group-hover:text-blue-500" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex text-sm text-gray-600 justify-center">
+                                <label
+                                  htmlFor="picture"
+                                  className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none px-3 py-1 border border-blue-200 hover:border-blue-300 transition-colors"
+                                >
+                                  <span>Choose File</span>
+                                  <input
+                                    id="picture"
+                                    name="picture"
+                                    type="file"
+                                    className="sr-only"
+                                    onChange={handleChange}
+                                    accept="image/*"
+                                  />
+                                </label>
+                                <p className="pl-2 text-gray-500 py-1">or drag and drop</p>
+                              </div>
+                              <p className="text-xs text-gray-400">
+                                PNG, JPG, GIF, WEBP up to 5MB
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Image preview */}
+                    {(inputValues.picture || editingCategory?.picture || editingCategory?.existingImage) && (
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-start gap-4">
+                          <img
+                            src={
+                              editingCategory?.picture instanceof File
+                                ? URL.createObjectURL(editingCategory.picture)
+                                : inputValues.picture instanceof File
+                                  ? URL.createObjectURL(inputValues.picture)
+                                  : editingCategory?.existingImage || inputValues.picture || '/placeholder-image.png'
+                            }
+                            alt="Image Preview"
+                            className="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-sm"
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            loading="eager"
+                            decoding="async"
+                            onError={(e) => {
+                              e.target.src = '/placeholder-image.png';
+                            }}
+                          />
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-medium text-gray-900">
+                                {editingCategory?.picture instanceof File || inputValues.picture instanceof File
+                                  ? 'Selected Image'
+                                  : 'Current Image'}
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (editingCategory) {
+                                    setEditingCategory({ ...editingCategory, picture: null, existingImage: null });
+                                  } else {
+                                    setInputValues((v) => ({ ...v, picture: null }));
+                                  }
+                                }}
+                                className="text-sm font-medium text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                                Remove
+                              </button>
+                            </div>
+                            <div className="text-sm text-gray-500 space-y-1">
+                              {(editingCategory?.picture instanceof File || inputValues.picture instanceof File) ? (
+                                <>
+                                  <p className="truncate">
+                                    <span className="font-medium">Name:</span>{' '}
+                                    {(editingCategory?.picture || inputValues.picture)?.name}
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Size:</span>{' '}
+                                    {((editingCategory?.picture || inputValues.picture)?.size / 1024 / 1024).toFixed(2)} MB
+                                  </p>
+                                  <p>
+                                    <span className="font-medium">Type:</span>{' '}
+                                    {(editingCategory?.picture || inputValues.picture)?.type?.split('/')[1]?.toUpperCase()}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-xs text-gray-400 italic">
+                                  Current category image. Select a new file to replace it.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <DialogFooter className="pt-4 sm:pt-6 border-t border-gray-100">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        onClick={() => setEditingCategory({ ...editingCategory, active: !editingCategory.active })}
+                        onClick={cancelEditing}
                         disabled={loading}
-                        className="h-9 border-gray-300 hover:bg-gray-50"
+                        className="flex-1 h-10 sm:h-11 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm sm:text-base"
                       >
-                        {editingCategory.active ? 'Deactivate' : 'Activate'}
+                        <X className="mr-2 h-4 w-4" />
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        className="flex-1 h-10 sm:h-11 bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 text-sm sm:text-base"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin text-white" />
+                            <span className="hidden sm:inline">{editingCategory ? 'Updating...' : 'Adding...'}</span>
+                            <span className="sm:hidden">{editingCategory ? 'Updating' : 'Adding'}</span>
+                          </>
+                        ) : (
+                          <>
+                            {editingCategory ? (
+                              <Check className="mr-2 h-4 w-4" />
+                            ) : (
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                            )}
+                            <span className="hidden sm:inline">{editingCategory ? 'Update Category' : 'Add Category'}</span>
+                            <span className="sm:hidden">{editingCategory ? 'Update' : 'Add'}</span>
+                          </>
+                        )}
                       </Button>
                     </div>
-                    <p className="text-sm text-gray-500">
-                      Active categories are visible to users. Inactive categories are hidden.
-                    </p>
-                  </div>
-                </>
-              )}
-
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <Label htmlFor="picture" className="text-sm font-medium text-gray-700">
-                    Category Image <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <div className="flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200 group bg-gray-50">
-                      <div className="space-y-3 text-center">
-                        <div className="mx-auto w-16 h-16 bg-white rounded-full flex items-center justify-center group-hover:bg-blue-50 transition-colors duration-200 shadow-sm border border-gray-100">
-                          <ImageIcon className="w-8 h-8 text-gray-400 group-hover:text-blue-500" />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex text-sm text-gray-600 justify-center">
-                            <label
-                              htmlFor="picture"
-                              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none px-3 py-1 border border-blue-200 hover:border-blue-300 transition-colors"
-                            >
-                              <span>Choose File</span>
-                              <input
-                                id="picture"
-                                name="picture"
-                                type="file"
-                                className="sr-only"
-                                onChange={handleChange}
-                                accept="image/*"
-                              />
-                            </label>
-                            <p className="pl-2 text-gray-500 py-1">or drag and drop</p>
-                          </div>
-                          <p className="text-xs text-gray-400">
-                            PNG, JPG, GIF, WEBP up to 5MB
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Image preview */}
-                {(inputValues.picture || editingCategory?.picture || editingCategory?.existingImage) && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={
-                          editingCategory?.picture instanceof File
-                            ? URL.createObjectURL(editingCategory.picture)
-                            : inputValues.picture instanceof File
-                            ? URL.createObjectURL(inputValues.picture)
-                            : editingCategory?.existingImage || inputValues.picture || '/placeholder-image.png'
-                        }
-                        alt="Image Preview"
-                        className="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-sm"
-                        crossOrigin="anonymous"
-                        referrerPolicy="no-referrer-when-downgrade"
-                        loading="eager"
-                        decoding="async"
-                        onError={(e) => {
-                          e.target.src = '/placeholder-image.png';
-                        }}
-                      />
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-gray-900">
-                            {editingCategory?.picture instanceof File || inputValues.picture instanceof File
-                              ? 'Selected Image'
-                              : 'Current Image'}
-                          </h4>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (editingCategory) {
-                                setEditingCategory({ ...editingCategory, picture: null, existingImage: null });
-                              } else {
-                                setInputValues((v) => ({ ...v, picture: null }));
-                              }
-                            }}
-                            className="text-sm font-medium text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                            Remove
-                          </button>
-                        </div>
-                        <div className="text-sm text-gray-500 space-y-1">
-                          {(editingCategory?.picture instanceof File || inputValues.picture instanceof File) ? (
-                            <>
-                              <p className="truncate">
-                                <span className="font-medium">Name:</span>{' '}
-                                {(editingCategory?.picture || inputValues.picture)?.name}
-                              </p>
-                              <p>
-                                <span className="font-medium">Size:</span>{' '}
-                                {((editingCategory?.picture || inputValues.picture)?.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                              <p>
-                                <span className="font-medium">Type:</span>{' '}
-                                {(editingCategory?.picture || inputValues.picture)?.type?.split('/')[1]?.toUpperCase()}
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-xs text-gray-400 italic">
-                              Current category image. Select a new file to replace it.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <DialogFooter className="pt-4 sm:pt-6 border-t border-gray-100">
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={cancelEditing} 
-                    disabled={loading}
-                    className="flex-1 h-10 sm:h-11 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm sm:text-base"
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={loading}
-                    className="flex-1 h-10 sm:h-11 bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 text-sm sm:text-base"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-white" />
-                        <span className="hidden sm:inline">{editingCategory ? 'Updating...' : 'Adding...'}</span>
-                        <span className="sm:hidden">{editingCategory ? 'Updating' : 'Adding'}</span>
-                      </>
-                    ) : (
-                      <>
-                        {editingCategory ? (
-                          <Check className="mr-2 h-4 w-4" />
-                        ) : (
-                          <PlusCircle className="mr-2 h-4 w-4" />
-                        )}
-                        <span className="hidden sm:inline">{editingCategory ? 'Update Category' : 'Add Category'}</span>
-                        <span className="sm:hidden">{editingCategory ? 'Update' : 'Add'}</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-        </div>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Search and Filter Controls */}
@@ -822,7 +822,7 @@ const Category = () => {
                     onCheckedChange={handleSelectAll}
                     className="h-4 w-4 sm:h-5 sm:w-5 border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <Label 
+                  <Label
                     htmlFor="select-all"
                     className="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer"
                     onClick={() => handleSelectAll(!isAllSelected)}
@@ -956,15 +956,15 @@ const Category = () => {
                                   </Badge>
                                 </div>
                               </div>
-                              
+
                               <div className="flex items-center justify-between mt-4">
-                                <Badge 
-                                  variant={category.active ? "default" : "outline"} 
+                                <Badge
+                                  variant={category.active ? "default" : "outline"}
                                   className={`text-xs px-2 py-0.5 border-0 ${category.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
                                 >
                                   {category.active ? 'Active' : 'Inactive'}
                                 </Badge>
-                                
+
                                 <div className="flex gap-1">
                                   <Button
                                     variant="ghost"
@@ -1003,7 +1003,7 @@ const Category = () => {
                                       <AlertDialogHeader>
                                         <AlertDialogTitle>Delete Category</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          Are you sure you want to delete the category <strong>"{category.name}"</strong>? 
+                                          Are you sure you want to delete the category <strong>"{category.name}"</strong>?
                                           This action will:
                                           <ul className="list-disc list-inside mt-2 space-y-1">
                                             <li>Permanently remove the category from the system</li>
@@ -1070,8 +1070,8 @@ const Category = () => {
                                   <Badge variant="secondary" className="text-[10px] sm:text-xs font-mono bg-gray-100 text-gray-600 border border-gray-200">
                                     Pos: {category.position || index + 1}
                                   </Badge>
-                                  <Badge 
-                                    variant={category.active ? "default" : "outline"} 
+                                  <Badge
+                                    variant={category.active ? "default" : "outline"}
                                     className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 border-0 ${category.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
                                   >
                                     {category.active ? 'Active' : 'Inactive'}
@@ -1127,7 +1127,7 @@ const Category = () => {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete Category</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete the category <strong>"{category.name}"</strong>? 
+                                      Are you sure you want to delete the category <strong>"{category.name}"</strong>?
                                       This action will:
                                       <ul className="list-disc list-inside mt-2 space-y-1">
                                         <li>Permanently remove the category from the system</li>

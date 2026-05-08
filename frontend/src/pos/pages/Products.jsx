@@ -117,19 +117,10 @@ export const Products = () => {
     return flattenCategoryApiTree(roots);
   }, [categoryTreeRaw]);
 
-  const allProducts = useMemo(() => {
-    if (!data) return [];
-    if (Array.isArray(data)) return data;
-    if (data?.data?.products) return data.data.products;
-    if (data?.products) return data.products;
-    if (data?.data?.data?.products) return data.data.data.products;
-    if (data?.items) return data.items;
-    return [];
-  }, [data]);
+  const allProducts = useMemo(() => data?.products || [], [data]);
 
   const pagination = useMemo(() => {
-    const raw = data?.pagination || data?.data?.pagination || {};
-    return getUiPagination(raw, itemsPerPage);
+    return getUiPagination(data?.pagination || {}, itemsPerPage);
   }, [data, getUiPagination, itemsPerPage]);
 
   const products = allProducts;

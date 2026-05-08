@@ -292,7 +292,7 @@ router.post('/', [
   auth,
   requirePermission('create_customers'),
   preventDuplicates({ windowMs: 10000 }), // Prevent duplicate submissions within 10 seconds
-  body('name').trim().isLength({ min: 1 }).withMessage('Name is required'),
+  body('name').optional({ checkFalsy: true }).trim(),
   body('email').optional({ nullable: true, checkFalsy: true }).isEmail().withMessage('Valid email is required'),
   body('phone').optional().trim(),
   body('businessName').trim().isLength({ min: 1 }).withMessage('Business name is required'),

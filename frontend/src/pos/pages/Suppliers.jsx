@@ -363,10 +363,13 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen, isSubmitting }) => {
       toast.error('Company name is required');
       return;
     }
+    // Contact name is now optional as backend provides a fallback
+    /* 
     if (!formData.contactPerson?.name?.trim()) {
       toast.error('Contact name is required');
       return;
     }
+    */
 
     // Prevent submission if duplicates exist
     if (emailExists) {
@@ -437,12 +440,11 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen, isSubmitting }) => {
           {visibilitySettings.contactPerson && (
             <div className="min-w-0">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                Contact Person *
+                Contact Person (Optional)
               </label>
               <div className="relative">
                 <Input
                   type="text"
-                  required
                   autoComplete="off"
                   value={formData.contactPerson?.name || ''}
                   onChange={(e) => setFormData({
@@ -854,8 +856,8 @@ export const Suppliers = () => {
     setCurrentPage(1);
   };
 
-  const allSuppliers = suppliers?.data?.suppliers || suppliers?.suppliers || [];
-  const pagination = suppliers?.data?.pagination || suppliers?.pagination || {};
+  const allSuppliers = suppliers?.suppliers || [];
+  const pagination = suppliers?.pagination || {};
   const filteredSuppliers = useFuzzySearch(
     allSuppliers,
     searchTerm,
