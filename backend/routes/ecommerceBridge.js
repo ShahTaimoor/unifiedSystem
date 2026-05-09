@@ -230,11 +230,12 @@ router.get(
       const limit = parseInt(req.query.limit, 10) || 20;
       const page = parseInt(req.query.page, 10) || 1;
       const products = await productService.searchProducts(q, limit);
+      const adaptedProducts = Array.isArray(products) ? products.map(adaptProduct) : [];
       res.json({
-        data: products,
+        data: adaptedProducts,
         query: q,
         pagination: {
-          total: products.length,
+          total: adaptedProducts.length,
           page,
           limit,
           totalPages: 1,
@@ -260,9 +261,10 @@ router.get(
       const q = req.query.q;
       const limit = parseInt(req.query.limit, 10) || 8;
       const products = await productService.searchProducts(q, limit);
+      const adaptedProducts = Array.isArray(products) ? products.map(adaptProduct) : [];
       res.json({
         data: {
-          products,
+          products: adaptedProducts,
           categories: [],
         },
         query: q,
