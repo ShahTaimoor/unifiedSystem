@@ -37,6 +37,12 @@ const adaptCategory = (category) => {
     id: category.id || category._id || null,
     slug: category.slug || slugify(category.name || ""),
     active: category.active !== undefined ? category.active : category.isActive,
+    image:
+      category.image ||
+      category.imageUrl ||
+      category.picture?.secure_url ||
+      category.picture?.url ||
+      null,
   };
 
   if (adapted.isActive === undefined && category.active !== undefined) {
@@ -351,11 +357,9 @@ router.put(
           salesOrder.status,
         )
       ) {
-        return res
-          .status(400)
-          .json({
-            message: "Cannot update order after confirmation or invoicing",
-          });
+        return res.status(400).json({
+          message: "Cannot update order after confirmation or invoicing",
+        });
       }
       const updateData = {
         status,
