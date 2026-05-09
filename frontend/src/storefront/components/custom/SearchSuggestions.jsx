@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useDebounce } from '@/storefront/hooks/use-debounce';
 import { fetchSearchSuggestions } from '@/storefront/redux/slices/products/productSlice';
 import { Input } from '../ui/input';
@@ -107,6 +107,7 @@ const SearchSuggestions = ({
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const isMobile = useIsMobile();
   
   // Initialize state from URL if not controlled
@@ -124,22 +125,26 @@ const SearchSuggestions = ({
   // Sync internal state with URL search param if not controlled
   useEffect(() => {
     if (value === undefined) {
-      // Only update if URL value actually changed
-      if (urlSearchValue !== prevUrlSearchRef.current) {
-        prevUrlSearchRef.current = urlSearchValue;
-        setInternalSearchQuery(urlSearchValue);
-        // Hide suggestions when search is cleared or when navigating to search results
-        if (!urlSearchValue) {
-          setShowSuggestions(false);
-          setSelectedIndex(-1);
-        } else {
-          // Hide suggestions when URL changes to search results (navigation happened)
-          setShowSuggestions(false);
-          setSelectedIndex(-1);
-        }
+      const currentUrlSearch = searchParams.get('search') || '';
+      
+      // If we have a search param in URL, always sync it
+      if (currentUrlSearch) {
+        setInternalSearchQuery(currentUrlSearch);
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+      } 
+      // If no search param in URL, only clear if we're NOT on a product page
+      // This allows the product name to stay in the search bar while viewing the product,
+      // but clears it when going back to home or other pages.
+      else if (!location.pathname.includes('/product/')) {
+        setInternalSearchQuery('');
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
       }
+      
+      prevUrlSearchRef.current = currentUrlSearch;
     }
-  }, [urlSearchValue, value]);
+  }, [urlSearchValue, value, location.pathname]);
 
   // Use controlled value if provided, otherwise use internal state
   const searchQuery = (value !== undefined && value !== null) ? String(value) : (internalSearchQuery || '');
