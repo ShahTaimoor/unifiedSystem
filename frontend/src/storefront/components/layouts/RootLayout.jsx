@@ -11,7 +11,7 @@ const RootLayout = ({ children }) => {
     return (
         <>
             <Navbar />
-            <main className={isMobile ? 'pb-20' : ''}>
+            <main className={`min-h-screen ${isMobile ? 'pb-20' : 'pt-16'}`}>
                 {children}
             </main>
             <Footer />

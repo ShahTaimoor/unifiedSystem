@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useDebounce } from '@/storefront/hooks/use-debounce';
 import { fetchSearchSuggestions } from '@/storefront/redux/slices/products/productSlice';
 import { Input } from '../ui/input';
@@ -12,7 +12,7 @@ import { useIsMobile } from '@/storefront/hooks/use-mobile';
  * Capitalize first letter of each word
  */
 const capitalizeWords = (text) => {
-    if (!text) return text;
+    if (!text || typeof text !== 'string') return text;
     return text.split(' ').map(word => {
         if (word.length === 0) return word;
         return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -23,7 +23,7 @@ const capitalizeWords = (text) => {
  * Highlight keywords in text
  */
 const highlightKeywords = (text, keywords) => {
-    if (!text || !keywords || keywords.length === 0) return text;
+    if (!text || typeof text !== 'string' || !keywords || keywords.length === 0) return text;
     
     const lowerText = text.toLowerCase();
     const parts = [];
@@ -35,6 +35,7 @@ const highlightKeywords = (text, keywords) => {
     // Find all matches
     const matches = [];
     sortedKeywords.forEach(keyword => {
+        if (!keyword || typeof keyword !== 'string') return;
         const lowerKeyword = keyword.toLowerCase();
         let index = lowerText.indexOf(lowerKeyword, lastIndex);
         while (index !== -1) {
@@ -106,10 +107,11 @@ const SearchSuggestions = ({
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const isMobile = useIsMobile();
   
   // Initialize state from URL if not controlled
-  const initialSearchValue = value !== undefined ? value : (searchParams.get('search') || '');
+  const initialSearchValue = (value !== undefined && value !== null) ? String(value) : (searchParams.get('search') || '');
   const [internalSearchQuery, setInternalSearchQuery] = useState(initialSearchValue);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -123,32 +125,37 @@ const SearchSuggestions = ({
   // Sync internal state with URL search param if not controlled
   useEffect(() => {
     if (value === undefined) {
-      // Only update if URL value actually changed
-      if (urlSearchValue !== prevUrlSearchRef.current) {
-        prevUrlSearchRef.current = urlSearchValue;
-        setInternalSearchQuery(urlSearchValue);
-        // Hide suggestions when search is cleared or when navigating to search results
-        if (!urlSearchValue) {
-          setShowSuggestions(false);
-          setSelectedIndex(-1);
-        } else {
-          // Hide suggestions when URL changes to search results (navigation happened)
-          setShowSuggestions(false);
-          setSelectedIndex(-1);
-        }
+      const currentUrlSearch = searchParams.get('search') || '';
+      
+      // If we have a search param in URL, always sync it
+      if (currentUrlSearch) {
+        setInternalSearchQuery(currentUrlSearch);
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
+      } 
+      // If no search param in URL, only clear if we're NOT on a product page
+      // This allows the product name to stay in the search bar while viewing the product,
+      // but clears it when going back to home or other pages.
+      else if (!location.pathname.includes('/product/')) {
+        setInternalSearchQuery('');
+        setShowSuggestions(false);
+        setSelectedIndex(-1);
       }
+      
+      prevUrlSearchRef.current = currentUrlSearch;
     }
-  }, [urlSearchValue, value]);
+  }, [urlSearchValue, value, location.pathname]);
 
   // Use controlled value if provided, otherwise use internal state
-  const searchQuery = value !== undefined ? value : internalSearchQuery;
+  const searchQuery = (value !== undefined && value !== null) ? String(value) : (internalSearchQuery || '');
 
   const { suggestions, suggestionsStatus, suggestionsQuery } = useSelector((state) => state.products);
   
   // Extract keywords from query for highlighting
   const keywords = useMemo(() => {
     const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from']);
-    return searchQuery
+    const query = searchQuery || '';
+    return query
       .toLowerCase()
       .trim()
       .split(/\s+/)
@@ -178,7 +185,8 @@ const SearchSuggestions = ({
 
   // Fetch suggestions when debounced query changes (only if 2+ characters)
   useEffect(() => {
-    const trimmedQuery = debouncedQuery.trim();
+    const query = debouncedQuery || '';
+    const trimmedQuery = query.trim();
     if (trimmedQuery.length >= 2) {
       dispatch(fetchSearchSuggestions({ query: trimmedQuery, limit: 8 }));
     }
@@ -187,7 +195,8 @@ const SearchSuggestions = ({
   // Show suggestions when user types (only if 2+ characters as per requirements)
   // But don't show if the query matches the URL search param (meaning we're on search results page)
   useEffect(() => {
-    const trimmedQuery = searchQuery.trim();
+    const query = searchQuery || '';
+    const trimmedQuery = query.trim();
     const urlSearch = searchParams.get('search') || '';
     
     // Only show suggestions if:
@@ -217,7 +226,7 @@ const SearchSuggestions = ({
 
   // Handle input change
   const handleInputChange = (e) => {
-    const newValue = e.target.value;
+    const newValue = e.target.value || '';
     const trimmedValue = newValue.trim();
     
     // If onChange is provided, it expects the value directly, not an event
@@ -254,11 +263,13 @@ const SearchSuggestions = ({
 
   // Handle product selection
   const handleSelectProduct = useCallback((product) => {
+    if (!product) return;
+    const productTitle = product.title || '';
     // Update internal state always
-    setInternalSearchQuery(product.title);
+    setInternalSearchQuery(productTitle);
     // If onChange is provided (controlled mode), also call it
     if (onChange && typeof onChange === 'function') {
-      onChange(product.title);
+      onChange(productTitle);
     }
     setShowSuggestions(false);
     setSelectedIndex(-1);
@@ -327,7 +338,8 @@ const SearchSuggestions = ({
 
   // Handle search button click
   const handleSearch = useCallback(() => {
-    const trimmedQuery = searchQuery.trim();
+    const query = searchQuery || '';
+    const trimmedQuery = query.trim();
     if (trimmedQuery.length < 2) {
       return;
     }
@@ -494,7 +506,8 @@ const SearchSuggestions = ({
                         key={`category-${category}`}
                         onClick={() => {
                           setShowSuggestions(false);
-                          navigate(`/products?category=${encodeURIComponent(category.toLowerCase())}`);
+                          const categoryQuery = category ? category.toLowerCase() : '';
+                          navigate(`/products?category=${encodeURIComponent(categoryQuery)}`);
                         }}
                         className={`flex items-center gap-3 px-4 py-2 cursor-pointer transition-colors ${
                           isSelected
