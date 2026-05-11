@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { addOrder } from "@/storefront/redux/slices/order/orderSlice";
 import {
   emptyCart,
-  checkStock,
   removeFromCart,
 } from "@/storefront/redux/slices/cart/cartSlice";
 import { updateProfile } from "@/storefront/redux/slices/auth/authSlice";
@@ -115,46 +114,6 @@ const Checkout = ({ closeModal }) => {
     try {
       setLoading(true);
       setError(null);
-
-      const stockCheckResult = await dispatch(
-        checkStock(productArray),
-      ).unwrap();
-
-      if (!stockCheckResult.success || !stockCheckResult.isValid) {
-        const errorMessages = [];
-
-        if (
-          stockCheckResult.outOfStockItems &&
-          stockCheckResult.outOfStockItems.length > 0
-        ) {
-          const outOfStockNames = stockCheckResult.outOfStockItems
-            .map((item) => item.productTitle || "Product")
-            .join(", ");
-          errorMessages.push(`Out of stock: ${outOfStockNames}`);
-        }
-
-        if (
-          stockCheckResult.insufficientStockItems &&
-          stockCheckResult.insufficientStockItems.length > 0
-        ) {
-          const insufficientMessages =
-            stockCheckResult.insufficientStockItems.map(
-              (item) =>
-                `"${item.productTitle}": Only ${item.availableStock} available`,
-            );
-          errorMessages.push(...insufficientMessages);
-        }
-
-        const errorMsg =
-          errorMessages.length > 0
-            ? errorMessages.join(". ")
-            : "Some products are no longer available in the requested quantities";
-
-        setError(errorMsg);
-        toast.error(errorMsg);
-        setLoading(false);
-        return;
-      }
 
       await dispatch(updateProfile({ address, phone, city })).unwrap();
 

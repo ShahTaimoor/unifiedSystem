@@ -4,6 +4,7 @@ const { auth, requirePermission } = require("../middleware/auth");
 const productService = require("../services/productServicePostgres");
 const categoryService = require("../services/categoryServicePostgres");
 const salesOrderRepository = require("../repositories/postgres/SalesOrderRepository");
+const customerRepository = require("../repositories/postgres/CustomerRepository");
 const { query: pgQuery } = require("../config/postgres");
 
 const router = express.Router();
@@ -28,6 +29,49 @@ const decodeHtmlEntities = (value) => {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">");
 };
+
+const resolveCustomerIdForUser = async (user) => {
+  if (!user) return null;
+  const searchTerm =
+    user.email || user.phone || user.username || user.name || user.firstName;
+  if (!searchTerm) return null;
+
+  const customers = await customerRepository.findAll(
+    { search: searchTerm },
+    { limit: 5 },
+  );
+  if (!customers || customers.length === 0) return null;
+
+  const exactMatch = customers.find((customer) => {
+    const normalized = (value) =>
+      String(value || "")
+        .trim()
+        .toLowerCase();
+    return (
+      normalized(customer.email) === normalized(user.email) ||
+      normalized(customer.phone) === normalized(user.phone) ||
+      normalized(customer.name) === normalized(user.name) ||
+      normalized(customer.business_name) === normalized(user.username) ||
+      normalized(customer.business_name) === normalized(user.name)
+    );
+  });
+  return (
+    (exactMatch && (exactMatch.id || exactMatch._id)) ||
+    customers[0].id ||
+    customers[0]._id
+  );
+};
+
+const normalizeOrder = (order) => ({
+  ...order,
+  _id: order._id || order.id,
+  id: order.id || order._id,
+  createdAt: order.createdAt || order.created_at,
+  updatedAt: order.updatedAt || order.updated_at,
+  shippingAddress: order.shippingAddress || order.shipping_address,
+  shippingPhone: order.shippingPhone || order.shipping_phone,
+  shippingCity: order.shippingCity || order.shipping_city,
+});
 
 const adaptCategory = (category) => {
   if (!category) return category;
@@ -230,7 +274,9 @@ router.get(
       const limit = parseInt(req.query.limit, 10) || 20;
       const page = parseInt(req.query.page, 10) || 1;
       const products = await productService.searchProducts(q, limit);
-      const adaptedProducts = Array.isArray(products) ? products.map(adaptProduct) : [];
+      const adaptedProducts = Array.isArray(products)
+        ? products.map(adaptProduct)
+        : [];
       res.json({
         data: adaptedProducts,
         query: q,
@@ -261,7 +307,9 @@ router.get(
       const q = req.query.q;
       const limit = parseInt(req.query.limit, 10) || 8;
       const products = await productService.searchProducts(q, limit);
-      const adaptedProducts = Array.isArray(products) ? products.map(adaptProduct) : [];
+      const adaptedProducts = Array.isArray(products)
+        ? products.map(adaptProduct)
+        : [];
       res.json({
         data: {
           products: adaptedProducts,
@@ -284,8 +332,17 @@ router.get("/get-orders-by-user-id", auth, async (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const orders = await salesOrderRepository.findByCustomer(userId);
-    res.json({ data: orders });
+    const customerId = await resolveCustomerIdForUser(req.user);
+    if (!customerId) {
+      return res.json({ data: [] });
+    }
+
+    const orders = await salesOrderRepository.findByCustomer(customerId);
+    const normalizedOrders = Array.isArray(orders)
+      ? orders.map(normalizeOrder)
+      : [];
+
+    res.json({ data: normalizedOrders });
   } catch (error) {
     next(error);
   }
@@ -482,6 +539,42 @@ router.post(
         return res.status(401).json({ message: "Unauthorized" });
       }
 
+      let customerId = null;
+      const searchTerm =
+        req.user?.email ||
+        req.user?.phone ||
+        req.user?.username ||
+        req.user?.name;
+      if (searchTerm) {
+        const existingCustomers = await customerRepository.findAll(
+          { search: searchTerm },
+          { limit: 1 },
+        );
+        if (existingCustomers.length > 0) {
+          customerId = existingCustomers[0].id || existingCustomers[0]._id;
+        }
+      }
+
+      if (!customerId) {
+        const name =
+          [
+            req.user?.firstName || req.user?.name || null,
+            req.user?.lastName || null,
+          ]
+            .filter(Boolean)
+            .join(" ") || null;
+        const newCustomer = await customerRepository.create({
+          name,
+          email: req.user?.email || null,
+          phone: req.user?.phone || null,
+          address: req.body.address || null,
+          businessType: "retail",
+          isActive: true,
+          createdBy: userId,
+        });
+        customerId = newCustomer?.id || newCustomer?._id;
+      }
+
       const products = req.body.products || [];
       const orderItems = [];
       let subtotal = 0;
@@ -513,7 +606,7 @@ router.post(
       }
 
       const createdOrder = await salesOrderRepository.create({
-        customer: userId,
+        customer: customerId,
         items: orderItems,
         subtotal: parseFloat(subtotal.toFixed(2)),
         total: parseFloat(subtotal.toFixed(2)),
