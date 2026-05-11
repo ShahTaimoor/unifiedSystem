@@ -1,33 +1,37 @@
-import axiosInstance from '../auth/axiosInstance';
+import axiosInstance from "../auth/axiosInstance";
 
 // Get Orders By User ID
 const getAllOrder = async () => {
   try {
-    const axiosResponse = await axiosInstance.get('/get-orders-by-user-id', {
+    const axiosResponse = await axiosInstance.get("/get-orders-by-user-id", {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return axiosResponse.data;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'An unexpected error occurred while fetching orders.';
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred while fetching orders.";
     return Promise.reject(errorMessage);
   }
 };
 
-// Add New Order
+// Add New E-commerce Order
 const addOrder = async (orderData) => {
   try {
-    const axiosResponse = await axiosInstance.post('/order', orderData, {
+    const axiosResponse = await axiosInstance.post("/order", orderData, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return axiosResponse.data;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'An unexpected error occurred while adding the order.';
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred while adding the order.";
     return Promise.reject(errorMessage);
   }
 };
@@ -35,16 +39,18 @@ const addOrder = async (orderData) => {
 // Get All Orders (Admin)
 const getAllOrderAdmin = async (page = 1, limit = 24) => {
   try {
-    const axiosResponse = await axiosInstance.get('/get-all-orders', {
+    const axiosResponse = await axiosInstance.get("/get-all-orders", {
       params: { page, limit },
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return axiosResponse.data;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'An unexpected error occurred while fetching orders.';
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred while fetching orders.";
     return Promise.reject(errorMessage);
   }
 };
@@ -52,17 +58,18 @@ const getAllOrderAdmin = async (page = 1, limit = 24) => {
 // Get Pending Order Count (Admin)
 const getPendingOrderCount = async () => {
   try {
-    const axiosResponse = await axiosInstance.get('/pending-orders-count', {
-      headers: { 'Content-Type': 'application/json' },
+    const axiosResponse = await axiosInstance.get("/pending-orders-count", {
+      headers: { "Content-Type": "application/json" },
     });
     return axiosResponse.data.count;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'An unexpected error occurred while fetching pending order count.';
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred while fetching pending order count.";
     return Promise.reject(errorMessage);
   }
 };
-
 
 // Update Order Status
 const updateOrderStatus = async ({ orderId, status, packerName }) => {
@@ -70,13 +77,14 @@ const updateOrderStatus = async ({ orderId, status, packerName }) => {
     const axiosResponse = await axiosInstance.put(
       `/update-order-status/${orderId}`,
       { status, packerName },
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { "Content-Type": "application/json" } },
     );
     return axiosResponse.data;
   } catch (error) {
-    const errorMessage = 
-      error.response?.data?.message || error.message ||
-      'An unexpected error occurred while updating order';
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred while updating order";
     return Promise.reject(errorMessage);
   }
 };
@@ -84,15 +92,20 @@ const updateOrderStatus = async ({ orderId, status, packerName }) => {
 // Delete Order
 const deleteOrder = async (orderId) => {
   try {
-    const axiosResponse = await axiosInstance.delete(`/delete-order/${orderId}`, {
-      headers: {
-        'Content-Type': 'application/json',
+    const axiosResponse = await axiosInstance.delete(
+      `/delete-order/${orderId}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
     return axiosResponse.data;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'An unexpected error occurred while deleting the order.';
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred while deleting the order.";
     return Promise.reject(errorMessage);
   }
 };
@@ -100,20 +113,30 @@ const deleteOrder = async (orderId) => {
 // Bulk Delete Orders
 const bulkDeleteOrders = async (orderIds) => {
   try {
-    const axiosResponse = await axiosInstance.delete('/bulk-delete-orders', {
+    const axiosResponse = await axiosInstance.delete("/bulk-delete-orders", {
       data: { orderIds },
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
     return axiosResponse.data;
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'An unexpected error occurred while deleting the orders.';
+      error.response?.data?.message ||
+      error.message ||
+      "An unexpected error occurred while deleting the orders.";
     return Promise.reject(errorMessage);
   }
 };
 
-const orderService = { getAllOrder, addOrder, getAllOrderAdmin, updateOrderStatus, getPendingOrderCount, deleteOrder, bulkDeleteOrders };
+const orderService = {
+  getAllOrder,
+  addOrder,
+  getAllOrderAdmin,
+  updateOrderStatus,
+  getPendingOrderCount,
+  deleteOrder,
+  bulkDeleteOrders,
+};
 
 export default orderService;
