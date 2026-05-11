@@ -68,6 +68,15 @@ const Checkout = ({ closeModal }) => {
   const handleCheckout = async () => {
     const { address, phone, city } = formData;
     if (!address.trim() || !phone.trim() || !city.trim()) {
+      const missingFields = [];
+      if (!address.trim()) missingFields.push('address');
+      if (!phone.trim()) missingFields.push('phone');
+      if (!city.trim()) missingFields.push('city');
+
+      const errorMessage = `Please complete your ${missingFields.join(' and ')} before placing the order.`;
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setShowForm(true);
       return;
     }
 
@@ -444,7 +453,13 @@ const Checkout = ({ closeModal }) => {
             </div>
             <Button
               onClick={handleCheckout}
-              disabled={loading || validCartItems.length === 0 || showForm}
+              disabled={
+                loading ||
+                validCartItems.length === 0 ||
+                !formData.address.trim() ||
+                !formData.phone.trim() ||
+                !formData.city.trim()
+              }
               className="w-full sm:w-auto min-w-[200px] bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-8 text-base shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all touch-manipulation"
             >
               {loading ? (
