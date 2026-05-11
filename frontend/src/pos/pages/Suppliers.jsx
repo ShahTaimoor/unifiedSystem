@@ -26,6 +26,8 @@ import ExcelImportButton from '../components/ExcelImportButton';
 import { exportTemplate } from '../utils/excelExport';
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
 import { toast } from 'sonner';
+import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
+import { useDeleteConfirmation } from '../hooks/useConfirmation';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage, LoadingInline } from '../components/LoadingSpinner';
 
 import SupplierFilters from '../components/SupplierFilters';
@@ -828,6 +830,8 @@ export const Suppliers = () => {
     ...filters
   };
 
+  const { confirmation, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
+
   const { data: suppliers, isLoading, error, refetch } = useGetSuppliersQuery(queryParams, {
     refetchOnMountOrArgChange: true,
   });
@@ -941,17 +945,15 @@ export const Suppliers = () => {
   };
 
   const handleDelete = (supplier) => {
-    if (window.confirm(`Are you sure you want to delete ${supplier.companyName}?`)) {
-      deleteSupplier(supplier.id || supplier._id)
-        .unwrap()
-        .then(() => {
-          toast.success('Supplier deleted successfully!');
-          refetch();
-        })
-        .catch((error) => {
-          toast.error(error?.data?.message || 'Failed to delete supplier');
-        });
-    }
+    confirmDelete(supplier.companyName, 'Supplier', async () => {
+      try {
+        await deleteSupplier(supplier.id || supplier._id).unwrap();
+        toast.success('Supplier deleted successfully!');
+        refetch();
+      } catch (error) {
+        toast.error(error?.data?.message || 'Failed to delete supplier');
+      }
+    });
   };
   const handleAddNew = () => {
     setSelectedSupplier(null);
@@ -1463,6 +1465,15 @@ export const Suppliers = () => {
           }}
         />
       )}
+
+      <DeleteConfirmationDialog
+        isOpen={confirmation.isOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        itemName={confirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
+        itemType="Supplier"
+        isLoading={confirmation.isLoading}
+      />
     </div>
   );
 };

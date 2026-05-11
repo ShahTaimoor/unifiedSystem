@@ -149,13 +149,12 @@ export const useProductOperations = (products, refetch) => {
     }
   };
 
-  const handleBulkDelete = async (bulkOps) => {
+  const handleBulkDelete = async (bulkOps, confirmBulkDelete) => {
     const selectedItems = bulkOps.getSelectedItems();
     if (selectedItems.length === 0) return;
 
-    if (!window.confirm(`Are you sure you want to delete ${selectedItems.length} products? This action cannot be undone.`)) {
-      return;
-    }
+    const confirmed = await confirmBulkDelete(selectedItems.length, 'products');
+    if (!confirmed) return;
 
     const productIds = selectedItems.map(item => item._id);
     try {

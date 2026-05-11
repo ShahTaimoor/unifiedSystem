@@ -86,9 +86,7 @@ const ProductVariants = () => {
     }
   };
 
-  const { isDeleteDialogOpen, itemToDelete, openDeleteDialog, closeDeleteDialog, confirmDelete } = useDeleteConfirmation(
-    handleDelete
-  );
+  const { confirmation, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
 
   const handleEdit = (variant) => {
     setEditingVariant(variant);
@@ -239,7 +237,7 @@ const ProductVariants = () => {
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => openDeleteDialog(variant._id || variant.id, getVariantDisplayName(variant))}
+                          onClick={() => confirmDelete(getVariantDisplayName(variant), 'Variant', () => handleDelete(variant._id || variant.id))}
                           className="text-red-600 hover:text-red-900 p-1"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -270,11 +268,12 @@ const ProductVariants = () => {
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={closeDeleteDialog}
-        onConfirm={confirmDelete}
-        itemName={itemToDelete?.name || ''}
-        itemType="variant"
+        isOpen={confirmation.isOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        itemName={confirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
+        itemType="Variant"
+        isLoading={confirmation.isLoading}
       />
     </div>
   );

@@ -350,7 +350,7 @@ const Warehouses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
 
-  const { confirmDelete, deleteDialog } = useDeleteConfirmation();
+  const { confirmation, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
 
   const { data: warehousesResponse, isLoading, error, isFetching, refetch: refetchWarehouses } = useGetWarehousesQuery(
     {
@@ -412,9 +412,7 @@ const Warehouses = () => {
   };
 
   const handleDelete = async (warehouse) => {
-    const confirmed = await confirmDelete(
-      `Are you sure you want to delete "${warehouse.name}" warehouse? This action cannot be undone.`
-    );
+    const confirmed = await confirmDelete(warehouse.name, 'Warehouse');
     if (confirmed) {
       try {
         await deleteWarehouse(warehouse._id).unwrap();
@@ -689,7 +687,14 @@ const Warehouses = () => {
         />
       )}
 
-      {deleteDialog}
+      <DeleteConfirmationDialog
+        isOpen={confirmation.isOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        itemName={confirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
+        itemType="Warehouse"
+        isLoading={confirmation.isLoading}
+      />
     </div>
   );
 };
