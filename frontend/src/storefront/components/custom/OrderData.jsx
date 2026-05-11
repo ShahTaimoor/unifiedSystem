@@ -181,7 +181,7 @@ const OrderData = ({
 
       // Product Table: Admin or Super Admin (role 1 or 2)
       if (Number(user?.role) === 1 || Number(user?.role) === 2) {
-        const tableBody = products.map((product, idx) => [
+        const tableBody = (products || []).map((product, idx) => [
           idx + 1,
           product?.id?.title || "Unnamed Product",
           product?.quantity || 0,
@@ -191,7 +191,7 @@ const OrderData = ({
             : ""
         ]);
 
-        const grandTotal = products.reduce(
+        const grandTotal = (products || []).reduce(
           (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
           0
         );
@@ -277,14 +277,14 @@ const OrderData = ({
         doc.text('Total Amount:', margin + 10, yPos);
         doc.setFontSize(16);
         doc.setTextColor(...primaryColor);
-        const totalAmount = price || products.reduce(
+        const totalAmount = price || (products || []).reduce(
           (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
           0
         );
         doc.text(`Rs. ${totalAmount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
       } else {
         // Product Table: Customer (role 0) - no images, no price/total
-        const customerTableBody = products.map((product, idx) => [
+        const customerTableBody = (products || []).map((product, idx) => [
           idx + 1,
           product?.id?.title || "Unnamed Product",
           product?.quantity || 0
@@ -387,7 +387,7 @@ const OrderData = ({
     }
   };
 
-  const totalQuantity = products.reduce((sum, product) => sum + (product.quantity || 0), 0);
+  const totalQuantity = (products || []).reduce((sum, product) => sum + (product.quantity || 0), 0);
   const StatusIcon = statusIcons[status] || AlertCircle;
 
   return (
@@ -403,7 +403,7 @@ const OrderData = ({
             <div>
               <h2 className="text-lg font-bold text-gray-900">Order Summary</h2>
               <p className="text-sm text-gray-600">
-                {new Date(createdAt).toLocaleDateString()} • {products.length} products
+                {new Date(createdAt).toLocaleDateString()} • {(products || []).length} products
               </p>
             </div>
           </div>
@@ -440,7 +440,7 @@ const OrderData = ({
             <div>
               <h2 className="text-lg font-bold text-gray-900">Order Details</h2>
               <p className="text-sm text-gray-600">
-                {new Date(createdAt).toLocaleDateString()} • {products.length} products
+                {new Date(createdAt).toLocaleDateString()} • {(products || []).length} products
               </p>
             </div>
           </div>
@@ -563,12 +563,12 @@ const OrderData = ({
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-blue-600" />
-              Products ({products.length})
+              Products ({(products || []).length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {products.map((product, idx) => (
+              {(products || []).map((product, idx) => (
                 <div
                   key={idx}
                   className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
