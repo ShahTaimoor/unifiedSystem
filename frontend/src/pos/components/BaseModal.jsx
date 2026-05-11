@@ -68,7 +68,7 @@ const BaseModal = ({
   }, [isOpen, onClose, closeOnEscape, lockBodyScroll]);
 
   const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget && closeOnBackdrop) {
+    if (closeOnBackdrop) {
       onClose();
     }
   };
