@@ -169,7 +169,6 @@ export const ProductList = ({
                               height={40}
                               loading="lazy"
                               decoding="async"
-                              crossOrigin="anonymous"
                               className="h-full w-full object-cover"
                             />
                           </div>
@@ -325,7 +324,6 @@ export const ProductList = ({
                               height={40}
                               loading="lazy"
                               decoding="async"
-                              crossOrigin="anonymous"
                               className="h-full w-full object-cover"
                             />
                           </div>

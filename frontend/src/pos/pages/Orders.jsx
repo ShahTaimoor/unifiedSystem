@@ -984,8 +984,12 @@ export const Orders = () => {
                   <tbody>
                     {selectedOrder.items?.map((item, index) => (
                       <tr key={index}>
-                        <td className="border border-gray-300 px-4 py-2">{item.product?.name || 'Unknown Product'}</td>
-                        <td className="border border-gray-300 px-4 py-2">{item.product?.description || ''}</td>
+                        <td className="border border-gray-300 px-4 py-2">
+                          {item.product?.name || item.name || item.productName || item.product?.displayName || 'Unknown Product'}
+                        </td>
+                        <td className="border border-gray-300 px-4 py-2">
+                          {item.product?.description || item.description || ''}
+                        </td>
                         <td className="border border-gray-300 px-4 py-2 text-right">{item.quantity}</td>
                         <td className="border border-gray-300 px-4 py-2 text-right">{Math.round(item.unitPrice)}</td>
                         <td className="border border-gray-300 px-4 py-2 text-right">{Math.round(item.total)}</td>

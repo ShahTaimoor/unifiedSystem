@@ -25,8 +25,8 @@ import { flattenCategoryApiTree } from '../utils/categoryTree';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { LoadingPage } from '../components/LoadingSpinner';
-import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
-import { useDeleteConfirmation } from '../hooks/useConfirmation';
+import { DeleteConfirmationDialog, BulkDeleteConfirmationDialog } from '../components/ConfirmationDialog';
+import { useDeleteConfirmation, useBulkDeleteConfirmation } from '../hooks/useConfirmation';
 
 import ProductFilters from '../components/ProductFilters';
 import { useTab } from '../contexts/TabContext';
@@ -131,6 +131,7 @@ export const Products = () => {
   });
 
   const { confirmation, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
+  const { confirmation: bulkConfirmation, confirmBulkDelete, handleConfirm: handleBulkConfirm, handleCancel: handleBulkCancel } = useBulkDeleteConfirmation();
 
   const productOps = useProductOperations(allProducts, refetch);
 
@@ -433,7 +434,7 @@ export const Products = () => {
           setBulkUpdateType('update');
           setShowBulkUpdateModal(true);
         }}
-        onBulkDelete={() => productOps.handleBulkDelete(bulkOps)}
+        onBulkDelete={() => productOps.handleBulkDelete(bulkOps, confirmBulkDelete)}
 
         onBulkStatusChange={() => {
           setBulkUpdateType('status');
@@ -554,6 +555,15 @@ export const Products = () => {
         itemName={confirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
         itemType="Product"
         isLoading={productOps.deleting}
+      />
+
+      <BulkDeleteConfirmationDialog
+        isOpen={bulkConfirmation.isOpen}
+        onClose={handleBulkCancel}
+        onConfirm={handleBulkConfirm}
+        itemCount={bulkOps.selectedCount}
+        itemType="products"
+        isLoading={bulkConfirmation.isLoading}
       />
 
       {productOps.selectedProductForInvestors && (
