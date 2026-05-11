@@ -83,11 +83,16 @@ function capitalizeFirst(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Helper function to calculate order total from products (using current prices)
+// Helper function to calculate order total from products/items (using current prices)
 function calculateOrderTotal(order) {
-  if (!order || !order.products) return 0;
-  return order.products.reduce((sum, p) => {
-    const price = p.id?.price || 0;
+  if (!order) return 0;
+  
+  // Handle both products and items arrays
+  const products = order.products || order.items || [];
+  if (!products.length) return 0;
+  
+  return products.reduce((sum, p) => {
+    const price = p.id?.price || p.product?.price || p.unitPrice || 0;
     const quantity = p.quantity || 0;
     return sum + (price * quantity);
   }, 0);
@@ -1746,17 +1751,17 @@ Phone: ${order.phone}
 
                               <OrderData
                                 price={calculateOrderTotal(selectedOrder)}
-                                address={selectedOrder.address}
-                                phone={selectedOrder.phone}
-                                city={selectedOrder.city}
-                                createdAt={selectedOrder.createdAt}
-                                products={selectedOrder.products}
+                                address={selectedOrder.shippingAddress || selectedOrder.address}
+                                phone={selectedOrder.shippingPhone || selectedOrder.phone}
+                                city={selectedOrder.shippingCity || selectedOrder.city}
+                                createdAt={selectedOrder.createdAt || selectedOrder.created_at}
+                                products={selectedOrder.products || selectedOrder.items || []}
                                 packerName={selectedOrder.packerName}
                                 hideStatus={true}
                                 hideCOD={true}
                                 hideDownload={true}
-                                user={selectedOrder.userId || selectedOrder.user || user}
-                                _id={selectedOrder._id}
+                                user={selectedOrder.userId || selectedOrder.user || selectedOrder.customer || user}
+                                _id={selectedOrder._id || selectedOrder.id}
                               />
                             </div>
                           )}

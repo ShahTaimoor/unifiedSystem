@@ -59,6 +59,14 @@ const Checkout = ({ closeModal }) => {
     });
   }, [user]);
 
+  // Additional effect to ensure form is hidden when user has complete info
+  useEffect(() => {
+    const hasCompleteInfo = user?.address && user?.phone && user?.city;
+    if (hasCompleteInfo) {
+      setShowForm(false);
+    }
+  }, [user]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -66,9 +74,16 @@ const Checkout = ({ closeModal }) => {
 
   const handleProfileUpdate = async () => {
     try {
-      await dispatch(updateProfile(formData)).unwrap();
+      const result = await dispatch(updateProfile(formData)).unwrap();
       setShowForm(false);
       toast.success("Profile updated successfully!");
+      
+      // Update the local formData with the saved values
+      setFormData({
+        address: formData.address,
+        phone: formData.phone,
+        city: formData.city,
+      });
     } catch (err) {
       toast.error(err || "Failed to update profile");
     }

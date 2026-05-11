@@ -181,18 +181,29 @@ const OrderData = ({
 
       // Product Table: Admin or Super Admin (role 1 or 2)
       if (Number(user?.role) === 1 || Number(user?.role) === 2) {
-        const tableBody = (products || []).map((product, idx) => [
-          idx + 1,
-          product?.id?.title || "Unnamed Product",
-          product?.quantity || 0,
-          product?.id?.price ? `Rs. ${product.id.price}` : "",
-          product?.quantity && product?.id?.price
-            ? `Rs. ${product.quantity * product.id.price}`
-            : ""
-        ]);
+        const tableBody = (products || []).map((product, idx) => {
+          // Handle different product data structures
+          const productTitle = product?.id?.title || product?.product?.title || product?.title || "Unnamed Product";
+          const productPrice = product?.id?.price || product?.product?.price || product?.unitPrice || 0;
+          const productQuantity = product?.quantity || 0;
+          
+          return [
+            idx + 1,
+            productTitle,
+            productQuantity,
+            productPrice ? `Rs. ${productPrice}` : "",
+            productQuantity && productPrice
+              ? `Rs. ${productQuantity * productPrice}`
+              : ""
+          ];
+        });
 
         const grandTotal = (products || []).reduce(
-          (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
+          (sum, p) => {
+            const price = p?.id?.price || p?.product?.price || p?.unitPrice || 0;
+            const quantity = p?.quantity || 0;
+            return sum + (quantity * price);
+          },
           0
         );
 
@@ -278,7 +289,11 @@ const OrderData = ({
         doc.setFontSize(16);
         doc.setTextColor(...primaryColor);
         const totalAmount = price || (products || []).reduce(
-          (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
+          (sum, p) => {
+            const price = p?.id?.price || p?.product?.price || p?.unitPrice || 0;
+            const quantity = p?.quantity || 0;
+            return sum + (quantity * price);
+          },
           0
         );
         doc.text(`Rs. ${totalAmount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
@@ -286,7 +301,7 @@ const OrderData = ({
         // Product Table: Customer (role 0) - no images, no price/total
         const customerTableBody = (products || []).map((product, idx) => [
           idx + 1,
-          product?.id?.title || "Unnamed Product",
+          product?.id?.title || product?.product?.title || product?.title || "Unnamed Product",
           product?.quantity || 0
         ]);
 
@@ -528,19 +543,19 @@ const OrderData = ({
               <Phone className="h-4 w-4 text-gray-500" />
               <div>
               
-                <p className="text-gray-600"><span>Contact No: </span>{phone}</p>
+                <p className="text-gray-600"><span>Contact No: </span>{phone || (products && products[0]?.phone) || "N/A"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Building className="h-4 w-4 text-gray-500" />
               <div>
-                <p className="text-gray-600"><span>City: </span>{city}</p>
+                <p className="text-gray-600"><span>City: </span>{city || (products && products[0]?.city) || "N/A"}</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <MapPin className="h-4 w-4 text-gray-500" />
               <div>
-                <p className="text-gray-600"><span>Address: </span>{address}</p>
+                <p className="text-gray-600"><span>Address: </span>{address || (products && products[0]?.address) || "N/A"}</p>
               </div>
             </div>
             
@@ -568,37 +583,44 @@ const OrderData = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {(products || []).map((product, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="relative">
-                    <LazyImage
-                      src={product?.id?.picture?.secure_url}
-                      alt={product?.id?.title || "Product image"}
-                      className="h-16 w-16 rounded-lg object-cover border"
-                      fallback="fallback.jpg"
-                      quality={80}
-                      loading="eager"
-                    />
-                    <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-medium">
-                      {product.quantity}
-                    </div>
-                  </div>
+              {(products || []).map((product, idx) => {
+                  // Handle different product data structures
+                  const productTitle = product?.id?.title || product?.product?.title || product?.title || "Unnamed Product";
+                  const productImage = product?.id?.picture?.secure_url || product?.product?.picture?.secure_url || product?.picture?.secure_url;
+                  const productQuantity = product?.quantity || 0;
                   
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 text-base leading-relaxed">
-                      {product?.id?.title || "Unnamed Product"}
-                    </h3>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="text-sm text-gray-600">
-                        Quantity: <span className="font-medium">{product.quantity}</span>
-                      </span>
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="relative">
+                        <LazyImage
+                          src={productImage}
+                          alt={productTitle}
+                          className="h-16 w-16 rounded-lg object-cover border"
+                          fallback="fallback.jpg"
+                          quality={80}
+                          loading="eager"
+                        />
+                        <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-medium">
+                          {productQuantity}
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 text-base leading-relaxed">
+                          {productTitle}
+                        </h3>
+                        <div className="flex items-center gap-4 mt-2">
+                          <span className="text-sm text-gray-600">
+                            Quantity: <span className="font-medium">{productQuantity}</span>
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           </CardContent>
         </Card>
