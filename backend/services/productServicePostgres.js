@@ -98,7 +98,7 @@ function toApiProduct(row, categoryMap = null) {
     updated_at: row.updated_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    imageUrl: row.image_url || null
+    imageUrl: row.image_url || row.imageUrl || null
   };
 }
 
