@@ -93,16 +93,16 @@ const BaseModal = ({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 overflow-auto"
+      className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-50 overflow-auto transition-all duration-300"
       style={{ zIndex }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
     >
-      <div className={`${wrapperClasses} flex ${variant === 'centered' ? 'items-center justify-center min-h-full' : 'pt-20'} relative w-full min-w-0`}>
+      <div className={`${wrapperClasses} flex ${variant === 'centered' ? 'items-center justify-center min-h-full' : 'pt-10 sm:pt-20'} relative w-full min-w-0`}>
         <div
-          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-lg rounded-md bg-white flex flex-col ${
+          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-2xl rounded-xl bg-white/95 backdrop-blur-md border border-white/20 flex flex-col transition-all duration-300 animate-in zoom-in-95 ${
             variant === 'scrollable' ? 'max-h-[90vh]' : ''
           } ${className}`}
           onClick={(e) => e.stopPropagation()}
@@ -142,7 +142,7 @@ const BaseModal = ({
           </div>
 
           {footer && (
-            <div className="flex-shrink-0 p-5 border-t border-gray-200 bg-gray-50 rounded-b-md">
+            <div className="flex-shrink-0 p-5 border-t border-gray-100 bg-slate-50/50 rounded-b-xl">
               {footer}
             </div>
           )}
