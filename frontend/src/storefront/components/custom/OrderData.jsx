@@ -409,9 +409,7 @@ const OrderData = ({
   const totalQuantity = (products || []).reduce((sum, product) => sum + (product.quantity || 0), 0);
   const StatusIcon = statusIcons[status] || AlertCircle;
   
-  // Debug: Log products data
-  console.log('OrderData - Products:', products);
-  console.log('OrderData - Products length:', products?.length);
+
 
   return (
     <div className="space-y-4">
@@ -597,17 +595,14 @@ const OrderData = ({
                   <p className="text-sm text-gray-500">
                     No products found in this order
                   </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Debug: Products length = {products?.length || 0}
-                  </p>
                 </div>
               ) : (
                 (products || []).map((product, idx) => {
                   // Handle different product data structures
                   // New backend structure: product field contains full product object, id field contains product ID
                   const productObj = product?.product || product?.id || product;
-                  const productTitle = productObj?.title || "Unnamed Product";
-                  const productImage = productObj?.picture?.secure_url || productObj?.image;
+                  const productTitle = productObj?.title || productObj?.name || "Unnamed Product";
+                  const productImage = productObj?.picture?.secure_url || productObj?.image || productObj?.imageUrl || productObj?.image_url;
                   const productQuantity = product?.quantity || 0;
                   const productPrice = product?.unitPrice || productObj?.price || 0;
                   
