@@ -62,16 +62,55 @@ const resolveCustomerIdForUser = async (user) => {
   );
 };
 
-const normalizeOrder = (order) => ({
-  ...order,
-  _id: order._id || order.id,
-  id: order.id || order._id,
-  createdAt: order.createdAt || order.created_at,
-  updatedAt: order.updatedAt || order.updated_at,
-  shippingAddress: order.shippingAddress || order.shipping_address,
-  shippingPhone: order.shippingPhone || order.shipping_phone,
-  shippingCity: order.shippingCity || order.shipping_city,
-});
+const normalizeOrder = (order) => {
+  // Map items to products format for frontend compatibility
+  const rawItems = order.items || order.products || [];
+  const products = rawItems.map((item) => {
+    const productData = item.product || item.id || item;
+    return {
+      ...item,
+      product: {
+        ...(typeof productData === "object" ? productData : {}),
+        _id: productData?._id || productData?.id || item.id || item.product_id,
+        title:
+          productData?.title || productData?.name || "Unnamed Product",
+        price:
+          item.unitPrice || productData?.price || productData?.sellingPrice || 0,
+        image:
+          productData?.image ||
+          productData?.imageUrl ||
+          productData?.image_url ||
+          null,
+        picture: productData?.picture || {
+          secure_url:
+            productData?.image ||
+            productData?.imageUrl ||
+            productData?.image_url ||
+            null,
+        },
+      },
+      quantity: item.quantity || 0,
+      unitPrice: item.unitPrice || productData?.price || 0,
+    };
+  });
+
+  const normalized = {
+    ...order,
+    _id: order._id || order.id,
+    createdAt: order.createdAt || order.created_at,
+    updatedAt: order.updatedAt || order.updated_at,
+    shippingAddress: order.shippingAddress || order.shipping_address,
+    shippingPhone: order.shippingPhone || order.shipping_phone,
+    shippingCity: order.shippingCity || order.shipping_city,
+    address: order.shippingAddress || order.shipping_address || order.address,
+    phone: order.shippingPhone || order.shipping_phone || order.phone,
+    city: order.shippingCity || order.shipping_city || order.city,
+    status: order.status || "Pending",
+    price: order.total || order.subtotal || order.price || 0,
+    products,
+  };
+  return normalized;
+};
 
 const adaptCategory = (category) => {
   if (!category) return category;
@@ -597,7 +636,8 @@ router.post(
         subtotal += totalPrice;
 
         orderItems.push({
-          product: product._id,
+          id: product._id,
+          product: product, // Include full product object
           quantity,
           unitPrice,
           totalPrice,
@@ -613,9 +653,9 @@ router.post(
         status: "confirmed",
         orderType: "retail",
         orderDate: new Date(),
-        shippingAddress: req.body.address,
-        shippingPhone: req.body.phone,
-        shippingCity: req.body.city,
+        shipping_address: req.body.address,
+        shipping_phone: req.body.phone,
+        shipping_city: req.body.city,
         notes: `E-commerce order (structured)`.trim(),
         createdBy: userId,
       });

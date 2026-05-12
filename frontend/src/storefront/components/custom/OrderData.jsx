@@ -182,9 +182,10 @@ const OrderData = ({
       // Product Table: Admin or Super Admin (role 1 or 2)
       if (Number(user?.role) === 1 || Number(user?.role) === 2) {
         const tableBody = (products || []).map((product, idx) => {
-          // Handle different product data structures
-          const productTitle = product?.id?.title || product?.product?.title || product?.title || "Unnamed Product";
-          const productPrice = product?.id?.price || product?.product?.price || product?.unitPrice || 0;
+          // Handle new backend product structure
+          const productObj = product?.product || product?.id || product;
+          const productTitle = productObj?.title || "Unnamed Product";
+          const productPrice = product?.unitPrice || productObj?.price || 0;
           const productQuantity = product?.quantity || 0;
           
           return [
@@ -299,11 +300,14 @@ const OrderData = ({
         doc.text(`Rs. ${totalAmount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
       } else {
         // Product Table: Customer (role 0) - no images, no price/total
-        const customerTableBody = (products || []).map((product, idx) => [
-          idx + 1,
-          product?.id?.title || product?.product?.title || product?.title || "Unnamed Product",
-          product?.quantity || 0
-        ]);
+        const customerTableBody = (products || []).map((product, idx) => {
+          const productObj = product?.product || product?.id || product;
+          return [
+            idx + 1,
+            productObj?.title || "Unnamed Product",
+            product?.quantity || 0
+          ];
+        });
 
         // Section Title for Products
         doc.setFontSize(13);
@@ -404,6 +408,8 @@ const OrderData = ({
 
   const totalQuantity = (products || []).reduce((sum, product) => sum + (product.quantity || 0), 0);
   const StatusIcon = statusIcons[status] || AlertCircle;
+  
+
 
   return (
     <div className="space-y-4">
@@ -583,11 +589,22 @@ const OrderData = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {(products || []).map((product, idx) => {
+              {(!products || products.length === 0) ? (
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">
+                    No products found in this order
+                  </p>
+                </div>
+              ) : (
+                (products || []).map((product, idx) => {
                   // Handle different product data structures
-                  const productTitle = product?.id?.title || product?.product?.title || product?.title || "Unnamed Product";
-                  const productImage = product?.id?.picture?.secure_url || product?.product?.picture?.secure_url || product?.picture?.secure_url;
+                  // New backend structure: product field contains full product object, id field contains product ID
+                  const productObj = product?.product || product?.id || product;
+                  const productTitle = productObj?.title || productObj?.name || "Unnamed Product";
+                  const productImage = productObj?.picture?.secure_url || productObj?.image || productObj?.imageUrl || productObj?.image_url;
                   const productQuantity = product?.quantity || 0;
+                  const productPrice = product?.unitPrice || productObj?.price || 0;
                   
                   return (
                     <div
@@ -620,7 +637,8 @@ const OrderData = ({
                       </div>
                     </div>
                   );
-                })}
+                })
+              )}
             </div>
           </CardContent>
         </Card>

@@ -28,8 +28,7 @@ const MyOrders = () => {
     }
   };
 
-  // Filter orders by date range based on Pakistan timezone
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = (!fromDate || !toDate) ? orders : orders.filter(order => {
     const orderDate = new Date(order.createdAt)
       .toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
     return orderDate >= fromDate && orderDate <= toDate;
