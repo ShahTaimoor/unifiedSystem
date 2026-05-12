@@ -2941,225 +2941,234 @@ export const PurchaseOrders = ({ tabId }) => {
         )}
       >
         <div className="p-5">
-          {/* Company Info */}
-          <div className="mb-6 text-center">
-            <h4 className="text-lg font-semibold text-gray-900 mb-2">{resolvedCompanyName}</h4>
-            {resolvedCompanyAddress && (
-              <p className="text-sm text-gray-600">{resolvedCompanyAddress}</p>
-            )}
-            {resolvedCompanyPhone && (
-              <p className="text-sm text-gray-600">Phone: {resolvedCompanyPhone}</p>
-            )}
-          </div>
-
-          {/* PO Details */}
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            <div>
-              <h5 className="font-semibold text-gray-900 mb-2">Purchase Order Details</h5>
-              <div className="space-y-1 text-sm">
-                <p><span className="font-medium">PO Number:</span> {viewOrder.purchase_order_number || viewOrder.poNumber || '-'}</p>
-                <p><span className="font-medium">Date:</span> {formatDate(viewOrder.purchase_date || viewOrder.order_date || viewOrder.created_at || viewOrder.createdAt)}</p>
-                <p><span className="font-medium">Status:</span>
-                  <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${viewOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                    viewOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                      viewOrder.status === 'partially_received' ? 'bg-yellow-100 text-yellow-800' :
-                        viewOrder.status === 'fully_received' ? 'bg-green-100 text-green-800' :
-                          viewOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                    }`}>
-                    {viewOrder.status === 'draft' ? 'Pending' : (viewOrder.status || '').replace('_', ' ')}
-                  </span>
-                </p>
-                {itemWiseConfirmationEnabled && (
-                  <p><span className="font-medium">Confirmation:</span>
-                    <OrderConfirmationStatusBadge order={viewOrder} />
-                  </p>
+          {viewOrder ? (
+            <>
+              {/* Company Info */}
+              <div className="mb-6 text-center">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">{resolvedCompanyName}</h4>
+                {resolvedCompanyAddress && (
+                  <p className="text-sm text-gray-600">{resolvedCompanyAddress}</p>
                 )}
-                {viewOrder.expectedDelivery && (
-                  <p><span className="font-medium">Expected Delivery:</span> {formatDate(viewOrder.expectedDelivery)}</p>
+                {resolvedCompanyPhone && (
+                  <p className="text-sm text-gray-600">Phone: {resolvedCompanyPhone}</p>
                 )}
               </div>
-            </div>
-            <div>
-              {/* Empty middle column for spacing */}
-            </div>
-            <div className="text-right">
-              <h5 className="font-semibold text-gray-900 mb-2">Supplier Details</h5>
-              <div className="space-y-1 text-sm">
-                <p><span className="font-medium">Company:</span> {safeRender(viewOrder.supplier) || 'Unknown'}</p>
-                {viewOrder.supplier?.email && (
-                  <p><span className="font-medium">Email:</span> {safeRender(viewOrder.supplier.email)}</p>
-                )}
-                {viewOrder.supplier?.phone && (
-                  <p><span className="font-medium">Phone:</span> {safeRender(viewOrder.supplier.phone)}</p>
-                )}
-                <p><span className="font-medium">Address:</span> {formatAddressForDisplay(viewOrder.supplier) || '—'}</p>
-                {(viewOrder.supplier?.contact_person || viewOrder.supplier?.contactPerson) && (
-                  <p><span className="font-medium">Contact:</span> {safeRender(viewOrder.supplier.contact_person || viewOrder.supplier.contactPerson)}</p>
-                )}
-                <div className="mt-3 pt-2 border-t border-gray-200">
-                  <p className="font-semibold text-red-600">
-                    <span className="font-medium">Outstanding Balance:</span> {Math.round((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance) || 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Items Table */}
-          <div className="mb-6">
-            <h5 className="font-semibold text-gray-900 mb-3">Items Ordered</h5>
-            {itemWiseConfirmationEnabled && (
-              <OrderConfirmSelectedActions
-                items={viewOrder.items}
-                canEdit={viewOrder.status !== 'cancelled'}
-                selectedIndices={selectedItemIndices}
-                onSelectAll={(indices) => setSelectedItemIndices(indices)}
-                onSelectNone={() => setSelectedItemIndices([])}
-                onConfirmSelected={(indices) => {
-                  if (indices.length) {
-                    handleUpdateItemsConfirmation(
-                      indices.map((i) => ({ itemIndex: i, confirmationStatus: 'confirmed' })),
-                      false,
-                      false
-                    );
-                  }
-                }}
-                isUpdating={updatingItemsConfirmation}
-              />
-            )}
-            <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-200 rounded-lg">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                      #
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                      Product
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                      Quantity
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                      Unit Cost
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                      Total Cost
-                    </th>
+              {/* PO Details */}
+              <div className="grid grid-cols-3 gap-6 mb-6">
+                <div>
+                  <h5 className="font-semibold text-gray-900 mb-2">Purchase Order Details</h5>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="font-medium">PO Number:</span> {viewOrder?.purchase_order_number || viewOrder?.poNumber || '-'}</p>
+                    <p><span className="font-medium">Date:</span> {formatDate(viewOrder?.purchase_date || viewOrder?.order_date || viewOrder?.created_at || viewOrder?.createdAt)}</p>
+                    <p><span className="font-medium">Status:</span>
+                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${viewOrder?.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                        viewOrder?.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                          viewOrder?.status === 'partially_received' ? 'bg-yellow-100 text-yellow-800' :
+                            viewOrder?.status === 'fully_received' ? 'bg-green-100 text-green-800' :
+                              viewOrder?.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                        }`}>
+                        {viewOrder?.status === 'draft' ? 'Pending' : (viewOrder?.status || '').replace('_', ' ')}
+                      </span>
+                    </p>
                     {itemWiseConfirmationEnabled && (
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                        Confirmation
-                      </th>
+                      <p><span className="font-medium">Confirmation:</span>
+                        <OrderConfirmationStatusBadge order={viewOrder} />
+                      </p>
                     )}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {viewOrder.items && viewOrder.items.map((item, index) => (
-                    <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(item.confirmationStatus ?? item.confirmation_status) === 'cancelled' ? 'opacity-60' : ''}`}>
-                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
-                        {index + 1}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
-                        <div>
-                          <div className="font-medium">
-                            {typeof item.product === 'object' && item.product !== null
-                              ? (item.product.name || item.product.displayName || item.product.display_name || item.product.variantName || item.product.variant_name || 'Unknown Product')
-                              : (getProductDisplayName(item.product) || item.productData?.name || 'Unknown Product')}
-                          </div>
-                          {item.product?.description && typeof item.product === 'object' && (
-                            <div className="text-gray-500 text-xs">{safeRender(item.product.description)}</div>
-                          )}
-                          {(() => {
-                            const p =
-                              typeof item.product === 'object' && item.product !== null
-                                ? item.product
-                                : item.productData || {};
-                            const b = (p.barcode ?? '').toString().trim();
-                            if (b) return <div className="text-gray-600 text-xs font-mono mt-0.5">Barcode: {b}</div>;
-                            const s = (p.sku ?? '').toString().trim();
-                            if (s) return <div className="text-gray-600 text-xs font-mono mt-0.5">SKU: {s}</div>;
-                            return null;
-                          })()}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right border-b border-gray-200">
-                        {item.quantity}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right border-b border-gray-200">
-                        {Math.round(item.costPerUnit || 0)}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right border-b border-gray-200">
-                        {Math.round(item.totalCost || 0)}
-                      </td>
-                      {itemWiseConfirmationEnabled && (
-                        <td className="px-4 py-3 text-sm border-b border-gray-200">
-                          <OrderItemConfirmationCell
-                            item={item}
-                            itemIndex={index}
-                            status={getItemConfirmationStatus(item)}
-                            canEdit={viewOrder.status !== 'cancelled'}
-                            selected={selectedItemIndices.includes(index)}
-                            onToggleSelect={(idx) => setSelectedItemIndices((prev) => prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx])}
-                            onCancel={(idx) => handleUpdateItemsConfirmation([{ itemIndex: idx, confirmationStatus: 'cancelled' }], false, false)}
-                            isUpdating={updatingItemsConfirmation}
-                          />
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Totals */}
-          <div className="flex justify-end mb-6">
-            <div className="w-80">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">{Math.round(Number(viewOrder.subtotal) || 0)}</span>
-                </div>
-                {taxSystemEnabled && viewOrder.tax && Number(viewOrder.tax) > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tax:</span>
-                    <span className="font-medium">{Math.round(Number(viewOrder.tax))}</span>
+                    {viewOrder?.expectedDelivery && (
+                      <p><span className="font-medium">Expected Delivery:</span> {formatDate(viewOrder.expectedDelivery)}</p>
+                    )}
                   </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">PO Total:</span>
-                  <span className="font-medium">{Math.round(Number(viewOrder.total) || 0)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Previous Outstanding:</span>
-                  <span className="font-medium text-red-600">{Math.round((Number((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance)) || 0))}</span>
+                <div>
+                  {/* Empty middle column for spacing */}
                 </div>
-                <div className="flex justify-between text-lg font-bold border-t pt-2">
-                  <span>Total Payables:</span>
-                  <span className="text-red-600">{Math.round((Number(viewOrder.total) || 0) + (Number((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance)) || 0))}</span>
+                <div className="text-right">
+                  <h5 className="font-semibold text-gray-900 mb-2">Supplier Details</h5>
+                  <div className="space-y-1 text-sm">
+                    <p><span className="font-medium">Company:</span> {safeRender(viewOrder?.supplier) || 'Unknown'}</p>
+                    {viewOrder?.supplier?.email && (
+                      <p><span className="font-medium">Email:</span> {safeRender(viewOrder?.supplier?.email)}</p>
+                    )}
+                    {viewOrder?.supplier?.phone && (
+                      <p><span className="font-medium">Phone:</span> {safeRender(viewOrder?.supplier?.phone)}</p>
+                    )}
+                    <p><span className="font-medium">Address:</span> {formatAddressForDisplay(viewOrder?.supplier) || '—'}</p>
+                    {(viewOrder?.supplier?.contact_person || viewOrder?.supplier?.contactPerson) && (
+                      <p><span className="font-medium">Contact:</span> {safeRender(viewOrder?.supplier?.contact_person || viewOrder?.supplier?.contactPerson)}</p>
+                    )}
+                    <div className="mt-3 pt-2 border-t border-gray-200">
+                      <p className="font-semibold text-red-600">
+                        <span className="font-medium">Outstanding Balance:</span> {Math.round((viewOrder?.supplier?.pendingBalance ?? viewOrder?.supplier?.currentBalance) || 0)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Notes */}
-          {viewOrder.notes && (
-            <div className="mb-6">
-              <h5 className="font-semibold text-gray-900 mb-2">Notes</h5>
-              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
-                {safeRender(viewOrder.notes)}
-              </p>
-            </div>
-          )}
+              {/* Items Table */}
+              <div className="mb-6">
+                <h5 className="font-semibold text-gray-900 mb-3">Items Ordered</h5>
+                {itemWiseConfirmationEnabled && (
+                  <OrderConfirmSelectedActions
+                    items={viewOrder?.items}
+                    canEdit={viewOrder?.status !== 'cancelled'}
+                    selectedIndices={selectedItemIndices}
+                    onSelectAll={(indices) => setSelectedItemIndices(indices)}
+                    onSelectNone={() => setSelectedItemIndices([])}
+                    onConfirmSelected={(indices) => {
+                      if (indices.length) {
+                        handleUpdateItemsConfirmation(
+                          indices.map((i) => ({ itemIndex: i, confirmationStatus: 'confirmed' })),
+                          false,
+                          false
+                        );
+                      }
+                    }}
+                    isUpdating={updatingItemsConfirmation}
+                  />
+                )}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full border border-gray-200 rounded-lg">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                          #
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                          Product
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                          Quantity
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                          Unit Cost
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                          Total Cost
+                        </th>
+                        {itemWiseConfirmationEnabled && (
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                            Confirmation
+                          </th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {viewOrder?.items && viewOrder.items.map((item, index) => (
+                        <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(item.confirmationStatus ?? item.confirmation_status) === 'cancelled' ? 'opacity-60' : ''}`}>
+                          <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
+                            {index + 1}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
+                            <div>
+                              <div className="font-medium">
+                                {typeof item.product === 'object' && item.product !== null
+                                  ? (item.product.name || item.product.displayName || item.product.display_name || item.product.variantName || item.product.variant_name || 'Unknown Product')
+                                  : (getProductDisplayName(item.product) || item.productData?.name || 'Unknown Product')}
+                              </div>
+                              {item.product?.description && typeof item.product === 'object' && (
+                                <div className="text-gray-500 text-xs">{safeRender(item.product.description)}</div>
+                              )}
+                              {(() => {
+                                const p =
+                                  typeof item.product === 'object' && item.product !== null
+                                    ? item.product
+                                    : item.productData || {};
+                                const b = (p.barcode ?? '').toString().trim();
+                                if (b) return <div className="text-gray-600 text-xs font-mono mt-0.5">Barcode: {b}</div>;
+                                const s = (p.sku ?? '').toString().trim();
+                                if (s) return <div className="text-gray-600 text-xs font-mono mt-0.5">SKU: {s}</div>;
+                                return null;
+                              })()}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900 text-right border-b border-gray-200">
+                            {item.quantity}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900 text-right border-b border-gray-200">
+                            {Math.round(item.costPerUnit || 0)}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right border-b border-gray-200">
+                            {Math.round(item.totalCost || 0)}
+                          </td>
+                          {itemWiseConfirmationEnabled && (
+                            <td className="px-4 py-3 text-sm border-b border-gray-200">
+                              <OrderItemConfirmationCell
+                                item={item}
+                                itemIndex={index}
+                                status={getItemConfirmationStatus(item)}
+                                canEdit={viewOrder?.status !== 'cancelled'}
+                                selected={selectedItemIndices.includes(index)}
+                                onToggleSelect={(idx) => setSelectedItemIndices((prev) => prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx])}
+                                onCancel={(idx) => handleUpdateItemsConfirmation([{ itemIndex: idx, confirmationStatus: 'cancelled' }], false, false)}
+                                isUpdating={updatingItemsConfirmation}
+                              />
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-          {/* Terms */}
-          {viewOrder.terms && (
-            <div className="mb-6">
-              <h5 className="font-semibold text-gray-900 mb-2">Terms & Conditions</h5>
-              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
-                {safeRender(viewOrder.terms)}
-              </p>
+              {/* Totals */}
+              <div className="flex justify-end mb-6">
+                <div className="w-80">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="font-medium">{Math.round(Number(viewOrder?.subtotal) || 0)}</span>
+                    </div>
+                    {taxSystemEnabled && viewOrder?.tax && Number(viewOrder.tax) > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Tax:</span>
+                        <span className="font-medium">{Math.round(Number(viewOrder.tax))}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">PO Total:</span>
+                      <span className="font-medium">{Math.round(Number(viewOrder?.total) || 0)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Previous Outstanding:</span>
+                      <span className="font-medium text-red-600">{Math.round((Number((viewOrder?.supplier?.pendingBalance ?? viewOrder?.supplier?.currentBalance)) || 0))}</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                      <span>Total Payables:</span>
+                      <span className="text-red-600">{Math.round((Number(viewOrder?.total) || 0) + (Number((viewOrder?.supplier?.pendingBalance ?? viewOrder?.supplier?.currentBalance)) || 0))}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {viewOrder?.notes && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-900 mb-2">Notes</h5>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
+                    {safeRender(viewOrder?.notes)}
+                  </p>
+                </div>
+              )}
+
+              {/* Terms */}
+              {viewOrder?.terms && (
+                <div className="mb-6">
+                  <h5 className="font-semibold text-gray-900 mb-2">Terms & Conditions</h5>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
+                    {safeRender(viewOrder?.terms)}
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12">
+              <LoadingSpinner className="h-8 w-8 text-blue-600 mb-4" />
+              <p className="text-gray-500">Loading order details...</p>
             </div>
           )}
         </div>
