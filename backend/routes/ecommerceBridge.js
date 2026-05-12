@@ -71,6 +71,9 @@ const normalizeOrder = (order) => ({
   shippingAddress: order.shippingAddress || order.shipping_address,
   shippingPhone: order.shippingPhone || order.shipping_phone,
   shippingCity: order.shippingCity || order.shipping_city,
+  address: order.shippingAddress || order.shipping_address || order.address,
+  phone: order.shippingPhone || order.shipping_phone || order.phone,
+  city: order.shippingCity || order.shipping_city || order.city,
 });
 
 const adaptCategory = (category) => {
@@ -613,9 +616,9 @@ router.post(
         status: "confirmed",
         orderType: "retail",
         orderDate: new Date(),
-        shippingAddress: req.body.address,
-        shippingPhone: req.body.phone,
-        shippingCity: req.body.city,
+        shipping_address: req.body.address,
+        shipping_phone: req.body.phone,
+        shipping_city: req.body.city,
         notes: `E-commerce order (structured)`.trim(),
         createdBy: userId,
       });
