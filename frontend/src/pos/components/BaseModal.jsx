@@ -93,7 +93,7 @@ const BaseModal = ({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-50 overflow-auto transition-all duration-300"
+      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 overflow-auto transition-all duration-300"
       style={{ zIndex }}
       onClick={handleBackdropClick}
       role="dialog"
@@ -102,7 +102,7 @@ const BaseModal = ({
     >
       <div className={`${wrapperClasses} flex ${variant === 'centered' ? 'items-center justify-center min-h-full' : 'pt-10 sm:pt-20'} relative w-full min-w-0`}>
         <div
-          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-2xl rounded-xl bg-white/95 backdrop-blur-md border border-white/20 flex flex-col transition-all duration-300 animate-in zoom-in-95 ${
+          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-2xl rounded-xl bg-white/85 backdrop-blur-xl border border-white/20 flex flex-col transition-all duration-300 animate-in zoom-in-95 ${
             variant === 'scrollable' ? 'max-h-[90vh]' : ''
           } ${className}`}
           onClick={(e) => e.stopPropagation()}

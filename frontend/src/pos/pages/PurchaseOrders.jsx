@@ -2085,523 +2085,507 @@ export const PurchaseOrders = ({ tabId }) => {
       )}
 
       {/* Edit Modal */}
-      {showEditModal && selectedOrder && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div
-            className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Edit Purchase Order</h2>
-                <button
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setSelectedOrder(null);
-                    setSupplierSearchTerm('');
-                    setModalProductSearchTerm('');
-                    setModalSelectedProduct(null);
-                    setEditProductQuantity(1);
-                    setEditProductCost(0);
-                    setModalSelectedSuggestionIndex(-1);
-                    resetForm();
-                  }}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-                >
-                  Close
-                </button>
-              </div>
-
-              {/* Purchase Order Details */}
-              <OrderCheckoutCard className="mb-6 ml-0 mt-0 max-w-none">
-                <div className="border-b border-blue-200/60 bg-white/40 px-5 py-4 sm:px-7">
-                  <ShowDetailsSectionHeader
-                    title="Edit Purchase Order Details"
-                    showDetails={showPurchaseOrderDetailsFields}
-                    onShowDetailsChange={setShowPurchaseOrderDetailsFields}
-                    checkboxId="showPurchaseOrderDetailsFieldsEdit"
-                    titleClassName="text-lg"
+      <BaseModal
+        isOpen={showEditModal && !!selectedOrder}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedOrder(null);
+          setSupplierSearchTerm('');
+          setModalProductSearchTerm('');
+          setModalSelectedProduct(null);
+          setEditProductQuantity(1);
+          setEditProductCost(0);
+          setModalSelectedSuggestionIndex(-1);
+          resetForm();
+        }}
+        title="Edit Purchase Order"
+        maxWidth="full"
+        className="max-w-6xl"
+      >
+        <div className="p-6">
+          {/* Purchase Order Details */}
+          <OrderCheckoutCard className="mb-6 ml-0 mt-0 max-w-none">
+            <div className="border-b border-blue-200/60 bg-white/40 px-5 py-4 sm:px-7">
+              <ShowDetailsSectionHeader
+                title="Edit Purchase Order Details"
+                showDetails={showPurchaseOrderDetailsFields}
+                onShowDetailsChange={setShowPurchaseOrderDetailsFields}
+                checkboxId="showPurchaseOrderDetailsFieldsEdit"
+                titleClassName="text-lg"
+              />
+            </div>
+            <div className="px-5 py-4 sm:px-7">
+              {/* Supplier Selection */}
+              <div className="mb-4">
+                <div className="flex flex-col">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Supplier Selection</label>
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Search suppliers..."
+                    value={supplierSearchTerm}
+                    onChange={(e) => setSupplierSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </div>
-                <div className="px-5 py-4 sm:px-7">
-                  {/* Supplier Selection */}
-                  <div className="mb-4">
-                    <div className="flex flex-col">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Supplier Selection</label>
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        placeholder="Search suppliers..."
-                        value={supplierSearchTerm}
-                        onChange={(e) => setSupplierSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      {/* Supplier Suggestions */}
-                      {supplierSearchTerm && suppliers?.length > 0 && (
-                        <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                          {suppliers.slice(0, 5).map((supplier) => (
-                            <div
-                              key={supplier._id}
-                              onClick={() => {
-                                setFormData(prev => ({ ...prev, supplier: supplier._id }));
-                                setSupplierSearchTerm(supplier.companyName || supplier.name);
-                              }}
-                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                            >
-                              <div className="font-medium">{supplier.companyName || supplier.name}</div>
-                              <div className="text-sm text-gray-600">{supplier.email}</div>
-                            </div>
-                          ))}
+                  {/* Supplier Suggestions */}
+                  {supplierSearchTerm && suppliers?.length > 0 && (
+                    <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
+                      {suppliers.slice(0, 5).map((supplier) => (
+                        <div
+                          key={supplier._id}
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, supplier: supplier._id }));
+                            setSupplierSearchTerm(supplier.companyName || supplier.name);
+                          }}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-medium">{supplier.companyName || supplier.name}</div>
+                          <div className="text-sm text-gray-600">{supplier.email}</div>
                         </div>
-                      )}
-                      {/* Selected Supplier Display */}
-                      {formData.supplier && (
-                        <div className="mt-2 p-2 bg-blue-50 rounded border">
-                          <div className="text-sm font-medium text-blue-900">
-                            Selected: {selectedOrder?.supplierInfo?.companyName || selectedOrder?.supplierInfo?.name || 'Supplier'}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, supplier: null }));
-                              setSupplierSearchTerm('');
-                            }}
-                            className="text-xs text-blue-600 hover:text-blue-800 mt-1"
-                          >
-                            Clear selection
-                          </button>
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  </div>
-
-                  {showPurchaseOrderDetailsFields && (
-                    <>
-                      {/* Single Row Layout for Purchase Order Details */}
-                      <div className="flex flex-nowrap gap-3 items-end justify-end">
-                        {/* Invoice Number */}
-                        <div className="flex flex-col w-44">
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Invoice Number
-                          </label>
-                          <Input
-                            type="text"
-                            value={formData.invoiceNumber || "Auto-generated"}
-                            onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-                            className="h-8 text-sm"
-                            placeholder="Auto-generated"
-                            disabled
-                          />
-                        </div>
-
-                        {/* Expected Delivery */}
-                        <div className="flex flex-col w-48">
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Expected Delivery
-                          </label>
-                          <Input
-                            type="date"
-                            autoComplete="off"
-                            value={formData.expectedDelivery}
-                            onChange={(e) => setFormData(prev => ({ ...prev, expectedDelivery: e.target.value }))}
-                            className="h-8 text-sm"
-                          />
-                        </div>
-
+                  )}
+                  {/* Selected Supplier Display */}
+                  {formData.supplier && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded border">
+                      <div className="text-sm font-medium text-blue-900">
+                        Selected: {selectedOrder?.supplierInfo?.companyName || selectedOrder?.supplierInfo?.name || 'Supplier'}
                       </div>
-
-                      {/* Notes and Terms Row */}
-                      <div className="mt-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          {/* Notes Column */}
-                          <div className="flex flex-col">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Notes
-                            </label>
-                            <Textarea
-                              value={formData.notes}
-                              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                              className="h-16 text-sm resize-none"
-                              placeholder="Add any notes or comments..."
-                            />
-                          </div>
-
-                          {/* Terms Column */}
-                          <div className="flex flex-col">
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Terms & Conditions
-                            </label>
-                            <Textarea
-                              value={formData.terms}
-                              onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
-                              className="h-16 text-sm resize-none"
-                              placeholder="Add terms and conditions..."
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, supplier: null }));
+                          setSupplierSearchTerm('');
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                      >
+                        Clear selection
+                      </button>
+                    </div>
                   )}
                 </div>
+              </div>
 
-                {/* Product Selection & Cart Items */}
-                <div className="px-6 py-4 border-t border-blue-200">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Product Selection & Cart Items</h4>
+              {showPurchaseOrderDetailsFields && (
+                <>
+                  {/* Single Row Layout for Purchase Order Details */}
+                  <div className="flex flex-nowrap gap-3 items-end justify-end">
+                    {/* Invoice Number */}
+                    <div className="flex flex-col w-44">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Invoice Number
+                      </label>
+                      <Input
+                        type="text"
+                        value={formData.invoiceNumber || "Auto-generated"}
+                        onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                        className="h-8 text-sm"
+                        placeholder="Auto-generated"
+                        disabled
+                      />
+                    </div>
 
-                  {/* Product Search */}
-                  <div className="mb-4">
-                    <div className="grid grid-cols-12 gap-4 items-end">
-                      {/* Product Search - 6 columns */}
-                      <div className="col-span-6">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Product Search
+                    {/* Expected Delivery */}
+                    <div className="flex flex-col w-48">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Expected Delivery
+                      </label>
+                      <Input
+                        type="date"
+                        autoComplete="off"
+                        value={formData.expectedDelivery}
+                        onChange={(e) => setFormData(prev => ({ ...prev, expectedDelivery: e.target.value }))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+
+                  </div>
+
+                  {/* Notes and Terms Row */}
+                  <div className="mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Notes Column */}
+                      <div className="flex flex-col">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Notes
                         </label>
-                        <input
-                          type="text"
-                          autoComplete="off"
-                          placeholder="Search or type product name..."
-                          value={modalProductSearchTerm}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            setModalProductSearchTerm(e.target.value);
-                            setModalSelectedSuggestionIndex(-1); // Reset selection when typing
-                          }}
-                          onFocus={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => {
-                            e.stopPropagation();
+                        <Textarea
+                          value={formData.notes}
+                          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                          className="h-16 text-sm resize-none"
+                          placeholder="Add any notes or comments..."
+                        />
+                      </div>
 
-                            if (!modalProductsData?.length) return;
+                      {/* Terms Column */}
+                      <div className="flex flex-col">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Terms & Conditions
+                        </label>
+                        <Textarea
+                          value={formData.terms}
+                          onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                          className="h-16 text-sm resize-none"
+                          placeholder="Add terms and conditions..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
-                            const maxIndex = Math.min(modalProductsData.length - 1, 4); // Max 5 suggestions
+            {/* Product Selection & Cart Items */}
+            <div className="px-6 py-4 border-t border-blue-200">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Product Selection & Cart Items</h4>
 
-                            switch (e.key) {
-                              case 'ArrowDown':
-                                e.preventDefault();
-                                setModalSelectedSuggestionIndex(prev =>
-                                  prev < maxIndex ? prev + 1 : 0
-                                );
-                                break;
-                              case 'ArrowUp':
-                                e.preventDefault();
-                                setModalSelectedSuggestionIndex(prev =>
-                                  prev > 0 ? prev - 1 : maxIndex
-                                );
-                                break;
-                              case 'Enter':
-                                e.preventDefault();
-                                if (modalSelectedSuggestionIndex >= 0 && modalProductsData[modalSelectedSuggestionIndex]) {
-                                  const product = modalProductsData[modalSelectedSuggestionIndex];
-                                  setModalSelectedProduct(product);
-                                  setEditProductCost(product.pricing?.costPrice || 0);
-                                  setEditProductQuantity(1);
-                                  const displayName = product.isVariant
-                                    ? (product.displayName || product.variantName || product.name)
-                                    : product.name;
-                                  setModalProductSearchTerm(displayName);
-                                  setModalSelectedSuggestionIndex(-1);
+              {/* Product Search */}
+              <div className="mb-4">
+                <div className="grid grid-cols-12 gap-4 items-end">
+                  {/* Product Search - 6 columns */}
+                  <div className="col-span-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Product Search
+                    </label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      placeholder="Search or type product name..."
+                      value={modalProductSearchTerm}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setModalProductSearchTerm(e.target.value);
+                        setModalSelectedSuggestionIndex(-1); // Reset selection when typing
+                      }}
+                      onFocus={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
 
-                                  // Move focus to quantity field after selecting product
-                                  setTimeout(() => {
-                                    const quantityInput = document.querySelector('.modal-quantity-input');
-                                    if (quantityInput) {
-                                      quantityInput.focus();
-                                    }
-                                  }, 100);
+                        if (!modalProductsData?.length) return;
+
+                        const maxIndex = Math.min(modalProductsData.length - 1, 4); // Max 5 suggestions
+
+                        switch (e.key) {
+                          case 'ArrowDown':
+                            e.preventDefault();
+                            setModalSelectedSuggestionIndex(prev =>
+                              prev < maxIndex ? prev + 1 : 0
+                            );
+                            break;
+                          case 'ArrowUp':
+                            e.preventDefault();
+                            setModalSelectedSuggestionIndex(prev =>
+                              prev > 0 ? prev - 1 : maxIndex
+                            );
+                            break;
+                          case 'Enter':
+                            e.preventDefault();
+                            if (modalSelectedSuggestionIndex >= 0 && modalProductsData[modalSelectedSuggestionIndex]) {
+                              const product = modalProductsData[modalSelectedSuggestionIndex];
+                              setModalSelectedProduct(product);
+                              setEditProductCost(product.pricing?.costPrice || 0);
+                              setEditProductQuantity(1);
+                              const displayName = product.isVariant
+                                ? (product.displayName || product.variantName || product.name)
+                                : product.name;
+                              setModalProductSearchTerm(displayName);
+                              setModalSelectedSuggestionIndex(-1);
+
+                              // Move focus to quantity field after selecting product
+                              setTimeout(() => {
+                                const quantityInput = document.querySelector('.modal-quantity-input');
+                                if (quantityInput) {
+                                  quantityInput.focus();
                                 }
-                                break;
-                              case 'Escape':
-                                e.preventDefault();
-                                setModalSelectedSuggestionIndex(-1);
-                                break;
+                              }, 100);
                             }
-                          }}
-                          className="modal-product-search w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          autoFocus
-                        />
-                        {/* Product Suggestions */}
-                        {modalProductsData && modalProductsData.length > 0 && (
-                          <div className="mt-2 max-h-96 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                            {modalProductsData
-                              .map((product, index) => (
-                                <div
-                                  key={product._id}
-                                  onClick={() => {
-                                    setModalSelectedProduct(product);
-                                    setEditProductCost(product.pricing?.costPrice || 0);
-                                    setEditProductQuantity(1);
-                                    const displayName = product.isVariant
-                                      ? (product.displayName || product.variantName || product.name)
-                                      : product.name;
-                                    setModalProductSearchTerm(displayName);
-                                    setModalSelectedSuggestionIndex(-1);
+                            break;
+                          case 'Escape':
+                            e.preventDefault();
+                            setModalSelectedSuggestionIndex(-1);
+                            break;
+                        }
+                      }}
+                      className="modal-product-search w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                    {/* Product Suggestions */}
+                    {modalProductsData && modalProductsData.length > 0 && (
+                      <div className="mt-2 max-h-96 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
+                        {modalProductsData
+                          .map((product, index) => (
+                            <div
+                              key={product._id}
+                              onClick={() => {
+                                setModalSelectedProduct(product);
+                                setEditProductCost(product.pricing?.costPrice || 0);
+                                setEditProductQuantity(1);
+                                const displayName = product.isVariant
+                                  ? (product.displayName || product.variantName || product.name)
+                                  : product.name;
+                                setModalProductSearchTerm(displayName);
+                                setModalSelectedSuggestionIndex(-1);
 
-                                    // Move focus to quantity field after selecting product
-                                    setTimeout(() => {
-                                      const quantityInput = document.querySelector('.modal-quantity-input');
-                                      if (quantityInput) {
-                                        quantityInput.focus();
-                                      }
-                                    }, 100);
-                                  }}
-                                  className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${modalSelectedSuggestionIndex === index
-                                    ? 'bg-blue-100 border-blue-200'
-                                    : 'hover:bg-gray-100'
-                                    }`}
-                                >
-                                  <div className="flex flex-col">
-                                    <div className="font-medium">
-                                      {product.isVariant
-                                        ? (product.displayName || product.variantName || product.name)
-                                        : product.name}
-                                    </div>
-                                    {product.isVariant && (
-                                      <div className="text-xs text-gray-500">
-                                        {product.variantType}: {product.variantValue}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    Stock:{' '}
-                                    {hasDualUnit(product)
-                                      ? formatStockDualLabel(product.inventory?.currentStock || 0, product)
-                                      : `${product.inventory?.currentStock || 0} pcs`}{' '}
-                                    | Cost: {product.pricing?.cost ?? product.pricing?.costPrice ?? 0}
-                                  </div>
+                                // Move focus to quantity field after selecting product
+                                setTimeout(() => {
+                                  const quantityInput = document.querySelector('.modal-quantity-input');
+                                  if (quantityInput) {
+                                    quantityInput.focus();
+                                  }
+                                }, 100);
+                              }}
+                              className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${modalSelectedSuggestionIndex === index
+                                ? 'bg-blue-100 border-blue-200'
+                                : 'hover:bg-gray-100'
+                                }`}
+                            >
+                              <div className="flex flex-col">
+                                <div className="font-medium">
+                                  {product.isVariant
+                                    ? (product.displayName || product.variantName || product.name)
+                                    : product.name}
                                 </div>
-                              ))}
-                          </div>
-                        )}
+                                {product.isVariant && (
+                                  <div className="text-xs text-gray-500">
+                                    {product.variantType}: {product.variantValue}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                Stock:{' '}
+                                {hasDualUnit(product)
+                                  ? formatStockDualLabel(product.inventory?.currentStock || 0, product)
+                                  : `${product.inventory?.currentStock || 0} pcs`}{' '}
+                                | Cost: {product.pricing?.cost ?? product.pricing?.costPrice ?? 0}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+
+
+                  {/* Quantity - 2 columns */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      autoComplete="off"
+                      value={editProductQuantity}
+                      onChange={(e) => setEditProductQuantity(parseInt(e.target.value) || 1)}
+                      onFocus={(e) => e.target.select()}
+                      className="modal-quantity-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="1"
+                    />
+                  </div>
+
+                  {/* Cost Per Unit - 2 columns */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cost Per Unit
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      autoComplete="off"
+                      value={editProductCost}
+                      onChange={(e) => setEditProductCost(parseFloat(e.target.value) || 0)}
+                      onFocus={(e) => e.target.select()}
+                      className="modal-cost-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  {/* Add Button - 2 columns */}
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (modalSelectedProduct && editProductQuantity > 0 && editProductCost >= 0) {
+                          const newItem = {
+                            product: modalSelectedProduct._id,
+                            quantity: editProductQuantity,
+                            costPerUnit: editProductCost,
+                            totalCost: editProductQuantity * editProductCost,
+                            productData: modalSelectedProduct
+                          };
+                          setFormData(prev => ({
+                            ...prev,
+                            items: [...prev.items, newItem]
+                          }));
+                          setModalSelectedProduct(null);
+                          setModalProductSearchTerm('');
+                          setEditProductQuantity(1);
+                          setEditProductCost(0);
+                          setModalSelectedSuggestionIndex(-1);
+                        }
+                      }}
+                      disabled={!modalSelectedProduct || editProductQuantity <= 0 || editProductCost < 0}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    >
+                      Add Product
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Items */}
+              <div className="space-y-2">
+                <h5 className="text-sm font-medium text-gray-700 mb-2">Current Items:</h5>
+                {formData.items.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic">No items in this order</p>
+                ) : (
+                  formData.items.map((item, index) => (
+                    <div key={index} className="flex items-center p-3 bg-white border border-gray-200 rounded-lg">
+                      {/* Product Name */}
+                      <div className="font-medium text-gray-900 min-w-[200px] mr-4">
+                        {item.productData?.isVariant
+                          ? (item.productData?.displayName || item.productData?.variantName || item.productData?.name || 'Unknown Variant')
+                          : (item.productData?.name || 'Unknown Product')}
                       </div>
 
+                      {/* Quantity, Cost, Total and Delete - Grouped Together */}
+                      <div className="flex items-center space-x-3 ml-auto">
+                        {/* Quantity Field */}
+                        <div className="flex items-center space-x-1">
+                          <label className="text-xs text-gray-600">Qty:</label>
+                          <DualUnitQuantityInput
+                            product={item.productData}
+                            quantity={item.quantity}
+                            showBoxInput={dualUnitShowBoxInputEnabled}
+                            showPiecesInput={dualUnitShowPiecesInputEnabled}
+                            onChange={(newQuantity) => {
+                              const newItems = [...formData.items];
+                              const ppb = getPiecesPerBox(item.productData);
+                              const { boxes, pieces } = ppb ? piecesToBoxesAndPieces(newQuantity, ppb) : {};
+                              newItems[index].quantity = newQuantity;
+                              if (ppb) { newItems[index].boxes = boxes; newItems[index].pieces = pieces; }
+                              newItems[index].totalCost = newQuantity * newItems[index].costPerUnit;
+                              setFormData(prev => ({ ...prev, items: newItems }));
+                            }}
+                            min={1}
+                            inputClassName="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            compact={true}
+                          />
+                        </div>
 
-                      {/* Quantity - 2 columns */}
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Quantity
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          autoComplete="off"
-                          value={editProductQuantity}
-                          onChange={(e) => setEditProductQuantity(parseInt(e.target.value) || 1)}
-                          onFocus={(e) => e.target.select()}
-                          className="modal-quantity-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="1"
-                        />
-                      </div>
+                        {/* Cost Field */}
+                        <div className="flex items-center space-x-1">
+                          <label className="text-xs text-gray-600">× Cost:</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            autoComplete="off"
+                            value={item.costPerUnit}
+                            onChange={(e) => {
+                              const newItems = [...formData.items];
+                              const newCost = parseFloat(e.target.value) || 0;
+                              newItems[index].costPerUnit = newCost;
+                              newItems[index].totalCost = newItems[index].quantity * newCost;
+                              setFormData(prev => ({ ...prev, items: newItems }));
+                            }}
+                            onFocus={(e) => e.target.select()}
+                            className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
 
-                      {/* Cost Per Unit - 2 columns */}
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Cost Per Unit
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          autoComplete="off"
-                          value={editProductCost}
-                          onChange={(e) => setEditProductCost(parseFloat(e.target.value) || 0)}
-                          onFocus={(e) => e.target.select()}
-                          className="modal-cost-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="0.00"
-                        />
-                      </div>
+                        {/* Total Display */}
+                        <div className="flex items-center space-x-1">
+                          <label className="text-xs text-gray-600">=</label>
+                          <span className="text-sm font-medium text-gray-900 min-w-[60px]">
+                            {item.totalCost.toFixed(2)}
+                          </span>
+                        </div>
 
-                      {/* Add Button - 2 columns */}
-                      <div className="col-span-2">
+                        {/* Remove Button */}
                         <button
                           type="button"
                           onClick={() => {
-                            if (modalSelectedProduct && editProductQuantity > 0 && editProductCost >= 0) {
-                              const newItem = {
-                                product: modalSelectedProduct._id,
-                                quantity: editProductQuantity,
-                                costPerUnit: editProductCost,
-                                totalCost: editProductQuantity * editProductCost,
-                                productData: modalSelectedProduct
-                              };
-                              setFormData(prev => ({
-                                ...prev,
-                                items: [...prev.items, newItem]
-                              }));
-                              setModalSelectedProduct(null);
-                              setModalProductSearchTerm('');
-                              setEditProductQuantity(1);
-                              setEditProductCost(0);
-                              setModalSelectedSuggestionIndex(-1);
-                            }
+                            const newItems = formData.items.filter((_, i) => i !== index);
+                            setFormData(prev => ({ ...prev, items: newItems }));
                           }}
-                          disabled={!modalSelectedProduct || editProductQuantity <= 0 || editProductCost < 0}
-                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                          className="px-2 py-1 text-sm bg-red-200 text-red-700 rounded hover:bg-red-300 ml-2"
+                          title="Remove item"
                         >
-                          Add Product
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Current Items */}
-                  <div className="space-y-2">
-                    <h5 className="text-sm font-medium text-gray-700 mb-2">Current Items:</h5>
-                    {formData.items.length === 0 ? (
-                      <p className="text-sm text-gray-500 italic">No items in this order</p>
-                    ) : (
-                      formData.items.map((item, index) => (
-                        <div key={index} className="flex items-center p-3 bg-white border border-gray-200 rounded-lg">
-                          {/* Product Name */}
-                          <div className="font-medium text-gray-900 min-w-[200px] mr-4">
-                            {item.productData?.isVariant
-                              ? (item.productData?.displayName || item.productData?.variantName || item.productData?.name || 'Unknown Variant')
-                              : (item.productData?.name || 'Unknown Product')}
-                          </div>
-
-                          {/* Quantity, Cost, Total and Delete - Grouped Together */}
-                          <div className="flex items-center space-x-3 ml-auto">
-                            {/* Quantity Field */}
-                            <div className="flex items-center space-x-1">
-                              <label className="text-xs text-gray-600">Qty:</label>
-                              <DualUnitQuantityInput
-                                product={item.productData}
-                                quantity={item.quantity}
-                                showBoxInput={dualUnitShowBoxInputEnabled}
-                                showPiecesInput={dualUnitShowPiecesInputEnabled}
-                                onChange={(newQuantity) => {
-                                  const newItems = [...formData.items];
-                                  const ppb = getPiecesPerBox(item.productData);
-                                  const { boxes, pieces } = ppb ? piecesToBoxesAndPieces(newQuantity, ppb) : {};
-                                  newItems[index].quantity = newQuantity;
-                                  if (ppb) { newItems[index].boxes = boxes; newItems[index].pieces = pieces; }
-                                  newItems[index].totalCost = newQuantity * newItems[index].costPerUnit;
-                                  setFormData(prev => ({ ...prev, items: newItems }));
-                                }}
-                                min={1}
-                                inputClassName="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                compact={true}
-                              />
-                            </div>
-
-                            {/* Cost Field */}
-                            <div className="flex items-center space-x-1">
-                              <label className="text-xs text-gray-600">× Cost:</label>
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                autoComplete="off"
-                                value={item.costPerUnit}
-                                onChange={(e) => {
-                                  const newItems = [...formData.items];
-                                  const newCost = parseFloat(e.target.value) || 0;
-                                  newItems[index].costPerUnit = newCost;
-                                  newItems[index].totalCost = newItems[index].quantity * newCost;
-                                  setFormData(prev => ({ ...prev, items: newItems }));
-                                }}
-                                onFocus={(e) => e.target.select()}
-                                className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              />
-                            </div>
-
-                            {/* Total Display */}
-                            <div className="flex items-center space-x-1">
-                              <label className="text-xs text-gray-600">=</label>
-                              <span className="text-sm font-medium text-gray-900 min-w-[60px]">
-                                {item.totalCost.toFixed(2)}
-                              </span>
-                            </div>
-
-                            {/* Remove Button */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newItems = formData.items.filter((_, i) => i !== index);
-                                setFormData(prev => ({ ...prev, items: newItems }));
-                              }}
-                              className="px-2 py-1 text-sm bg-red-200 text-red-700 rounded hover:bg-red-300 ml-2"
-                              title="Remove item"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Order Items Summary */}
-                <div className="border-t border-blue-200 px-6 py-4">
-                  <h4 className="mb-3 text-sm font-medium text-gray-900">Order Items Summary</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white rounded-lg p-3 border border-gray-200">
-                      <div className="text-xs text-gray-600 mb-1">Total Items</div>
-                      <div className="text-lg font-semibold text-gray-900">{formData.items.length}</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border border-gray-200">
-                      <div className="text-xs text-gray-600 mb-1">Total Quantity</div>
-                      <div className="text-lg font-semibold text-gray-900">
-                        {formData.items.reduce((sum, item) => sum + item.quantity, 0)}
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border border-gray-200">
-                      <div className="text-xs text-gray-600 mb-1">Total Cost</div>
-                      <div className="text-lg font-semibold text-blue-600">
-                        {Math.round(formData.items.reduce((sum, item) => sum + item.totalCost, 0))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pricing Summary */}
-                <div className="px-6 py-4 border-t border-blue-200 bg-white rounded-b-lg">
-                  <div className="flex justify-end">
-                    <div className="text-right">
-                      <div className="text-sm text-gray-600 mb-1">Total Payables</div>
-                      <div className="text-2xl font-bold text-blue-900">
-                        {Math.round(formData.items.reduce((sum, item) => sum + item.totalCost, 0))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
-                  <button
-                    onClick={() => {
-                      setShowEditModal(false);
-                      setSelectedOrder(null);
-                      setSupplierSearchTerm('');
-                      setModalProductSearchTerm('');
-                      setModalSelectedProduct(null);
-                      setEditProductQuantity(1);
-                      setEditProductCost(0);
-                      setModalSelectedSuggestionIndex(-1);
-                      resetForm();
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleUpdate}
-                    disabled={updating || formData.items.length === 0}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {updating ? 'Updating...' : 'Update Purchase Order'}
-                  </button>
-                </div>
-              </OrderCheckoutCard>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+
+            {/* Order Items Summary */}
+            <div className="border-t border-blue-200 px-6 py-4">
+              <h4 className="mb-3 text-sm font-medium text-gray-900">Order Items Summary</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="text-xs text-gray-600 mb-1">Total Items</div>
+                  <div className="text-lg font-semibold text-gray-900">{formData.items.length}</div>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="text-xs text-gray-600 mb-1">Total Quantity</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formData.items.reduce((sum, item) => sum + item.quantity, 0)}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="text-xs text-gray-600 mb-1">Total Cost</div>
+                  <div className="text-lg font-semibold text-blue-600">
+                    {Math.round(formData.items.reduce((sum, item) => sum + item.totalCost, 0))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing Summary */}
+            <div className="px-6 py-4 border-t border-blue-200 bg-white rounded-b-lg">
+              <div className="flex justify-end">
+                <div className="text-right">
+                  <div className="text-sm text-gray-600 mb-1">Total Payables</div>
+                  <div className="text-2xl font-bold text-blue-900">
+                    {Math.round(formData.items.reduce((sum, item) => sum + item.totalCost, 0))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedOrder(null);
+                  setSupplierSearchTerm('');
+                  setModalProductSearchTerm('');
+                  setModalSelectedProduct(null);
+                  setEditProductQuantity(1);
+                  setEditProductCost(0);
+                  setModalSelectedSuggestionIndex(-1);
+                  resetForm();
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdate}
+                disabled={updating || formData.items.length === 0}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {updating ? 'Updating...' : 'Update Purchase Order'}
+              </button>
+            </div>
+          </OrderCheckoutCard>
         </div>
-      )}
+      </BaseModal>
 
       {/* Filters */}
       <div className="card">
@@ -2917,282 +2901,269 @@ export const PurchaseOrders = ({ tabId }) => {
         </div>
       </div>
 
-      {/* View Modal - Bill Format */}
-      {showViewModal && (viewOrder || selectedOrder) && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-4/5 max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              {/* Header */}
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Purchase Order</h3>
-                <button
-                  onClick={() => {
-                    setShowViewModal(false);
-                    setSelectedOrder(null);
-                    setViewOrderFresh(null);
-                    setSelectedItemIndices([]);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+      <BaseModal
+        isOpen={showViewModal && (!!viewOrder || !!selectedOrder)}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedOrder(null);
+          setViewOrderFresh(null);
+          setSelectedItemIndices([]);
+        }}
+        title="Purchase Order"
+        maxWidth="xl"
+        footer={(
+          <div className="flex justify-between items-center w-full">
+            <div className="text-xs text-gray-500">
+              Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+            </div>
+            <div className="flex space-x-3">
+              <Button
+                onClick={() => handlePrint(viewOrder)}
+                variant="default"
+                className="flex items-center"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowViewModal(false);
+                  setSelectedOrder(null);
+                  setViewOrderFresh(null);
+                  setSelectedItemIndices([]);
+                }}
+                variant="secondary"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      >
+        <div className="p-5">
+          {/* Company Info */}
+          <div className="mb-6 text-center">
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">{resolvedCompanyName}</h4>
+            {resolvedCompanyAddress && (
+              <p className="text-sm text-gray-600">{resolvedCompanyAddress}</p>
+            )}
+            {resolvedCompanyPhone && (
+              <p className="text-sm text-gray-600">Phone: {resolvedCompanyPhone}</p>
+            )}
+          </div>
 
-              {/* Company Info */}
-              <div className="mb-6 text-center">
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">{resolvedCompanyName}</h4>
-                {resolvedCompanyAddress && (
-                  <p className="text-sm text-gray-600">{resolvedCompanyAddress}</p>
-                )}
-                {resolvedCompanyPhone && (
-                  <p className="text-sm text-gray-600">Phone: {resolvedCompanyPhone}</p>
-                )}
-              </div>
-
-              {/* PO Details */}
-              <div className="grid grid-cols-3 gap-6 mb-6">
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-2">Purchase Order Details</h5>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="font-medium">PO Number:</span> {viewOrder.purchase_order_number || viewOrder.poNumber || '-'}</p>
-                    <p><span className="font-medium">Date:</span> {formatDate(viewOrder.purchase_date || viewOrder.order_date || viewOrder.created_at || viewOrder.createdAt)}</p>
-                    <p><span className="font-medium">Status:</span>
-                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${viewOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                        viewOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                          viewOrder.status === 'partially_received' ? 'bg-yellow-100 text-yellow-800' :
-                            viewOrder.status === 'fully_received' ? 'bg-green-100 text-green-800' :
-                              viewOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                        }`}>
-                        {viewOrder.status === 'draft' ? 'Pending' : (viewOrder.status || '').replace('_', ' ')}
-                      </span>
-                    </p>
-                    {itemWiseConfirmationEnabled && (
-                      <p><span className="font-medium">Confirmation:</span>
-                        <OrderConfirmationStatusBadge order={viewOrder} />
-                      </p>
-                    )}
-                    {viewOrder.expectedDelivery && (
-                      <p><span className="font-medium">Expected Delivery:</span> {formatDate(viewOrder.expectedDelivery)}</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  {/* Empty middle column for spacing */}
-                </div>
-                <div className="text-right">
-                  <h5 className="font-semibold text-gray-900 mb-2">Supplier Details</h5>
-                  <div className="space-y-1 text-sm">
-                    <p><span className="font-medium">Company:</span> {safeRender(viewOrder.supplier) || 'Unknown'}</p>
-                    {viewOrder.supplier?.email && (
-                      <p><span className="font-medium">Email:</span> {safeRender(viewOrder.supplier.email)}</p>
-                    )}
-                    {viewOrder.supplier?.phone && (
-                      <p><span className="font-medium">Phone:</span> {safeRender(viewOrder.supplier.phone)}</p>
-                    )}
-                    <p><span className="font-medium">Address:</span> {formatAddressForDisplay(viewOrder.supplier) || '—'}</p>
-                    {(viewOrder.supplier?.contact_person || viewOrder.supplier?.contactPerson) && (
-                      <p><span className="font-medium">Contact:</span> {safeRender(viewOrder.supplier.contact_person || viewOrder.supplier.contactPerson)}</p>
-                    )}
-                    <div className="mt-3 pt-2 border-t border-gray-200">
-                      <p className="font-semibold text-red-600">
-                        <span className="font-medium">Outstanding Balance:</span> {Math.round((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance) || 0)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Items Table */}
-              <div className="mb-6">
-                <h5 className="font-semibold text-gray-900 mb-3">Items Ordered</h5>
+          {/* PO Details */}
+          <div className="grid grid-cols-3 gap-6 mb-6">
+            <div>
+              <h5 className="font-semibold text-gray-900 mb-2">Purchase Order Details</h5>
+              <div className="space-y-1 text-sm">
+                <p><span className="font-medium">PO Number:</span> {viewOrder.purchase_order_number || viewOrder.poNumber || '-'}</p>
+                <p><span className="font-medium">Date:</span> {formatDate(viewOrder.purchase_date || viewOrder.order_date || viewOrder.created_at || viewOrder.createdAt)}</p>
+                <p><span className="font-medium">Status:</span>
+                  <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${viewOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                    viewOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                      viewOrder.status === 'partially_received' ? 'bg-yellow-100 text-yellow-800' :
+                        viewOrder.status === 'fully_received' ? 'bg-green-100 text-green-800' :
+                          viewOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                    }`}>
+                    {viewOrder.status === 'draft' ? 'Pending' : (viewOrder.status || '').replace('_', ' ')}
+                  </span>
+                </p>
                 {itemWiseConfirmationEnabled && (
-                  <OrderConfirmSelectedActions
-                    items={viewOrder.items}
-                    canEdit={viewOrder.status !== 'cancelled'}
-                    selectedIndices={selectedItemIndices}
-                    onSelectAll={(indices) => setSelectedItemIndices(indices)}
-                    onSelectNone={() => setSelectedItemIndices([])}
-                    onConfirmSelected={(indices) => {
-                      if (indices.length) {
-                        handleUpdateItemsConfirmation(
-                          indices.map((i) => ({ itemIndex: i, confirmationStatus: 'confirmed' })),
-                          false,
-                          false
-                        );
-                      }
-                    }}
-                    isUpdating={updatingItemsConfirmation}
-                  />
+                  <p><span className="font-medium">Confirmation:</span>
+                    <OrderConfirmationStatusBadge order={viewOrder} />
+                  </p>
                 )}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border border-gray-200 rounded-lg">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                          #
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                          Product
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                          Quantity
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                          Unit Cost
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                          Total Cost
-                        </th>
-                        {itemWiseConfirmationEnabled && (
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                            Confirmation
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {viewOrder.items && viewOrder.items.map((item, index) => (
-                        <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(item.confirmationStatus ?? item.confirmation_status) === 'cancelled' ? 'opacity-60' : ''}`}>
-                          <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
-                            {index + 1}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
-                            <div>
-                              <div className="font-medium">
-                                {typeof item.product === 'object' && item.product !== null
-                                  ? (item.product.name || item.product.displayName || item.product.display_name || item.product.variantName || item.product.variant_name || 'Unknown Product')
-                                  : (getProductDisplayName(item.product) || item.productData?.name || 'Unknown Product')}
-                              </div>
-                              {item.product?.description && typeof item.product === 'object' && (
-                                <div className="text-gray-500 text-xs">{safeRender(item.product.description)}</div>
-                              )}
-                              {(() => {
-                                const p =
-                                  typeof item.product === 'object' && item.product !== null
-                                    ? item.product
-                                    : item.productData || {};
-                                const b = (p.barcode ?? '').toString().trim();
-                                if (b) return <div className="text-gray-600 text-xs font-mono mt-0.5">Barcode: {b}</div>;
-                                const s = (p.sku ?? '').toString().trim();
-                                if (s) return <div className="text-gray-600 text-xs font-mono mt-0.5">SKU: {s}</div>;
-                                return null;
-                              })()}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 text-right border-b border-gray-200">
-                            {item.quantity}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 text-right border-b border-gray-200">
-                            {Math.round(item.costPerUnit || 0)}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right border-b border-gray-200">
-                            {Math.round(item.totalCost || 0)}
-                          </td>
-                          {itemWiseConfirmationEnabled && (
-                            <td className="px-4 py-3 text-sm border-b border-gray-200">
-                              <OrderItemConfirmationCell
-                                item={item}
-                                itemIndex={index}
-                                status={getItemConfirmationStatus(item)}
-                                canEdit={viewOrder.status !== 'cancelled'}
-                                selected={selectedItemIndices.includes(index)}
-                                onToggleSelect={(idx) => setSelectedItemIndices((prev) => prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx])}
-                                onCancel={(idx) => handleUpdateItemsConfirmation([{ itemIndex: idx, confirmationStatus: 'cancelled' }], false, false)}
-                                isUpdating={updatingItemsConfirmation}
-                              />
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                {viewOrder.expectedDelivery && (
+                  <p><span className="font-medium">Expected Delivery:</span> {formatDate(viewOrder.expectedDelivery)}</p>
+                )}
               </div>
-
-              {/* Totals */}
-              <div className="flex justify-end mb-6">
-                <div className="w-80">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Subtotal:</span>
-                      <span className="font-medium">{Math.round(Number(viewOrder.subtotal) || 0)}</span>
-                    </div>
-                    {taxSystemEnabled && viewOrder.tax && Number(viewOrder.tax) > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Tax:</span>
-                        <span className="font-medium">{Math.round(Number(viewOrder.tax))}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">PO Total:</span>
-                      <span className="font-medium">{Math.round(Number(viewOrder.total) || 0)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Previous Outstanding:</span>
-                      <span className="font-medium text-red-600">{Math.round((Number((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance)) || 0))}</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold border-t pt-2">
-                      <span>Total Payables:</span>
-                      <span className="text-red-600">{Math.round((Number(viewOrder.total) || 0) + (Number((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance)) || 0))}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Notes */}
-              {viewOrder.notes && (
-                <div className="mb-6">
-                  <h5 className="font-semibold text-gray-900 mb-2">Notes</h5>
-                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
-                    {safeRender(viewOrder.notes)}
+            </div>
+            <div>
+              {/* Empty middle column for spacing */}
+            </div>
+            <div className="text-right">
+              <h5 className="font-semibold text-gray-900 mb-2">Supplier Details</h5>
+              <div className="space-y-1 text-sm">
+                <p><span className="font-medium">Company:</span> {safeRender(viewOrder.supplier) || 'Unknown'}</p>
+                {viewOrder.supplier?.email && (
+                  <p><span className="font-medium">Email:</span> {safeRender(viewOrder.supplier.email)}</p>
+                )}
+                {viewOrder.supplier?.phone && (
+                  <p><span className="font-medium">Phone:</span> {safeRender(viewOrder.supplier.phone)}</p>
+                )}
+                <p><span className="font-medium">Address:</span> {formatAddressForDisplay(viewOrder.supplier) || '—'}</p>
+                {(viewOrder.supplier?.contact_person || viewOrder.supplier?.contactPerson) && (
+                  <p><span className="font-medium">Contact:</span> {safeRender(viewOrder.supplier.contact_person || viewOrder.supplier.contactPerson)}</p>
+                )}
+                <div className="mt-3 pt-2 border-t border-gray-200">
+                  <p className="font-semibold text-red-600">
+                    <span className="font-medium">Outstanding Balance:</span> {Math.round((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance) || 0)}
                   </p>
-                </div>
-              )}
-
-              {/* Terms */}
-              {viewOrder.terms && (
-                <div className="mb-6">
-                  <h5 className="font-semibold text-gray-900 mb-2">Terms & Conditions</h5>
-                  <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
-                    {safeRender(viewOrder.terms)}
-                  </p>
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className="flex justify-between items-center pt-4 border-t">
-                <div className="text-xs text-gray-500">
-                  Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
-                </div>
-                <div className="flex space-x-3">
-                  <Button
-                    onClick={() => handlePrint(viewOrder)}
-                    variant="default"
-                    className="flex items-center"
-                  >
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowViewModal(false);
-                      setSelectedOrder(null);
-                      setViewOrderFresh(null);
-                      setSelectedItemIndices([]);
-                    }}
-                    variant="secondary"
-                  >
-                    Close
-                  </Button>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Items Table */}
+          <div className="mb-6">
+            <h5 className="font-semibold text-gray-900 mb-3">Items Ordered</h5>
+            {itemWiseConfirmationEnabled && (
+              <OrderConfirmSelectedActions
+                items={viewOrder.items}
+                canEdit={viewOrder.status !== 'cancelled'}
+                selectedIndices={selectedItemIndices}
+                onSelectAll={(indices) => setSelectedItemIndices(indices)}
+                onSelectNone={() => setSelectedItemIndices([])}
+                onConfirmSelected={(indices) => {
+                  if (indices.length) {
+                    handleUpdateItemsConfirmation(
+                      indices.map((i) => ({ itemIndex: i, confirmationStatus: 'confirmed' })),
+                      false,
+                      false
+                    );
+                  }
+                }}
+                isUpdating={updatingItemsConfirmation}
+              />
+            )}
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-200 rounded-lg">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                      Product
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                      Quantity
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                      Unit Cost
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                      Total Cost
+                    </th>
+                    {itemWiseConfirmationEnabled && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                        Confirmation
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {viewOrder.items && viewOrder.items.map((item, index) => (
+                    <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${(item.confirmationStatus ?? item.confirmation_status) === 'cancelled' ? 'opacity-60' : ''}`}>
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">
+                        <div>
+                          <div className="font-medium">
+                            {typeof item.product === 'object' && item.product !== null
+                              ? (item.product.name || item.product.displayName || item.product.display_name || item.product.variantName || item.product.variant_name || 'Unknown Product')
+                              : (getProductDisplayName(item.product) || item.productData?.name || 'Unknown Product')}
+                          </div>
+                          {item.product?.description && typeof item.product === 'object' && (
+                            <div className="text-gray-500 text-xs">{safeRender(item.product.description)}</div>
+                          )}
+                          {(() => {
+                            const p =
+                              typeof item.product === 'object' && item.product !== null
+                                ? item.product
+                                : item.productData || {};
+                            const b = (p.barcode ?? '').toString().trim();
+                            if (b) return <div className="text-gray-600 text-xs font-mono mt-0.5">Barcode: {b}</div>;
+                            const s = (p.sku ?? '').toString().trim();
+                            if (s) return <div className="text-gray-600 text-xs font-mono mt-0.5">SKU: {s}</div>;
+                            return null;
+                          })()}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 text-right border-b border-gray-200">
+                        {item.quantity}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 text-right border-b border-gray-200">
+                        {Math.round(item.costPerUnit || 0)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right border-b border-gray-200">
+                        {Math.round(item.totalCost || 0)}
+                      </td>
+                      {itemWiseConfirmationEnabled && (
+                        <td className="px-4 py-3 text-sm border-b border-gray-200">
+                          <OrderItemConfirmationCell
+                            item={item}
+                            itemIndex={index}
+                            status={getItemConfirmationStatus(item)}
+                            canEdit={viewOrder.status !== 'cancelled'}
+                            selected={selectedItemIndices.includes(index)}
+                            onToggleSelect={(idx) => setSelectedItemIndices((prev) => prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx])}
+                            onCancel={(idx) => handleUpdateItemsConfirmation([{ itemIndex: idx, confirmationStatus: 'cancelled' }], false, false)}
+                            isUpdating={updatingItemsConfirmation}
+                          />
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Totals */}
+          <div className="flex justify-end mb-6">
+            <div className="w-80">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium">{Math.round(Number(viewOrder.subtotal) || 0)}</span>
+                </div>
+                {taxSystemEnabled && viewOrder.tax && Number(viewOrder.tax) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Tax:</span>
+                    <span className="font-medium">{Math.round(Number(viewOrder.tax))}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">PO Total:</span>
+                  <span className="font-medium">{Math.round(Number(viewOrder.total) || 0)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Previous Outstanding:</span>
+                  <span className="font-medium text-red-600">{Math.round((Number((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance)) || 0))}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                  <span>Total Payables:</span>
+                  <span className="text-red-600">{Math.round((Number(viewOrder.total) || 0) + (Number((viewOrder.supplier?.pendingBalance ?? viewOrder.supplier?.currentBalance)) || 0))}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          {viewOrder.notes && (
+            <div className="mb-6">
+              <h5 className="font-semibold text-gray-900 mb-2">Notes</h5>
+              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
+                {safeRender(viewOrder.notes)}
+              </p>
+            </div>
+          )}
+
+          {/* Terms */}
+          {viewOrder.terms && (
+            <div className="mb-6">
+              <h5 className="font-semibold text-gray-900 mb-2">Terms & Conditions</h5>
+              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded border">
+                {safeRender(viewOrder.terms)}
+              </p>
+            </div>
+          )}
         </div>
-      )}
+      </BaseModal>
 
       <PrintModal
         isOpen={showPrintModal}
