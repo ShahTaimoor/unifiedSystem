@@ -27,7 +27,7 @@ const poolConfig = {
   min: 2, // Keep at least 2 connections ready
   
   // 2. Timeouts
-  connectionTimeoutMillis: 5000, // Wait 5s for a connection before failing
+  connectionTimeoutMillis: 10000, // Wait 10s for a connection before failing
   idleTimeoutMillis: 60000,     // Close idle connections after 60s
   
   // 3. Keepalive (Fixes the 2-minute "Connection Terminated" error)
@@ -112,14 +112,28 @@ const transaction = async (callback) => {
  * Startup Connection Check
  */
 const connectDB = async () => {
-  try {
-    const res = await query('SELECT NOW()');
-    logger.info(`PostgreSQL Connected: ${poolConfig.host} (Pool Max: ${poolConfig.max})`);
-    return pool;
-  } catch (error) {
-    logger.error(`PostgreSQL Initial Connection Failed: ${error.message}`);
-    // Only exit on initial startup failure
-    process.exit(1);
+  let retries = 3;
+  let lastError;
+  
+  while (retries > 0) {
+    try {
+      const res = await query('SELECT NOW()');
+      logger.info(`PostgreSQL Connected: ${poolConfig.host} (Pool Max: ${poolConfig.max})`);
+      return pool;
+    } catch (error) {
+      lastError = error;
+      logger.error(`PostgreSQL Connection Attempt Failed (Retries left: ${retries - 1}): ${error.message}`);
+      
+      if (retries === 1) {
+        // Only exit on final retry failure
+        logger.error(`PostgreSQL Initial Connection Failed after ${3 - retries} attempts: ${lastError.message}`);
+        process.exit(1);
+      } else {
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        retries--;
+      }
+    }
   }
 };
 

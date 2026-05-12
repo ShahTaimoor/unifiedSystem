@@ -600,7 +600,8 @@ router.post(
         subtotal += totalPrice;
 
         orderItems.push({
-          product: product._id,
+          id: product._id,
+          product: product, // Include full product object
           quantity,
           unitPrice,
           totalPrice,
