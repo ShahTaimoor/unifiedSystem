@@ -272,7 +272,7 @@ class AuthService {
    * @returns {Promise<{user: User, message: string}>}
    */
   async updateProfile(userId, updateData) {
-    const { firstName, lastName, email, phone } = updateData;
+    const { firstName, lastName, email, phone, address, city, username } = updateData;
 
     const emailVal = email !== undefined && email !== null ? String(email).trim() : '';
     if (emailVal) {
@@ -282,17 +282,32 @@ class AuthService {
       }
     }
 
+    const existingUser = await userRepository.findById(userId);
+    if (!existingUser) {
+      throw new Error('User not found');
+    }
+
     const updateFields = {};
     if (firstName !== undefined) updateFields.firstName = firstName;
     if (lastName !== undefined) updateFields.lastName = lastName;
     if (emailVal) updateFields.email = emailVal.toLowerCase();
     if (phone !== undefined) updateFields.phone = phone;
+    if (address !== undefined) updateFields.address = address;
+    if (city !== undefined) updateFields.city = city;
 
-    const user = await userRepository.updateProfile(userId, updateFields);
-    if (!user) {
-      throw new Error('User not found');
+    // Handle username in preferences
+    if (username !== undefined) {
+      updateFields.preferences = {
+        ...(existingUser.preferences || {}),
+        username: username
+      };
+      // Also update firstName if it's the primary display name
+      if (!updateFields.firstName) {
+        updateFields.firstName = username;
+      }
     }
 
+    const user = await userRepository.updateProfile(userId, updateFields);
     return {
       user: user.toSafeObject(),
       message: 'Profile updated successfully'

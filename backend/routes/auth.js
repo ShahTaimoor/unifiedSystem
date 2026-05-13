@@ -374,10 +374,13 @@ router.get('/me', auth, async (req, res, next) => {
 // @access  Private
 router.put('/profile', [
   auth,
-  body('firstName').optional().trim().isLength({ min: 1 }),
-  body('lastName').optional().trim().isLength({ min: 1 }),
+  body('firstName').optional().trim(),
+  body('lastName').optional().trim(),
   body('email').optional().isEmail().normalizeEmail(),
   body('phone').optional().trim(),
+  body('address').optional().trim(),
+  body('city').optional().trim(),
+  body('username').optional().trim(),
   body('department').optional().trim()
 ], async (req, res, next) => {
   try {
