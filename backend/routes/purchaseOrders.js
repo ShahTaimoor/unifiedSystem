@@ -624,16 +624,21 @@ router.delete('/:id', [
         const inventoryService = require('../services/inventoryService');
         for (const item of purchaseOrder.items) {
           try {
+            const rawProductId = item.product_id || item.product;
+            if (!rawProductId) continue;
+            const productId = typeof rawProductId === 'object' ? (rawProductId.id || rawProductId._id || rawProductId) : rawProductId;
+            if (!productId || typeof productId === 'object') continue; // Final safety check
+
             await inventoryService.updateStock({
-              productId: item.product,
+              productId: productId,
               type: 'out',
               quantity: item.quantity,
               reason: 'Purchase Order Deletion',
               reference: 'Purchase Order',
-              referenceId: purchaseOrder._id,
+              referenceId: purchaseOrder.id || purchaseOrder._id,
               referenceModel: 'PurchaseOrder',
               performedBy: req.user?.id || req.user?._id,
-              notes: `Inventory rolled back due to deletion of purchase order ${purchaseOrder.poNumber}`
+              notes: `Inventory rolled back due to deletion of purchase order ${purchaseOrder.purchase_order_number || purchaseOrder.poNumber}`
             });
           } catch (error) {
             console.error(`Failed to restore inventory for product ${item.product}:`, error);
@@ -645,11 +650,15 @@ router.delete('/:id', [
       }
     }
 
-    await purchaseOrderService.deletePurchaseOrder(req.params.id);
-
     res.json({ message: 'Purchase order deleted successfully' });
   } catch (error) {
     console.error('Delete purchase order error:', error);
+    if (error.message === 'Purchase order not found') {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes('Only draft') || error.message.includes('Cannot delete')) {
+      return res.status(400).json({ message: error.message });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
