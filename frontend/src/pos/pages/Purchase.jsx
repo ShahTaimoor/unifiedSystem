@@ -1085,12 +1085,22 @@ export const Purchase = ({ tabId, editData }) => {
           return null;
         })()
       },
-      items: purchaseItems.map(item => ({
-        product: item.product?.id || item.product?._id,
-        quantity: item.quantity,
-        unitCost: item.costPerUnit,
-        totalCost: item.quantity * item.costPerUnit
-      })),
+      items: purchaseItems.map(item => {
+        const prodObj = item.product || {};
+        const prodId = prodObj.id || prodObj._id || item.productId || (typeof item.product === 'string' ? item.product : undefined);
+        const displayName = prodObj.isVariant
+          ? (prodObj.displayName || prodObj.variantName || prodObj.name || item.name || 'Unknown Variant')
+          : (prodObj.name || item.name || 'Unknown Product');
+        return {
+          product: prodId,
+          name: displayName,
+          quantity: item.quantity,
+          unitCost: item.costPerUnit || item.unitCost,
+          unitPrice: item.costPerUnit || item.unitCost,
+          totalCost: (item.quantity || 0) * (item.costPerUnit || item.unitCost || 0)
+        };
+      }),
+
       pricing: {
         subtotal: subtotal,
         discountAmount: 0,
@@ -1216,21 +1226,21 @@ export const Purchase = ({ tabId, editData }) => {
                       {selectedSupplier.companyName || selectedSupplier.company_name || selectedSupplier.businessName || selectedSupplier.business_name || selectedSupplier.displayName || selectedSupplier.name || 'Unknown Supplier'}
                     </span>
                     <span className="text-gray-400">|</span>
-                      <span className="text-gray-600 capitalize">
-                        {selectedSupplier.businessType || 'Wholesaler'}
-                      </span>
-                      <span className="text-gray-400">|</span>
-                      <span className="text-gray-500 uppercase font-semibold">Outstanding</span>
-                      <span className={`font-bold ${supplierOutstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {Math.round(supplierOutstanding)}
-                      </span>
-                      {selectedSupplier.phone && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-gray-400">|</span>
-                          <Phone className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <span className="text-xs text-gray-500">{selectedSupplier.phone}</span>
-                        </div>
-                      )}
+                    <span className="text-gray-600 capitalize">
+                      {selectedSupplier.businessType || 'Wholesaler'}
+                    </span>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-gray-500 uppercase font-semibold">Outstanding</span>
+                    <span className={`font-bold ${supplierOutstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {Math.round(supplierOutstanding)}
+                    </span>
+                    {selectedSupplier.phone && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-400">|</span>
+                        <Phone className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs text-gray-500">{selectedSupplier.phone}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

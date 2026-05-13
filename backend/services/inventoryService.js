@@ -101,7 +101,7 @@ const updateStock = async ({ productId, type, quantity, reason, reference, refer
             reason: reason || `Inventory ${type}`,
             referenceType: referenceModel === 'PurchaseInvoice' ? 'purchase_invoice' : (referenceModel === 'Sale' ? 'sale' : 'inventory_adjustment'),
             referenceId,
-            referenceNumber,
+            referenceNumber: referenceId,
             createdBy: validatedUserId,
             transactionDate: new Date()
           }, client);

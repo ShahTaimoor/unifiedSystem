@@ -552,14 +552,14 @@ class PurchaseInvoiceRepository {
       pagination: getAll
         ? { current: 1, pages: 1, total, hasNext: false, hasPrev: false, mode: 'offset' }
         : {
-            current: page,
-            pages: Math.ceil(total / limit),
-            total,
-            hasNext: page < Math.ceil(total / limit),
-            hasPrev: page > 1,
-            mode: 'offset',
-            nextCursor: null
-          }
+          current: page,
+          pages: Math.ceil(total / limit),
+          total,
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+          mode: 'offset',
+          nextCursor: null
+        }
     };
   }
 

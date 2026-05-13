@@ -269,7 +269,21 @@ const PrintDocument = ({
         };
     }, [orderData, partyLabel]);
 
-    const items = Array.isArray(orderData?.items) ? orderData.items : [];
+    const items = useMemo(() => {
+        const rawItems = orderData?.items;
+        if (!rawItems) return [];
+        if (Array.isArray(rawItems)) return rawItems;
+        if (typeof rawItems === 'string') {
+            try {
+                return JSON.parse(rawItems);
+            } catch (e) {
+                console.error('Failed to parse items string in PrintDocument:', e);
+                return [];
+            }
+        }
+        return [];
+    }, [orderData?.items]);
+
 
     const computedSubtotalFromItems = items.reduce((sum, item) => {
         const qty = toNumber(item.quantity ?? item.qty, 0);
@@ -622,16 +636,16 @@ const PrintDocument = ({
                                     <td className="border-b border-r border-black p-1 text-right">{formatCurrency(receivedAmount)}</td>
                                 </tr>
                                 {showPrintLedgerBalance && (
-                                  <>
-                                <tr>
-                                    <td className="border-b border-r border-black p-1 text-right font-bold">Previous Balance</td>
-                                    <td className="border-b border-r border-black p-1 text-right">{formatCurrency(previousBalance)}</td>
-                                </tr>
-                                <tr>
-                                    <td className="border-b border-r border-black p-1 text-right font-bold">Total Receivables</td>
-                                    <td className="border-b border-r border-black p-1 text-right font-bold">{formatCurrency(totalReceivables)}</td>
-                                </tr>
-                                  </>
+                                    <>
+                                        <tr>
+                                            <td className="border-b border-r border-black p-1 text-right font-bold">Previous Balance</td>
+                                            <td className="border-b border-r border-black p-1 text-right">{formatCurrency(previousBalance)}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="border-b border-r border-black p-1 text-right font-bold">Total Receivables</td>
+                                            <td className="border-b border-r border-black p-1 text-right font-bold">{formatCurrency(totalReceivables)}</td>
+                                        </tr>
+                                    </>
                                 )}
                             </tbody>
                         </table>
@@ -865,10 +879,10 @@ const PrintDocument = ({
                         <span>{formatCurrency(totalValue)}</span>
                     </div>
                     {showPrintLedgerBalance && (
-                    <div className="print-document__summary-row">
-                        <span>Ledger Balance</span>
-                        <span>{formatCurrency(ledgerBalance)}</span>
-                    </div>
+                        <div className="print-document__summary-row">
+                            <span>Ledger Balance</span>
+                            <span>{formatCurrency(ledgerBalance)}</span>
+                        </div>
                     )}
                 </div>
             </div>
