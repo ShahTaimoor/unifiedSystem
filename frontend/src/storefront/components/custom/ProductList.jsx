@@ -121,27 +121,24 @@ const CartProduct = ({ product, quantity }) => {
 
   return (
     <div
-      className={`flex items-center justify-between p-4 border-b transition-colors ${
-        isOutOfStock
+      className={`flex items-center justify-between p-4 border-b transition-colors ${isOutOfStock
           ? "bg-red-50 hover:bg-red-100 opacity-75 border-red-200"
           : "border-gray-100 hover:bg-gray-50"
-      }`}
+        }`}
     >
       <div className="flex items-center space-x-3 flex-1">
         <CartImage
           src={image}
           alt={title}
-          className={`w-12 h-12 rounded-md border object-cover ${
-            isOutOfStock ? "border-red-200 opacity-50" : "border-gray-200"
-          }`}
+          className={`w-12 h-12 rounded-md border object-cover ${isOutOfStock ? "border-red-200 opacity-50" : "border-gray-200"
+            }`}
           fallback="/fallback.jpg"
           quality={80}
         />
         <div className="min-w-0 flex-1">
           <h4
-            className={`font-medium text-sm line-clamp-2 ${
-              isOutOfStock ? "text-gray-500" : "text-gray-900"
-            }`}
+            className={`font-medium text-sm line-clamp-2 ${isOutOfStock ? "text-gray-500" : "text-gray-900"
+              }`}
           >
             {title}
           </h4>

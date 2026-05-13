@@ -254,7 +254,7 @@ const PaymentModal = ({
       <div className="space-y-6">
         {/* Order Summary */}
         {orderData && (
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50/50 backdrop-blur-sm rounded-lg p-4 border border-gray-100/50">
             <h3 className="font-medium text-gray-900 mb-2">Order Summary</h3>
             <div className="text-sm text-gray-600 space-y-1">
               <div className="flex justify-between">
@@ -443,7 +443,7 @@ const PaymentModal = ({
 
         {/* Digital Wallet Info */}
         {selectedMethod === 'digital_wallet' && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-blue-50/50 backdrop-blur-sm border border-blue-200/50 rounded-lg p-4">
             <div className="flex items-center">
               <Smartphone className="h-5 w-5 text-blue-600 mr-2" />
               <div className="text-sm text-blue-800">

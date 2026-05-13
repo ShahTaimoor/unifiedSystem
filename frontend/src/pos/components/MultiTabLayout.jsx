@@ -718,188 +718,188 @@ export const MultiTabLayout = ({ children }) => {
         {/* Top bar — matches TabBar (bg-gray-100) */}
         {showTopBar && (
           <div className="sticky top-0 z-40 flex h-14 shrink-0 items-center bg-gray-100 px-3 sm:px-4 lg:px-6 overflow-visible">
-          {/* Mobile Menu Button */}
-          <button
-            type="button"
-            className="-m-2.5 p-2.5 text-gray-700 lg:hidden mr-2"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
+            {/* Mobile Menu Button */}
+            <button
+              type="button"
+              className="-m-2.5 p-2.5 text-gray-700 lg:hidden mr-2"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
 
-          {/* Main Navigation Container */}
-          <div className="flex flex-1 items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
-            {/* Mobile Top Bar Buttons - Cash Receiving and Record Expense */}
-            <div className="flex-shrink-0 lg:hidden flex items-center gap-2">
-              {sidebarConfig['Cash Receipts'] !== false && isItemPermitted({ permission: 'view_cash_receipts' }, user, hasPermission) && (
-                <button
-                  onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
-                  className="bg-black hover:bg-gray-800 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
-                >
-                  <Receipt className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span>Receiving</span>
-                </button>
-              )}
-              {sidebarConfig['Record Expense'] !== false && isItemPermitted({ permission: 'view_expenses' }, user, hasPermission) && (
-                <button
-                  onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
-                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
-                >
-                  <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span>Expense</span>
-                </button>
-              )}
-            </div>
-
-            {/* Action Buttons - Shrink when zoom/screen percentage increases (responsive) */}
-            <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
-              {sidebarConfig['Cash Receiving'] !== false && isItemPermitted({ permission: 'view_accounting' }, user, hasPermission) && (
-                <button
-                  onClick={() => handleNavigationClick({ href: '/pos/cash-receiving', name: 'Cash Receiving' })}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                    <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span>Multiple Cash Receipt</span>
-                </button>
-              )}
-              {sidebarConfig['Cash Receipts'] !== false && isItemPermitted({ permission: 'view_cash_receipts' }, user, hasPermission) && (
-                <button
-                  onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                    <ArrowDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden sm:inline">Cash Receipt</span>
-                  <span className="sm:hidden">Cash R.</span>
-                </button>
-              )}
-              {sidebarConfig['Bank Receipts'] !== false && isItemPermitted({ permission: 'view_bank_receipts' }, user, hasPermission) && (
-                <button
-                  onClick={() => handleNavigationClick({ href: '/pos/bank-receipts', name: 'Bank Receipts' })}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                    <ArrowDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden sm:inline">Bank Receipt</span>
-                  <span className="sm:hidden">Bank R.</span>
-                </button>
-              )}
-              {sidebarConfig['Cash Payments'] !== false && isItemPermitted({ permission: 'view_cash_payments' }, user, hasPermission) && (
-                <button
-                  onClick={() => handleNavigationClick({ href: '/pos/cash-payments', name: 'Cash Payments' })}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                    <ArrowUp className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden sm:inline">Cash Payment</span>
-                  <span className="sm:hidden">Cash P.</span>
-                </button>
-              )}
-              {sidebarConfig['Bank Payments'] !== false && isItemPermitted({ permission: 'view_bank_payments' }, user, hasPermission) && (
-                <button
-                  onClick={() => handleNavigationClick({ href: '/pos/bank-payments', name: 'Bank Payments' })}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                    <ArrowUp className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden sm:inline">Bank Payment</span>
-                  <span className="sm:hidden">Bank P.</span>
-                </button>
-              )}
-              {sidebarConfig['Record Expense'] !== false && isItemPermitted({ permission: 'view_expenses' }, user, hasPermission) && (
-                <button
-                  onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                    <Wallet className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden sm:inline">Record Expense</span>
-                  <span className="sm:hidden">Expense</span>
-                </button>
-              )}
-            </div>
-
-
-            {/* User Profile Section - Right Aligned with Dropdown */}
-            <div className="relative flex items-center gap-2 sm:gap-4 ml-auto flex-shrink-0 overflow-visible" ref={userMenuRef}>
-              {/* Presence Hook */}
-              <PresenceHeartbeat />
-              
-              <div className="hidden min-[1100px]:block">
-                <OnlineAvatarStack />
+            {/* Main Navigation Container */}
+            <div className="flex flex-1 items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
+              {/* Mobile Top Bar Buttons - Cash Receiving and Record Expense */}
+              <div className="flex-shrink-0 lg:hidden flex items-center gap-2">
+                {sidebarConfig['Cash Receipts'] !== false && isItemPermitted({ permission: 'view_cash_receipts' }, user, hasPermission) && (
+                  <button
+                    onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
+                    className="bg-black hover:bg-gray-800 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
+                  >
+                    <Receipt className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>Receiving</span>
+                  </button>
+                )}
+                {sidebarConfig['Record Expense'] !== false && isItemPermitted({ permission: 'view_expenses' }, user, hasPermission) && (
+                  <button
+                    onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
+                    className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
+                  >
+                    <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>Expense</span>
+                  </button>
+                )}
               </div>
 
-              {/* Alerts Button - Right side, left of Admin user */}
-              {sidebarConfig['Inventory Alerts'] !== false && isItemPermitted({ permission: 'view_inventory' }, user, hasPermission) && (
-                <div className="flex-shrink-0 ml-1">
-                  <InventoryAlertsBadge onNavigate={handleNavigationClick} />
-                </div>
-              )}
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                title={`${user?.fullName} - ${user?.role}`}
-              >
-                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-semibold text-gray-900 leading-tight">{user?.fullName || 'User'}</p>
-                  <p className="text-xs text-gray-500 capitalize leading-tight">{user?.role || 'Admin'}</p>
-                </div>
-                <ChevronRight className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0 hidden sm:block transition-transform ${userMenuOpen ? 'rotate-90' : ''}`} />
-              </button>
+              {/* Action Buttons - Shrink when zoom/screen percentage increases (responsive) */}
+              <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
+                {sidebarConfig['Cash Receiving'] !== false && isItemPermitted({ permission: 'view_accounting' }, user, hasPermission) && (
+                  <button
+                    onClick={() => handleNavigationClick({ href: '/pos/cash-receiving', name: 'Cash Receiving' })}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                      <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span>Multiple Cash Receipt</span>
+                  </button>
+                )}
+                {sidebarConfig['Cash Receipts'] !== false && isItemPermitted({ permission: 'view_cash_receipts' }, user, hasPermission) && (
+                  <button
+                    onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                      <ArrowDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden sm:inline">Cash Receipt</span>
+                    <span className="sm:hidden">Cash R.</span>
+                  </button>
+                )}
+                {sidebarConfig['Bank Receipts'] !== false && isItemPermitted({ permission: 'view_bank_receipts' }, user, hasPermission) && (
+                  <button
+                    onClick={() => handleNavigationClick({ href: '/pos/bank-receipts', name: 'Bank Receipts' })}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                      <ArrowDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden sm:inline">Bank Receipt</span>
+                    <span className="sm:hidden">Bank R.</span>
+                  </button>
+                )}
+                {sidebarConfig['Cash Payments'] !== false && isItemPermitted({ permission: 'view_cash_payments' }, user, hasPermission) && (
+                  <button
+                    onClick={() => handleNavigationClick({ href: '/pos/cash-payments', name: 'Cash Payments' })}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                      <ArrowUp className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden sm:inline">Cash Payment</span>
+                    <span className="sm:hidden">Cash P.</span>
+                  </button>
+                )}
+                {sidebarConfig['Bank Payments'] !== false && isItemPermitted({ permission: 'view_bank_payments' }, user, hasPermission) && (
+                  <button
+                    onClick={() => handleNavigationClick({ href: '/pos/bank-payments', name: 'Bank Payments' })}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                      <ArrowUp className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden sm:inline">Bank Payment</span>
+                    <span className="sm:hidden">Bank P.</span>
+                  </button>
+                )}
+                {sidebarConfig['Record Expense'] !== false && isItemPermitted({ permission: 'view_expenses' }, user, hasPermission) && (
+                  <button
+                    onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                      <Wallet className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden sm:inline">Record Expense</span>
+                    <span className="sm:hidden">Expense</span>
+                  </button>
+                )}
+              </div>
 
-              {/* Dropdown Menu */}
-              {userMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-md shadow-xl border border-gray-200 py-1 z-[60]">
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <p className="text-sm font-semibold text-gray-900">{user?.fullName || 'User'}</p>
-                    {user?.email ? (
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                    ) : (
-                      <p className="text-xs text-gray-500 capitalize">{user?.role || 'Admin'}</p>
-                    )}
+
+              {/* User Profile Section - Right Aligned with Dropdown */}
+              <div className="relative flex items-center gap-2 sm:gap-4 ml-auto flex-shrink-0 overflow-visible" ref={userMenuRef}>
+                {/* Presence Hook */}
+                <PresenceHeartbeat />
+
+                <div className="hidden min-[1100px]:block">
+                  <OnlineAvatarStack />
+                </div>
+
+                {/* Alerts Button - Right side, left of Admin user */}
+                {sidebarConfig['Inventory Alerts'] !== false && isItemPermitted({ permission: 'view_inventory' }, user, hasPermission) && (
+                  <div className="flex-shrink-0 ml-1">
+                    <InventoryAlertsBadge onNavigate={handleNavigationClick} />
                   </div>
-                  <div className="py-1">
-                    {isItemPermitted({ permission: 'manage_users' }, user, hasPermission) && (
+                )}
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  title={`${user?.fullName} - ${user?.role}`}
+                >
+                  <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  </div>
+                  <div className="hidden md:block text-left">
+                    <p className="text-sm font-semibold text-gray-900 leading-tight">{user?.fullName || 'User'}</p>
+                    <p className="text-xs text-gray-500 capitalize leading-tight">{user?.role || 'Admin'}</p>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0 hidden sm:block transition-transform ${userMenuOpen ? 'rotate-90' : ''}`} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-md shadow-xl border border-gray-200 py-1 z-[60]">
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <p className="text-sm font-semibold text-gray-900">{user?.fullName || 'User'}</p>
+                      {user?.email ? (
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      ) : (
+                        <p className="text-xs text-gray-500 capitalize">{user?.role || 'Admin'}</p>
+                      )}
+                    </div>
+                    <div className="py-1">
+                      {isItemPermitted({ permission: 'manage_users' }, user, hasPermission) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleNavigationClick({ href: '/settings2', name: 'Settings' });
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                        >
+                          <Settings className="h-4 w-4 flex-shrink-0" />
+                          <span>Settings</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
-                          handleNavigationClick({ href: '/settings2', name: 'Settings' });
+                          if (isLoggingOut) return;
                           setUserMenuOpen(false);
+                          handleLogout();
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                        disabled={isLoggingOut}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                       >
-                        <Settings className="h-4 w-4 flex-shrink-0" />
-                        <span>Settings</span>
+                        <LogOut className="h-4 w-4 flex-shrink-0" />
+                        <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (isLoggingOut) return;
-                        setUserMenuOpen(false);
-                        handleLogout();
-                      }}
-                      disabled={isLoggingOut}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                    >
-                      <LogOut className="h-4 w-4 flex-shrink-0" />
-                      <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
-                    </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
           </div>
         )}
 

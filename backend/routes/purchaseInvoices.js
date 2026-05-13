@@ -600,9 +600,8 @@ router.delete('/:id', [
 
     if (invoice.status === 'confirmed') {
       for (const item of items) {
+        const productId = item.product?.id ?? item.product?._id ?? item.product;
         try {
-
-          const productId = item.product?.id ?? item.product?._id ?? item.product;
           const inventoryRollback = await inventoryService.updateStock({
             productId,
             type: 'out',

@@ -400,8 +400,8 @@ class PurchaseOrderService {
       throw new Error('Purchase order not found');
     }
 
-    if (purchaseOrder.status !== 'draft') {
-      throw new Error('Only draft purchase orders can be deleted');
+    if (purchaseOrder.status !== 'draft' && purchaseOrder.status !== 'cancelled') {
+      throw new Error('Only draft or cancelled purchase orders can be deleted');
     }
 
     await purchaseOrderRepository.softDelete(id);
