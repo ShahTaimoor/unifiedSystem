@@ -14,8 +14,8 @@ const sanitizeInput = (input) => {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+    .replace(/'/g, '&#x27;');
+    // .replace(/\//g, '&#x2F;'); // Removed as it breaks URLs
 };
 
 // Sanitize object recursively
@@ -30,7 +30,15 @@ const sanitizeObject = (obj) => {
     const sanitized = {};
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
-        sanitized[key] = sanitizeObject(obj[key]);
+        // Use specialized sanitizers for specific fields
+        const lowerKey = key.toLowerCase();
+        const value = obj[key];
+        
+        if (typeof value === 'string' && (lowerKey.includes('url') || lowerKey.includes('image') || lowerKey.includes('website') || lowerKey.includes('link'))) {
+          sanitized[key] = sanitizeURL(value);
+        } else {
+          sanitized[key] = sanitizeObject(value);
+        }
       }
     }
     return sanitized;
@@ -219,11 +227,20 @@ const sanitizeFileName = (fileName) => {
 const sanitizeURL = (url) => {
   if (!url || typeof url !== 'string') return '';
   
-  const sanitized = sanitizeInput(url);
+  // Basic cleaning without aggressive encoding that breaks URLs
+  const cleaned = url.trim()
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+=/gi, '');
+
   try {
-    new URL(sanitized);
-    return sanitized;
+    new URL(cleaned);
+    return cleaned;
   } catch {
+    // If it's a relative path, we might still want to keep it if it's simple
+    if (cleaned.startsWith('/') || cleaned.startsWith('./') || cleaned.startsWith('../')) {
+        return cleaned.replace(/[^\w\/\.\-\_\?\&\=\%\#]/g, '_');
+    }
     return '';
   }
 };
