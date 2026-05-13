@@ -616,7 +616,7 @@ const OrderData = ({
                           src={productImage}
                           alt={productTitle}
                           className="h-16 w-16 rounded-lg object-cover border"
-                          fallback="fallback.jpg"
+                          fallback="/logo.jpeg"
                           quality={80}
                           loading="eager"
                         />

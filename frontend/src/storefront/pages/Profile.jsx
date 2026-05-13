@@ -20,7 +20,11 @@ const Profile = () => {
     address: user?.address || '',
     phone: user?.phone || '',
     city: user?.city || '',
-    username: user?.username || ''
+    username: user?.username || '',
+    name: user?.name || '',
+    email: user?.email || '',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || ''
   });
 
   // Show form if user info incomplete
@@ -32,7 +36,11 @@ const Profile = () => {
       address: user?.address || '',
       phone: user?.phone || '',
       city: user?.city || '',
-      username: user?.username || ''
+      username: user?.username || '',
+      name: user?.name || '',
+      email: user?.email || '',
+      firstName: user?.firstName || '',
+      lastName: user?.lastName || ''
     });
   }, [user]);
 
@@ -48,8 +56,8 @@ const Profile = () => {
     const result = profileSchema.safeParse(formData);
     
     if (!result.success) {
-      const firstError = result.error.errors[0];
-      toast.error(firstError.message);
+      const firstError = result.error.issues?.[0] || result.error.errors?.[0];
+      toast.error(firstError?.message || 'Please check your information and try again.');
       return;
     }
     

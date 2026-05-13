@@ -29,6 +29,11 @@ export const profileSchema = z.object({
   city: z
     .string()
     .max(100, 'City must be less than 100 characters')
+    .optional(),
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username must be less than 30 characters')
     .optional()
 });
 

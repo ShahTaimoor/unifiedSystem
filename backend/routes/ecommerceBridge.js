@@ -5,6 +5,7 @@ const productService = require("../services/productServicePostgres");
 const categoryService = require("../services/categoryServicePostgres");
 const salesOrderRepository = require("../repositories/postgres/SalesOrderRepository");
 const customerRepository = require("../repositories/postgres/CustomerRepository");
+const productRepository = require("../repositories/postgres/ProductRepository");
 const { query: pgQuery } = require("../config/postgres");
 
 const router = express.Router();
@@ -110,6 +111,52 @@ const normalizeOrder = (order) => {
     products,
   };
   return normalized;
+};
+
+const enrichOrders = async (orders) => {
+  if (!orders || orders.length === 0) return orders;
+
+  const productIds = new Set();
+  orders.forEach((order) => {
+    const rawItems = order.items || order.products || [];
+    rawItems.forEach((item) => {
+      const pid = item.product || item.product_id || item.id;
+      if (
+        pid &&
+        typeof pid === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          pid,
+        )
+      ) {
+        productIds.add(pid);
+      }
+    });
+  });
+
+  if (productIds.size === 0) return orders;
+
+  const products = await productRepository.findAll(
+    { ids: Array.from(productIds) },
+    { limit: productIds.size },
+  );
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
+  orders.forEach((order) => {
+    const rawItems = order.items || order.products || [];
+    rawItems.forEach((item) => {
+      const pid = item.product || item.product_id || item.id;
+      if (pid && typeof pid === "string" && productMap.has(pid)) {
+        item.product = productMap.get(pid);
+      } else if (pid && typeof pid === "object" && (pid.id || pid._id)) {
+        const id = pid.id || pid._id;
+        if (productMap.has(id)) {
+          item.product = { ...pid, ...productMap.get(id) };
+        }
+      }
+    });
+  });
+
+  return orders;
 };
 
 const adaptCategory = (category) => {
@@ -377,8 +424,9 @@ router.get("/get-orders-by-user-id", auth, async (req, res, next) => {
     }
 
     const orders = await salesOrderRepository.findByCustomer(customerId);
-    const normalizedOrders = Array.isArray(orders)
-      ? orders.map(normalizeOrder)
+    const enrichedOrders = await enrichOrders(orders);
+    const normalizedOrders = Array.isArray(enrichedOrders)
+      ? enrichedOrders.map(normalizeOrder)
       : [];
 
     res.json({ data: normalizedOrders });
@@ -405,8 +453,9 @@ router.get(
         {},
         { page, limit },
       );
+      const enrichedOrders = await enrichOrders(result.salesOrders);
       res.json({
-        data: result.salesOrders,
+        data: enrichedOrders.map(normalizeOrder),
         totalPages: result.pagination?.pages || 1,
         currentPage: result.pagination?.current || 1,
         total: result.pagination?.total || 0,
