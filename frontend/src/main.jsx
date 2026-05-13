@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
 
 // Shim for ReactDOM.findDOMNode for React 19 compatibility with legacy libraries
-// Many libraries like react-quill or older versions of react-to-print still use this.
+// Many libraries like older versions of react-to-print still use this.
 const shimFindDOMNode = (instance) => {
   if (!instance) return null;
   if (instance instanceof HTMLElement) return instance;
