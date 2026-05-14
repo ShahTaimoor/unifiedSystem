@@ -108,11 +108,11 @@ export const navigation = [
     icon: Wallet,
     permission: PERMISSIONS.VIEW_ACCOUNTING,
     children: [
-      { name: 'Cash Receipts', href: '/cash-receipts', icon: Receipt, permission: PERMISSIONS.VIEW_ACCOUNTING },
-      { name: 'Cash Payments', href: '/cash-payments', icon: CreditCard, permission: PERMISSIONS.VIEW_ACCOUNTING },
-      { name: 'Bank Receipts', href: '/bank-receipts', icon: Building, permission: PERMISSIONS.VIEW_ACCOUNTING },
-      { name: 'Bank Payments', href: '/bank-payments', icon: ArrowUpDown, permission: PERMISSIONS.VIEW_ACCOUNTING },
-      { name: 'Record Expense', href: '/expenses', icon: Wallet, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Cash Receipts', href: '/pos/cash-receipts', icon: Receipt, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Cash Payments', href: '/pos/cash-payments', icon: CreditCard, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Bank Receipts', href: '/pos/bank-receipts', icon: Building, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Bank Payments', href: '/pos/bank-payments', icon: ArrowUpDown, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Record Expense', href: '/pos/expenses', icon: Wallet, permission: PERMISSIONS.VIEW_ACCOUNTING },
     ]
   },
 

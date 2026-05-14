@@ -14,11 +14,36 @@ const MobileBottomNav = () => {
   
   const [config, setConfig] = useState([]);
 
+  const normalizeHref = (href) => {
+    if (!href) return href;
+    if (href.startsWith('/pos/')) return href;
+
+    const legacyRouteMatch = href.match(/^\/(cash|bank)-(receipts|payments|receiving)\/?$/);
+    if (legacyRouteMatch) {
+      return `/pos${href.replace(/\/+$/, '')}`;
+    }
+
+    return href;
+  };
+
+  const normalizeConfig = (items) => {
+    if (!Array.isArray(items)) return [];
+    return items.map((item) => ({
+      ...item,
+      href: normalizeHref(item.href)
+    }));
+  };
+
   const loadConfig = () => {
     const saved = localStorage.getItem('bottomNavConfig');
     if (saved) {
       try {
-        setConfig(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        const normalized = normalizeConfig(parsed);
+        setConfig(normalized);
+        if (JSON.stringify(normalized) !== JSON.stringify(parsed)) {
+          localStorage.setItem('bottomNavConfig', JSON.stringify(normalized));
+        }
       } catch (e) {
         console.error('Failed to parse bottomNavConfig', e);
         setDefaultConfig();
@@ -30,10 +55,10 @@ const MobileBottomNav = () => {
 
   const setDefaultConfig = () => {
     const defaultConfig = [
-      { name: 'Cash Receipts', href: '/cash-receipts', icon: 'Receipt' },
-      { name: 'Bank Receipts', href: '/bank-receipts', icon: 'Receipt' },
-      { name: 'Cash Payments', href: '/cash-payments', icon: 'CreditCard' },
-      { name: 'Bank Payments', href: '/bank-payments', icon: 'CreditCard' }
+      { name: 'Cash Receipts', href: '/pos/cash-receipts', icon: 'Receipt' },
+      { name: 'Bank Receipts', href: '/pos/bank-receipts', icon: 'Receipt' },
+      { name: 'Cash Payments', href: '/pos/cash-payments', icon: 'CreditCard' },
+      { name: 'Bank Payments', href: '/pos/bank-payments', icon: 'CreditCard' }
     ];
     setConfig(defaultConfig);
     localStorage.setItem('bottomNavConfig', JSON.stringify(defaultConfig));
@@ -81,7 +106,8 @@ const MobileBottomNav = () => {
         props: { tabId: tabId }
       });
     } else {
-      navigate(item.href);
+      const normalizedHref = normalizeHref(item.href);
+      navigate(normalizedHref);
     }
   };
 

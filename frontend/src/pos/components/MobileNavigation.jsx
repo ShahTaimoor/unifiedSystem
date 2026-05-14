@@ -106,9 +106,9 @@ const MobileNavigation = ({ user, onLogout, isLoggingOut = false }) => {
     { path: '/attendance', icon: Clock, label: 'Attendance', badge: null },
     { path: '/settings2', icon: Settings, label: 'Settings', badge: null },
     { path: '/expenses', icon: Wallet, label: 'Record Expense', badge: null },
-    { path: '/cash-receipts', icon: Receipt, label: 'Cash Receipts', badge: null },
-    { path: '/cash-payments', icon: CreditCard, label: 'Cash Payments', badge: null },
-    { path: '/cctv-access', icon: Camera, label: 'CCTV Access', badge: null }
+    { path: '/pos/cash-receipts', icon: Receipt, label: 'Cash Receipts', badge: null },
+    { path: '/pos/cash-payments', icon: CreditCard, label: 'Cash Payments', badge: null },
+    { path: '/pos/cctv-access', icon: Camera, label: 'CCTV Access', badge: null }
   ];
 
   // Sidebar visibility state
