@@ -102,7 +102,7 @@ const BaseModal = ({
     >
       <div className={`${wrapperClasses} flex ${variant === 'centered' ? 'items-center justify-center min-h-full' : 'pt-10 sm:pt-20'} relative w-full min-w-0`}>
         <div
-          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-2xl rounded-xl bg-white/70 backdrop-blur-xl border border-white/20 flex flex-col transition-all duration-300 animate-in zoom-in-95 ${variant === 'scrollable' ? 'max-h-[90vh]' : ''
+          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-2xl rounded-xl bg-white border border-gray-200 flex flex-col transition-all duration-300 animate-in zoom-in-95 ${variant === 'scrollable' ? 'max-h-[90vh]' : ''
             } ${className}`}
           onClick={(e) => e.stopPropagation()}
         >
