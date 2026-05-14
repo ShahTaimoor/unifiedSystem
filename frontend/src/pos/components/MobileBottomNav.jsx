@@ -82,7 +82,13 @@ const MobileBottomNav = () => {
         '/orders',
         '/purchase-invoices',
         '/settings',
-        '/settings2'
+        '/settings2',
+        '/pos/sales-invoices',
+        '/pos/sales-invoices/',
+        '/pos/orders',
+        '/pos/purchase-invoices',
+        '/pos/settings',
+        '/pos/settings2'
       ]);
 
       if (!componentInfo.allowMultiple && existingTab) {
