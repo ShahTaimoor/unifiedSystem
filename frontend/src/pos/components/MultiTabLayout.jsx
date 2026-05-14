@@ -536,7 +536,7 @@ export const MultiTabLayout = ({ children }) => {
 
     // Don't redirect if we are on settings, login, or any other critical page
     if (currentPath === '/settings' || currentPath === '/settings2' || currentPath === '/login' || currentPath === '/profile' ||
-        currentPath === '/pos/settings' || currentPath === '/pos/settings2' || currentPath === '/pos/login' || currentPath === '/pos/profile') {
+      currentPath === '/pos/settings' || currentPath === '/pos/settings2' || currentPath === '/pos/login' || currentPath === '/pos/profile') {
       return;
     }
 

@@ -30,6 +30,17 @@ export const ProductList = ({
       localStorage.getItem('showProductSetting_invoiceRef') === 'true'
   );
 
+  const [isXL, setIsXL] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1280 : false);
+
+  useEffect(() => {
+    const handleResize = () => setIsXL(window.innerWidth >= 1280);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const gridLayout = `40px 40px minmax(200px, 1fr) ${showHsCodeColumn ? '90px ' : ''}65px ${showCostPrice ? '75px ' : ''}75px ${isXL ? '75px ' : ''}minmax(90px, 110px) 75px 110px`;
+
+
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -81,7 +92,10 @@ export const ProductList = ({
         {/* Desktop Table Header - Hidden on mobile/tablet - Responsive scaling */}
         <div className="hidden lg:block bg-gray-50 border-b border-gray-200 min-w-[840px] xl:min-w-[960px]">
           <div className="px-3 py-2 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4">
-            <div className="grid grid-cols-12 gap-2 xl:gap-3 2xl:gap-4 items-center">
+            <div 
+              className="grid gap-2 xl:gap-3 2xl:gap-4 items-start"
+              style={{ gridTemplateColumns: gridLayout }}
+            >
               <div className="col-span-1">
                 <h3 className="text-[10px] xl:text-xs 2xl:text-sm font-medium text-gray-700">S.No</h3>
               </div>
@@ -91,9 +105,7 @@ export const ProductList = ({
                   onChange={() => bulkOps.toggleSelectAll(products)}
                 />
               </div>
-              <div
-                className={`min-w-0 ${showHsCodeColumn ? 'col-span-2 xl:col-span-2' : 'col-span-3 xl:col-span-3'}`}
-              >
+              <div className="min-w-0 col-span-1">
                 <h3 className="text-[10px] xl:text-xs 2xl:text-sm font-medium text-gray-700">Product Name</h3>
               </div>
               {showHsCodeColumn && (
@@ -115,7 +127,7 @@ export const ProductList = ({
               <div className="col-span-1 hidden xl:block">
                 <h3 className="text-[10px] xl:text-xs 2xl:text-sm font-medium text-gray-700">Wholesale</h3>
               </div>
-              <div className="col-span-1 hidden lg:block xl:col-span-1">
+              <div className="col-span-1 hidden lg:block">
                 <h3 className="text-[10px] xl:text-xs 2xl:text-sm font-medium text-gray-700">Category</h3>
               </div>
               <div className="col-span-1">
@@ -145,7 +157,10 @@ export const ProductList = ({
             <div key={product._id}>
               {/* Desktop Table Row - Responsive scaling */}
               <div className="hidden lg:block px-3 py-2 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 hover:bg-gray-50 transition-colors min-w-[840px] xl:min-w-[960px]">
-                <div className="grid grid-cols-12 gap-2 xl:gap-3 2xl:gap-4 items-center">
+                <div 
+                  className="grid gap-2 xl:gap-3 2xl:gap-4 items-start"
+                  style={{ gridTemplateColumns: gridLayout }}
+                >
                   <div className="col-span-1 text-[10px] xl:text-xs 2xl:text-sm font-medium text-gray-500">
                     {idx + 1}
                   </div>
@@ -155,9 +170,7 @@ export const ProductList = ({
                       onChange={() => bulkOps.toggleSelection(product._id)}
                     />
                   </div>
-                  <div
-                    className={`min-w-0 ${showHsCodeColumn ? 'col-span-2 xl:col-span-2' : 'col-span-3 xl:col-span-3'}`}
-                  >
+                  <div className="min-w-0 col-span-1">
                     <div className="flex items-center space-x-1.5 xl:space-x-2 2xl:space-x-3">
                       {showImages ? (
                         product.imageUrl ? (
@@ -178,7 +191,7 @@ export const ProductList = ({
                       ) : null}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1 xl:gap-1.5 2xl:gap-2 flex-wrap">
-                          <h3 className="text-[10px] xl:text-xs 2xl:text-sm font-medium text-gray-900 truncate">
+                          <h3 className="text-[10px] xl:text-xs 2xl:text-sm font-medium text-gray-900 break-all">
                             {product.name}
                           </h3>
                           {showExpiryDate && product.expiryDate && (() => {
@@ -246,7 +259,7 @@ export const ProductList = ({
                     <p className="text-[10px] xl:text-xs 2xl:text-sm text-gray-600">{Math.round(product.pricing?.wholesale || 0)}</p>
                   </div>
 
-                  <div className="col-span-1 hidden lg:block xl:col-span-1">
+                  <div className="col-span-1 hidden lg:block">
                     <p className="text-[10px] xl:text-xs 2xl:text-sm text-gray-600 truncate">{product.category?.name || '-'}</p>
                   </div>
 
@@ -257,8 +270,8 @@ export const ProductList = ({
                     </span>
                   </div>
 
-                  <div className="col-span-1 min-w-0 flex flex-col items-end gap-1">
-                    <div className="flex flex-nowrap items-center justify-end gap-0.5 xl:gap-1 shrink-0">
+                  <div className="col-span-1 min-w-0 flex flex-col items-start gap-1">
+                    <div className="flex flex-nowrap items-center justify-start gap-0.5 xl:gap-1 shrink-0">
                       <button
                         type="button"
                         onClick={() => onGenerateBarcode(product)}
@@ -337,7 +350,7 @@ export const ProductList = ({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
                               <span className="text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">#{idx + 1}</span>
-                              <h3 className="text-sm xl:text-base font-medium text-gray-900 truncate">
+                              <h3 className="text-sm xl:text-base font-medium text-gray-900">
                                 {product.name}
                               </h3>
                             </div>
