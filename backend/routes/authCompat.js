@@ -17,7 +17,7 @@ router.get('/logout', auth, async (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/'
   });
   res.json({ message: 'Logout successful' });

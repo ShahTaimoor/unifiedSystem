@@ -98,7 +98,7 @@ router.post('/login', [
     res.cookie('token', result.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
-      sameSite: 'strict', // CSRF protection
+      sameSite: 'lax', // Better compatibility for localhost dev ports
       maxAge: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
       path: '/'
     });
@@ -191,7 +191,7 @@ router.post('/signup-or-login', [
       res.cookie('token', result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 8 * 60 * 60 * 1000,
         path: '/'
       });
@@ -226,7 +226,7 @@ router.post('/signup-or-login', [
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 8 * 60 * 60 * 1000,
       path: '/'
     });
@@ -325,7 +325,7 @@ router.post('/verify-2fa', [
     res.cookie('token', result.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 8 * 60 * 60 * 1000,
       path: '/'
     });
@@ -448,7 +448,7 @@ router.post('/logout', auth, async (req, res, next) => {
     res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/'
     });
 

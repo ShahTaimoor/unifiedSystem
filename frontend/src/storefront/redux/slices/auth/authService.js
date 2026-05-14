@@ -54,6 +54,11 @@ const adminLogin = async (userData) => {
   return response.data;
 };
 
+const getCurrentUser = async () => {
+  const response = await axiosInstance.get("/verify-token");
+  return response.data;
+};
+
 const authService = {
   loginUser,
   updateProfile,
@@ -62,5 +67,6 @@ const authService = {
   updateUsername,
   signupOrLogin,
   adminLogin,
+  getCurrentUser,
 };
 export default authService;
