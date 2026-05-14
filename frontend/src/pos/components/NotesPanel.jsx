@@ -40,6 +40,14 @@ const NotesPanel = ({
   onClose 
 }) => {
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleOverlayClick = () => {
+    if (onClose) onClose();
+  };
+
+  const stopPropagation = (event) => {
+    event.stopPropagation();
+  };
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -281,8 +289,14 @@ const NotesPanel = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-75 flex items-center justify-center p-4">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={handleOverlayClick}
+    >
+      <div
+        className="relative bg-white/95 backdrop-blur-sm rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col"
+        onClick={stopPropagation}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center space-x-2">
