@@ -1281,8 +1281,8 @@ export const Dashboard = () => {
           </div>
 
           {/* Period Comparison Section */}
-          <div className="card">
-            <div className="card-content pt-4">
+          <div className="card overflow-x-auto">
+            <div className="card-content pt-4 min-w-full">
               <PeriodComparisonSection
                 title="Sales Performance Comparison"
                 metrics={[

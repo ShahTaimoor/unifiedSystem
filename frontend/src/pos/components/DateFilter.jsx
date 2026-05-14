@@ -51,6 +51,17 @@ const DateFilter = ({
   const [endDate, setEndDate] = useState(initialEndDate || '');
   const [showPresetMenu, setShowPresetMenu] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Handle responsive calendar months
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Update local state when props change
   useEffect(() => {
@@ -172,7 +183,7 @@ const DateFilter = ({
                 defaultMonth={dateFrom || new Date()}
                 selected={range}
                 onSelect={handleRangeSelect}
-                numberOfMonths={2}
+                numberOfMonths={isMobile ? 1 : 2}
                 className="p-3"
               />
             </PopoverContent>

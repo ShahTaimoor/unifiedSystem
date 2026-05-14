@@ -535,7 +535,8 @@ export const MultiTabLayout = ({ children }) => {
     const currentPath = location.pathname;
 
     // Don't redirect if we are on settings, login, or any other critical page
-    if (currentPath === '/settings' || currentPath === '/settings2' || currentPath === '/login' || currentPath === '/profile') {
+    if (currentPath === '/settings' || currentPath === '/settings2' || currentPath === '/login' || currentPath === '/profile' ||
+        currentPath === '/pos/settings' || currentPath === '/pos/settings2' || currentPath === '/pos/login' || currentPath === '/pos/profile') {
       return;
     }
 
@@ -578,7 +579,13 @@ export const MultiTabLayout = ({ children }) => {
     '/orders',
     '/purchase-invoices',
     '/settings',
-    '/settings2'
+    '/settings2',
+    '/pos/sales-invoices',
+    '/pos/sales-invoices/',
+    '/pos/orders',
+    '/pos/purchase-invoices',
+    '/pos/settings',
+    '/pos/settings2'
   ]);
 
   const handleNavigationClick = (item) => {
@@ -655,7 +662,7 @@ export const MultiTabLayout = ({ children }) => {
 
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-[60] lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-all duration-300" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gray-100 shadow-xl">
           <div className="flex h-14 items-center justify-between px-4 bg-gray-100">
             <div className="flex items-center gap-2">
@@ -873,7 +880,7 @@ export const MultiTabLayout = ({ children }) => {
                         <button
                           type="button"
                           onClick={() => {
-                            handleNavigationClick({ href: '/settings2', name: 'Settings' });
+                            handleNavigationClick({ href: '/pos/settings2', name: 'Settings' });
                             setUserMenuOpen(false);
                           }}
                           className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"

@@ -102,11 +102,11 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <PageShell contentClassName="flex items-start sm:items-center justify-center pt-4 px-4 pb-6 sm:pb-20 text-center">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-        <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg sm:my-8 max-h-[90vh] flex flex-col">
+        <div className="relative inline-block align-bottom bg-white/95 backdrop-blur-sm rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg sm:my-8 max-h-[95vh] flex flex-col">
           <form onSubmit={handleSubmit} className="flex flex-col h-full">
-            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-1">
+            <div className="bg-white/80 px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-1">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 {category ? 'Edit Category' : 
                  categoryType === 'parent' ? 'Add New Parent Category' : 'Add New Child Category'}
@@ -262,7 +262,7 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
               </div>
             </div>
             
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse flex-shrink-0">
+            <div className="bg-gray-50/90 backdrop-blur-sm px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse flex-shrink-0 border-t border-gray-200/50">
               <LoadingButton
                 type="submit"
                 isLoading={isSubmitting}

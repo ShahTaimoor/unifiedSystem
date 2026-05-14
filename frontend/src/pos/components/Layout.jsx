@@ -108,11 +108,11 @@ export const navigation = [
     icon: Wallet,
     permission: PERMISSIONS.VIEW_ACCOUNTING,
     children: [
-      { name: 'Cash Receipts', href: '/cash-receipts', icon: Receipt, permission: PERMISSIONS.VIEW_ACCOUNTING },
-      { name: 'Cash Payments', href: '/cash-payments', icon: CreditCard, permission: PERMISSIONS.VIEW_ACCOUNTING },
-      { name: 'Bank Receipts', href: '/bank-receipts', icon: Building, permission: PERMISSIONS.VIEW_ACCOUNTING },
-      { name: 'Bank Payments', href: '/bank-payments', icon: ArrowUpDown, permission: PERMISSIONS.VIEW_ACCOUNTING },
-      { name: 'Record Expense', href: '/expenses', icon: Wallet, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Cash Receipts', href: '/pos/cash-receipts', icon: Receipt, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Cash Payments', href: '/pos/cash-payments', icon: CreditCard, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Bank Receipts', href: '/pos/bank-receipts', icon: Building, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Bank Payments', href: '/pos/bank-payments', icon: ArrowUpDown, permission: PERMISSIONS.VIEW_ACCOUNTING },
+      { name: 'Record Expense', href: '/pos/expenses', icon: Wallet, permission: PERMISSIONS.VIEW_ACCOUNTING },
     ]
   },
 
@@ -450,7 +450,7 @@ export const Layout = ({ children }) => {
 
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-[60] lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-all duration-300" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gray-100 shadow-xl">
           <div className="flex h-16 items-center justify-between px-4 bg-gray-100">
             <div className="flex items-center gap-2">
