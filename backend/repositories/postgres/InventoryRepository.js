@@ -52,6 +52,25 @@ class InventoryRepository {
     return result.rows;
   }
 
+  async count(filters = {}, client = null) {
+    let sql = 'SELECT COUNT(*) as count FROM inventory WHERE deleted_at IS NULL';
+    const params = [];
+    let paramCount = 1;
+
+    if (filters.status) {
+      sql += ` AND status = $${paramCount++}`;
+      params.push(filters.status);
+    }
+    if (filters.warehouse || filters['location.warehouse']) {
+      sql += ` AND location->>'warehouse' = $${paramCount++}`;
+      params.push(filters.warehouse || filters['location.warehouse']);
+    }
+
+    const q = client ? client.query.bind(client) : query;
+    const result = await q(sql, params);
+    return parseInt(result.rows[0].count, 10) || 0;
+  }
+
   async findByProduct(productId, options = {}) {
     return this.findOne({ product: productId, productId }, null, options.includeDeleted);
   }
