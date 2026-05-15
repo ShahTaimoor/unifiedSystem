@@ -101,12 +101,19 @@ class InvestorService {
       throw new Error('Investor with this email already exists');
     }
 
-    const newInvestor = await InvestorRepository.create({
-      ...investorData,
-      createdBy: userId
-    });
+    try {
+      const newInvestor = await InvestorRepository.create({
+        ...investorData,
+        createdBy: userId
+      });
 
-    return toApiInvestor(newInvestor);
+      return toApiInvestor(newInvestor);
+    } catch (error) {
+      if (error.code === '23505' && error.constraint === 'investors_email_key') {
+        throw new Error('Investor with this email already exists');
+      }
+      throw error;
+    }
   }
 
   /**
@@ -130,12 +137,19 @@ class InvestorService {
       }
     }
 
-    const updatedInvestor = await InvestorRepository.updateById(id, {
-      ...updateData,
-      updatedBy: userId
-    });
+    try {
+      const updatedInvestor = await InvestorRepository.updateById(id, {
+        ...updateData,
+        updatedBy: userId
+      });
 
-    return toApiInvestor(updatedInvestor);
+      return toApiInvestor(updatedInvestor);
+    } catch (error) {
+      if (error.code === '23505' && error.constraint === 'investors_email_key') {
+        throw new Error('Investor with this email already exists');
+      }
+      throw error;
+    }
   }
 
   /**
