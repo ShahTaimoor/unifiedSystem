@@ -92,7 +92,7 @@ export const ProductList = ({
         {/* Desktop Table Header - Hidden on mobile/tablet - Responsive scaling */}
         <div className="hidden lg:block bg-gray-50 border-b border-gray-200 min-w-[840px] xl:min-w-[960px]">
           <div className="px-3 py-2 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4">
-            <div 
+            <div
               className="grid gap-2 xl:gap-3 2xl:gap-4 items-start"
               style={{ gridTemplateColumns: gridLayout }}
             >
@@ -157,7 +157,7 @@ export const ProductList = ({
             <div key={product._id}>
               {/* Desktop Table Row - Responsive scaling */}
               <div className="hidden lg:block px-3 py-2 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 hover:bg-gray-50 transition-colors min-w-[840px] xl:min-w-[960px]">
-                <div 
+                <div
                   className="grid gap-2 xl:gap-3 2xl:gap-4 items-start"
                   style={{ gridTemplateColumns: gridLayout }}
                 >

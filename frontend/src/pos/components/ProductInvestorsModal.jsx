@@ -134,7 +134,7 @@ export const ProductInvestorsModal = ({ product, isOpen, onClose, onSave }) => {
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
 
