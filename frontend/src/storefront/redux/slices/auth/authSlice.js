@@ -1,9 +1,6 @@
-// src/features/auth/authSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import authService from './authService';
 
-// User data is stored only in Redux state (not in localStorage)
-// Authentication is handled via HTTP-only cookies
 const initialState = {
   user: null,
   isAuthenticated: false,
@@ -34,33 +31,11 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
-export const updateUserRole = createAsyncThunk(
-  'auth/updateUserRole',
-  async ({ userId, role }, thunkAPI) => {
-    try {
-      return await authService.updateUserRole(userId, role);
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
 export const changePassword = createAsyncThunk(
   'auth/changePassword',
   async (passwordData, thunkAPI) => {
     try {
       return await authService.changePassword(passwordData);
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
-export const updateUsername = createAsyncThunk(
-  'auth/updateUsername',
-  async (usernameData, thunkAPI) => {
-    try {
-      return await authService.updateUsername(usernameData);
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
@@ -79,18 +54,6 @@ export const signupOrLogin = createAsyncThunk(
   }
 );
 
-export const adminLogin = createAsyncThunk(
-  'auth/adminLogin',
-  async (userData, thunkAPI) => {
-    try {
-      return await authService.adminLogin(userData);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || 'Admin authentication failed';
-      return thunkAPI.rejectWithValue(errorMessage);
-    }
-  }
-);
-
 export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, thunkAPI) => {
@@ -99,7 +62,6 @@ export const logoutUser = createAsyncThunk(
       await authService.logout();
       return true;
     } catch (error) {
-      // Even if logout API fails, we still want to clear local state
       return true;
     }
   }
@@ -112,8 +74,6 @@ export const getCurrentUser = createAsyncThunk(
       const response = await authService.getCurrentUser();
       return response;
     } catch (error) {
-      // If getCurrentUser fails, user is not authenticated
-      // Don't throw error, just return null to indicate no user
       return thunkAPI.rejectWithValue(null);
     }
   }
@@ -169,16 +129,6 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-      .addCase(updateUserRole.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(updateUserRole.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-      })
-      .addCase(updateUserRole.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-      })
       .addCase(changePassword.pending, (state) => {
         state.status = 'loading';
       })
@@ -186,17 +136,6 @@ const authSlice = createSlice({
         state.status = 'succeeded';
       })
       .addCase(changePassword.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-      })
-      .addCase(updateUsername.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(updateUsername.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.user = { ...state.user, ...action.payload.user };
-      })
-      .addCase(updateUsername.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       })
@@ -213,19 +152,6 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-      .addCase(adminLogin.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(adminLogin.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
-        state.tokenExpired = false;
-      })
-      .addCase(adminLogin.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-      })
       .addCase(logoutUser.pending, (state) => {
         state.status = 'loading';
       })
@@ -236,7 +162,6 @@ const authSlice = createSlice({
         state.tokenExpired = false;
       })
       .addCase(logoutUser.rejected, (state) => {
-        // Even if logout fails, clear local state
         state.status = 'idle';
         state.user = null;
         state.isAuthenticated = false;
@@ -252,7 +177,6 @@ const authSlice = createSlice({
         state.tokenExpired = false;
       })
       .addCase(getCurrentUser.rejected, (state) => {
-        // User is not authenticated, keep state as is (don't set to failed)
         state.status = 'idle';
         state.user = null;
         state.isAuthenticated = false;

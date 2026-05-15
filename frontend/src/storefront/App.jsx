@@ -11,11 +11,11 @@ import { AuthDrawerProvider } from './contexts/AuthDrawerContext';
 import AuthDrawer from './components/custom/AuthDrawer';
 import { Toaster } from './components/ui/sonner';
 
-// Lazy-load pages
+// Lazy-load layouts and custom components
 const RootLayout = lazy(() => import('./components/layouts/RootLayout'));
-const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'));
 const ProtectedRoute = lazy(() => import('./components/custom/ProtectedRoute'));
 
+// Lazy-load pages
 const Home = lazy(() => import('./pages/Home'));
 const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
@@ -23,20 +23,7 @@ const Checkout = lazy(() => import('./pages/Checkout'));
 const MyOrders = lazy(() => import('./pages/MyOrders'));
 const Success = lazy(() => import('./pages/Success'));
 const ErrorPage = lazy(() => import('./pages/Error'));
-const Category = lazy(() => import('./pages/Category'));
-const Users = lazy(() => import('./pages/Users'));
 const Profile = lazy(() => import('./pages/Profile'));
-const AdminProfile = lazy(() => import('./pages/AdminProfile'));
-
-const CreateProducts = lazy(() => import('./components/custom/CreateProducts'));
-const AllProducts = lazy(() => import('./components/custom/AllProducts'));
-const LowStock = lazy(() => import('./components/custom/LowStock'));
-const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
-const Orders = lazy(() => import('./components/custom/Orders'));
-const Media = lazy(() => import('./pages/Media'));
-const Attendance = lazy(() => import('./pages/Attendance'));
-const AttendancePerformance = lazy(() => import('./pages/AttendancePerformance'));
-const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 
 const App = () => {
   return (
@@ -55,18 +42,6 @@ const App = () => {
               <Route path="/orders" element={<ProtectedRoute><RootLayout><MyOrders /></RootLayout></ProtectedRoute>} />
               <Route path="/success" element={<RootLayout><Success /></RootLayout>} />
               <Route path="/profile" element={<ProtectedRoute><RootLayout><Profile /></RootLayout></ProtectedRoute>} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin/dashboard" element={<ProtectedRoute><AdminLayout><CreateProducts /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/category" element={<ProtectedRoute><AdminLayout><Category /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/dashboard/all-products" element={<ProtectedRoute><AdminLayout><AllProducts /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/dashboard/low-stock" element={<ProtectedRoute><AdminLayout><LowStock /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/dashboard/update/:id" element={<ProtectedRoute><AdminLayout><UpdateProduct /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/dashboard/users" element={<ProtectedRoute><AdminLayout><Users /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/dashboard/orders" element={<ProtectedRoute><AdminLayout><Orders /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/dashboard/media" element={<ProtectedRoute><AdminLayout><Media /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/dashboard/attendance" element={<ProtectedRoute><AdminLayout><Attendance /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/dashboard/attendance-performance" element={<ProtectedRoute><AdminLayout><AttendancePerformance /></AdminLayout></ProtectedRoute>} />
-              <Route path="/admin/profile" element={<ProtectedRoute><AdminLayout><AdminProfile /></AdminLayout></ProtectedRoute>} />
               <Route path="*" element={<RootLayout><ErrorPage /></RootLayout>} />
             </Routes>
           </Suspense>

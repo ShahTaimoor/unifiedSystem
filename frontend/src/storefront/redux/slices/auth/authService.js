@@ -15,17 +15,6 @@ const updateProfile = async (data) => {
   return response.data.user;
 };
 
-const updateUserRole = async (userId, role) => {
-  const response = await axiosInstance.put(
-    `/update-user-role/${userId}`,
-    { role },
-    {
-      headers: { "Content-Type": "application/json" },
-    },
-  );
-  return response.data;
-};
-
 const changePassword = async (passwordData) => {
   const response = await axiosInstance.put("/change-password", passwordData, {
     headers: { "Content-Type": "application/json" },
@@ -47,8 +36,8 @@ const signupOrLogin = async (userData) => {
   return response.data;
 };
 
-const adminLogin = async (userData) => {
-  const response = await axiosInstance.post("/admin/login", userData, {
+const getCurrentUser = async () => {
+  const response = await axiosInstance.get("/get-current-user", {
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -57,10 +46,9 @@ const adminLogin = async (userData) => {
 const authService = {
   loginUser,
   updateProfile,
-  updateUserRole,
   changePassword,
   updateUsername,
   signupOrLogin,
-  adminLogin,
+  getCurrentUser,
 };
 export default authService;

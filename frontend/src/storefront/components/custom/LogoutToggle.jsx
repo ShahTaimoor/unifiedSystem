@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/storefront/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useState } from "react";
-import { Home, LayoutDashboard, User, ShoppingBag, LogOut, ChevronDown, ChevronUp } from "lucide-react";
+import { Home, User, ShoppingBag, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { logoutUser } from "../../redux/slices/auth/authSlice";
 import { useToast } from "@/storefront/hooks/use-toast";
 
@@ -22,12 +22,11 @@ const ToggleLogout = ({ user }) => {
     const clearCookies = () => {
         const cookies = ['accessToken', 'refreshToken'];
         const domains = [window.location.hostname, 'localhost', '127.0.0.1'];
-        const paths = ['/', '/api', '/admin'];
+        const paths = ['/', '/api'];
         
         cookies.forEach(cookieName => {
             domains.forEach(domain => {
                 paths.forEach(path => {
-                    // Clear with different combinations
                     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
                     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain};`;
                     document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=.${domain};`;
@@ -40,24 +39,17 @@ const ToggleLogout = ({ user }) => {
     };
 
     const handleLogout = async () => {
-        // Clear cookies on client side as fallback
         clearCookies();
-        
-        // Use Redux async thunk to handle logout (includes API call)
         try {
             await dispatch(logoutUser()).unwrap();
             toast.success('Logged out successfully');
         } catch (error) {
-            // Even if logout API fails, user is already logged out locally
             toast.success('Logged out successfully');
         } finally {
-            // Clear cookies again after logout attempt
             clearCookies();
             navigate('/');
         }
     };
-
-    const isAdmin = user?.role === 1 || user?.role === 2;
 
     return (
         <div>
@@ -76,13 +68,7 @@ const ToggleLogout = ({ user }) => {
                 <Home className="h-4 w-4 mr-2" />
                 Home
               </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                  Dashboard
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={() => navigate(isAdmin ? '/admin/profile' : '/profile')}>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </DropdownMenuItem>
@@ -121,13 +107,7 @@ const ToggleLogout = ({ user }) => {
                 <Home className="h-4 w-4 mr-2" />
                 Home
               </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                  Dashboard
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={() => navigate(isAdmin ? '/admin/profile' : '/profile')}>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </DropdownMenuItem>

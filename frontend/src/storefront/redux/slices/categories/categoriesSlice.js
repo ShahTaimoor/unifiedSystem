@@ -1,48 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import categoryService from "./categoriesService";
 
-export const AddCategory = createAsyncThunk(
-  "categories/addCategory",
-  async (inputValues, thunkAPI) => {
-    try {
-      const res = await categoryService.createCat(inputValues);
-      return res;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-export const updateCategory = createAsyncThunk(
-  "categories/updateCategory",
-  async ({ name, slug, picture, position, active }, thunkAPI) => {
-    try {
-      const res = await categoryService.updateCat({
-        name,
-        slug,
-        picture,
-        position,
-        active,
-      });
-      return res;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-export const deleteCategory = createAsyncThunk(
-  "categories/deleteCategory",
-  async (slug, thunkAPI) => {
-    try {
-      const res = await categoryService.deleteCat(slug);
-      return res;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
 export const AllCategory = createAsyncThunk(
   "categories/allCategory",
   async (search = "", thunkAPI) => {
@@ -60,18 +18,6 @@ export const SingleCategory = createAsyncThunk(
   async (slug, thunkAPI) => {
     try {
       const res = await categoryService.getSingleCat(slug);
-      return res;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error);
-    }
-  },
-);
-
-export const toggleCategoryActive = createAsyncThunk(
-  "categories/toggleCategoryActive",
-  async (slug, thunkAPI) => {
-    try {
-      const res = await categoryService.toggleCategoryActive(slug);
       return res;
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -104,18 +50,6 @@ const categoriesSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(AddCategory.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(AddCategory.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.categories.push(normalizeCategoryImage(action.payload.data));
-      })
-
-      .addCase(AddCategory.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
       .addCase(AllCategory.pending, (state) => {
         state.status = "loading";
       })
@@ -137,68 +71,6 @@ const categoriesSlice = createSlice({
         state.categories = normalizeCategoryImage(action.payload.data);
       })
       .addCase(SingleCategory.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
-      .addCase(deleteCategory.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(deleteCategory.fulfilled, (state, action) => {
-        state.status = "succeeded";
-
-        state.categories = state.categories.filter(
-          (prod) => prod._id !== action.payload.id,
-        );
-      })
-      .addCase(deleteCategory.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
-      .addCase(updateCategory.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(updateCategory.fulfilled, (state, action) => {
-        state.status = "succeeded";
-
-        const updatedCategory = action.payload?.data;
-
-        if (updatedCategory && updatedCategory._id) {
-          // Update the category in the array instead of replacing the whole list
-          const categoryIndex = state.categories.findIndex(
-            (cat) =>
-              cat._id === updatedCategory._id ||
-              cat.slug === updatedCategory.slug,
-          );
-
-          if (categoryIndex !== -1) {
-            const normalizedCategory = normalizeCategoryImage(updatedCategory);
-            state.categories[categoryIndex] = {
-              ...state.categories[categoryIndex],
-              ...normalizedCategory,
-            };
-          } else {
-            // If not found, add it (shouldn't happen, but just in case)
-            state.categories.push(updatedCategory);
-          }
-        }
-      })
-      .addCase(updateCategory.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
-      .addCase(toggleCategoryActive.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(toggleCategoryActive.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        const updatedCategory = action.payload.data;
-        state.categories = state.categories.map((cat) =>
-          cat._id === updatedCategory._id
-            ? { ...cat, active: updatedCategory.active }
-            : cat,
-        );
-      })
-      .addCase(toggleCategoryActive.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
       });
