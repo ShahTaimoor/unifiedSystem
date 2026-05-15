@@ -408,12 +408,3 @@ router.get('/:id/products', [
 });
 
 module.exports = router;
-
-message: 'Server error',
-  error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-module.exports = router;
-
