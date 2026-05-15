@@ -139,7 +139,7 @@ const AccountLedgerSummary = () => {
 
   // Fetch suppliers for dropdown
   const { data: suppliersData, isLoading: suppliersLoading } = useGetSuppliersQuery(
-    { search: debouncedSupplierQuery, limit: 100 },
+    { search: supplierSearchQuery, limit: 100 },
     { refetchOnMountOrArgChange: true }
   );
 
@@ -1430,7 +1430,7 @@ const AccountLedgerSummary = () => {
                                 {entry.voucherNo || '-'}
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-700 max-w-md whitespace-normal break-words">
-                                {entry.particular || '-'}
+                                {entry.particular || entry.description || '-'}
                               </td>
                               <td className="px-4 py-3 text-sm text-right text-gray-900">
                                 {entry.debitAmount > 0 ? formatCurrency(entry.debitAmount) : '0'}
@@ -1480,7 +1480,7 @@ const AccountLedgerSummary = () => {
                                         {entry.voucherNo || '-'}
                                       </td>
                                       <td className="px-4 py-3 text-sm text-gray-700 max-w-md whitespace-normal break-words">
-                                        {entry.particular || '-'}
+                                        {entry.particular || entry.description || '-'}
                                       </td>
                                       <td className="px-4 py-3 text-sm text-right text-gray-900">
                                         {entry.debitAmount > 0 ? formatCurrency(entry.debitAmount) : '0'}

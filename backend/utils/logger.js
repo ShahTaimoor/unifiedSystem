@@ -37,7 +37,13 @@ const format = winston.format.combine(
   winston.format.colorize({ all: true }),
   // Define format of the message
   winston.format.printf(
-    (info) => `${info.timestamp} ${info.level}: ${info.message}`,
+    (info) => {
+      const metadata = Object.keys(info)
+        .filter(key => !['timestamp', 'level', 'message'].includes(key))
+        .map(key => `\n  ${key}: ${typeof info[key] === 'object' ? JSON.stringify(info[key], null, 2) : info[key]}`)
+        .join('');
+      return `${info.timestamp} ${info.level}: ${info.message}${metadata}`;
+    },
   ),
 );
 
@@ -49,7 +55,13 @@ const transports = [
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
       winston.format.colorize({ all: true }),
       winston.format.printf(
-        (info) => `${info.timestamp} ${info.level}: ${info.message}`,
+        (info) => {
+          const metadata = Object.keys(info)
+            .filter(key => !['timestamp', 'level', 'message'].includes(key))
+            .map(key => `\n  ${key}: ${typeof info[key] === 'object' ? JSON.stringify(info[key], null, 2) : info[key]}`)
+            .join('');
+          return `${info.timestamp} ${info.level}: ${info.message}${metadata}`;
+        },
       ),
     ),
   }),

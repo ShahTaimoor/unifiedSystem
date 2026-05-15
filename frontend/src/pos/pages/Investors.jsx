@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
+import {
+  Plus,
+  Search,
+  Edit,
   Trash2,
   User,
   X,
@@ -152,7 +152,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -197,7 +197,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
-                        {...register('email', { 
+                        {...register('email', {
                           required: 'Email is required',
                           pattern: {
                             value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -213,7 +213,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                       <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
                     )}
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Phone
@@ -260,7 +260,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                       placeholder="Enter city"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       State/Province
@@ -282,7 +282,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                       placeholder="Enter zip code"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Country
@@ -307,7 +307,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                   <div className="relative">
                     <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                      {...register('totalInvestment', { 
+                      {...register('totalInvestment', {
                         valueAsNumber: true,
                         min: { value: 0, message: 'Investment must be positive' }
                       })}
@@ -321,7 +321,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                     <p className="text-red-500 text-sm mt-1">{errors.totalInvestment.message}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status
@@ -390,7 +390,7 @@ export const Investors = ({ tabId }) => {
   const [showProductsModal, setShowProductsModal] = useState(null);
   const { updateTabTitle } = useTab();
 
-  const queryParams = { 
+  const queryParams = {
     search: searchTerm || undefined,
     status: statusFilter || undefined
   };
@@ -658,11 +658,10 @@ export const Investors = ({ tabId }) => {
 
                     {/* Status */}
                     <div className="col-span-6 sm:col-span-4 lg:col-span-1 flex lg:justify-center justify-start">
-                      <span className={`badge ${
-                        investor.status === 'active' ? 'badge-success' :
-                        investor.status === 'inactive' ? 'badge-gray' :
-                        'badge-danger'
-                      }`}>
+                      <span className={`badge ${investor.status === 'active' ? 'badge-success' :
+                          investor.status === 'inactive' ? 'badge-gray' :
+                            'badge-danger'
+                        }`}>
                         {investor.status}
                       </span>
                     </div>
@@ -834,7 +833,7 @@ const InvestorProductsModal = ({ investor, onClose }) => {
   }, [data]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -879,11 +878,10 @@ const InvestorProductsModal = ({ investor, onClose }) => {
                           <h3 className="text-lg font-medium text-gray-900">
                             {product.name}
                           </h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            product.status === 'active' ? 'bg-green-100 text-green-800' :
-                            product.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.status === 'active' ? 'bg-green-100 text-green-800' :
+                              product.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                                'bg-red-100 text-red-800'
+                            }`}>
                             {product.status}
                           </span>
                         </div>
@@ -901,11 +899,10 @@ const InvestorProductsModal = ({ investor, onClose }) => {
                           </div>
                           <div>
                             <span className="text-gray-500">Stock:</span>
-                            <span className={`ml-2 font-medium ${
-                              (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
+                            <span className={`ml-2 font-medium ${(product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
                                 ? 'text-red-600'
                                 : 'text-gray-900'
-                            }`}>
+                              }`}>
                               {product.inventory?.currentStock || 0}
                             </span>
                           </div>
@@ -972,10 +969,10 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
   const profitSharesErrorMessage =
     isError && error?.data != null
       ? String(
-          typeof error.data === 'object' && error.data?.message != null
-            ? error.data.message
-            : error.data
-        )
+        typeof error.data === 'object' && error.data?.message != null
+          ? error.data.message
+          : error.data
+      )
       : isError
         ? 'Could not load profit shares. Try again or check the server.'
         : null;
@@ -993,15 +990,15 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
         const investorShare = isThisInvestor
           ? Number(share.investor_share ?? share.investorShare ?? 0)
           : share.investors?.find((inv) => {
-              const invId = inv.investor?._id || inv.investor;
-              return invId && invId.toString() === investorId.toString();
-            })?.shareAmount || 0;
+            const invId = inv.investor?._id || inv.investor;
+            return invId && invId.toString() === investorId.toString();
+          })?.shareAmount || 0;
         const sharePercentage = isThisInvestor
           ? Number(share.investor_share_percentage ?? share.investorSharePercentage ?? 0)
           : share.investors?.find((inv) => {
-              const invId = inv.investor?._id || inv.investor;
-              return invId && invId.toString() === investorId.toString();
-            })?.sharePercentage || 0;
+            const invId = inv.investor?._id || inv.investor;
+            return invId && invId.toString() === investorId.toString();
+          })?.sharePercentage || 0;
         const lineDate =
           share.order_date ?? share.orderDate ?? share.created_at ?? share.createdAt;
         const dateStr = lineDate
@@ -1040,7 +1037,7 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
@@ -1104,23 +1101,23 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
                     const isThisInvestor = shareInvestorId && (
                       shareInvestorId.toString() === investorId.toString()
                     );
-                    
+
                     const investorShare = isThisInvestor
                       ? Number(share.investor_share ?? share.investorShare ?? 0)
                       : share.investors?.find(inv => {
-                          const invId = inv.investor?._id || inv.investor;
-                          return invId && invId.toString() === investorId.toString();
-                        })?.shareAmount || 0;
-                        
+                        const invId = inv.investor?._id || inv.investor;
+                        return invId && invId.toString() === investorId.toString();
+                      })?.shareAmount || 0;
+
                     const sharePercentage = isThisInvestor
                       ? Number(share.investor_share_percentage ?? share.investorSharePercentage ?? 0)
                       : share.investors?.find(inv => {
-                          const invId = inv.investor?._id || inv.investor;
-                          return invId && invId.toString() === investorId.toString();
-                        })?.sharePercentage || 0;
+                        const invId = inv.investor?._id || inv.investor;
+                        return invId && invId.toString() === investorId.toString();
+                      })?.sharePercentage || 0;
 
                     const lineDate = share.order_date ?? share.orderDate ?? share.created_at ?? share.createdAt;
-                    
+
                     return (
                       <tr key={share.id || share._id}>
                         <td className="px-4 py-3 text-sm text-gray-900">
@@ -1176,10 +1173,10 @@ const PayoutHistoryModal = ({ investorId, investorName, onClose }) => {
   const errMsg =
     isError && error?.data != null
       ? String(
-          typeof error.data === 'object' && error.data?.message != null
-            ? error.data.message
-            : error.data
-        )
+        typeof error.data === 'object' && error.data?.message != null
+          ? error.data.message
+          : error.data
+      )
       : isError
         ? 'Could not load payout history.'
         : null;
@@ -1217,7 +1214,7 @@ const PayoutHistoryModal = ({ investorId, investorName, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
@@ -1330,7 +1327,7 @@ const PayoutModal = ({ investor, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -1487,7 +1484,7 @@ const InvestmentModal = ({ investor, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">

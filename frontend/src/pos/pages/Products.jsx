@@ -300,90 +300,90 @@ export const Products = () => {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-end gap-2 sm:gap-3 overflow-x-auto">
-          <Button
-            onClick={() => productOps.handleAdd()}
-            variant="default"
-            size="default"
-            className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white transition-all shadow-md active:scale-95 px-6 font-bold tracking-tight"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline uppercase">ADD PRODUCT</span>
-            <span className="sm:hidden uppercase">ADD</span>
-          </Button>
-          <ExcelExportButton
-            getData={getExportData}
-            label="Export"
-          />
-          <PdfExportButton
-            getData={getExportData}
-            label="PDF"
-          />
-          <ExcelImportButton
-            onDataImported={handleImportData}
-            label="Import"
-          />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="default"
-                className="flex items-center justify-center gap-2 border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all shadow-sm"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="font-semibold">More</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault();
-                  const componentInfo = getComponentInfo('/categories');
-                  if (componentInfo) {
-                    openTab({
-                      title: 'Add Product Category',
-                      path: '/categories?action=add',
-                      component: componentInfo.component,
-                      icon: componentInfo.icon,
-                      allowMultiple: true,
-                      props: { action: 'add' }
-                    });
-                  }
-                }}
-              >
-                <Tag className="h-4 w-4 mr-2 text-indigo-600" />
-                Add Category
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); refreshCategories(); }}>
-                <RefreshCw className="h-4 w-4 mr-2 text-teal-600" />
-                Refresh Categories
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowBarcodeScanner(true); }}>
-                <Camera className="h-4 w-4 mr-2 text-amber-600" />
-                Scan Barcode
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowLabelPrinter(true); }}>
-                <Printer className="h-4 w-4 mr-2 text-purple-600" />
-                Print Barcode Labels
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDownloadTemplate(); }}>
-                <Download className="h-4 w-4 mr-2 text-orange-600" />
-                Download Template
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default">
-                <label className="inline-flex items-center gap-2 text-xs text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={autoCreateImportCategories}
-                    onChange={(e) => setAutoCreateImportCategories(e.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  Auto-create category
-                </label>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <Button
+              onClick={() => productOps.handleAdd()}
+              variant="default"
+              size="default"
+              className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white transition-all shadow-md active:scale-95 px-6 font-bold tracking-tight"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline uppercase">ADD PRODUCT</span>
+              <span className="sm:hidden uppercase">ADD</span>
+            </Button>
+            <ExcelExportButton
+              getData={getExportData}
+              label="Export"
+            />
+            <PdfExportButton
+              getData={getExportData}
+              label="PDF"
+            />
+            <ExcelImportButton
+              onDataImported={handleImportData}
+              label="Import"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="flex items-center justify-center gap-2 border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all shadow-sm"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="font-semibold">More</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    const componentInfo = getComponentInfo('/categories');
+                    if (componentInfo) {
+                      openTab({
+                        title: 'Add Product Category',
+                        path: '/categories?action=add',
+                        component: componentInfo.component,
+                        icon: componentInfo.icon,
+                        allowMultiple: true,
+                        props: { action: 'add' }
+                      });
+                    }
+                  }}
+                >
+                  <Tag className="h-4 w-4 mr-2 text-indigo-600" />
+                  Add Category
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); refreshCategories(); }}>
+                  <RefreshCw className="h-4 w-4 mr-2 text-teal-600" />
+                  Refresh Categories
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowBarcodeScanner(true); }}>
+                  <Camera className="h-4 w-4 mr-2 text-amber-600" />
+                  Scan Barcode
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowLabelPrinter(true); }}>
+                  <Printer className="h-4 w-4 mr-2 text-purple-600" />
+                  Print Barcode Labels
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDownloadTemplate(); }}>
+                  <Download className="h-4 w-4 mr-2 text-orange-600" />
+                  Download Template
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default">
+                  <label className="inline-flex items-center gap-2 text-xs text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={autoCreateImportCategories}
+                      onChange={(e) => setAutoCreateImportCategories(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    Auto-create category
+                  </label>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -566,17 +566,15 @@ export const Products = () => {
         isLoading={bulkConfirmation.isLoading}
       />
 
-      {productOps.selectedProductForInvestors && (
-        <ProductInvestorsModal
+      <ProductInvestorsModal
           product={productOps.selectedProductForInvestors}
-          isOpen={productOps.isInvestorsModalOpen}
+          isOpen={!!(productOps.isInvestorsModalOpen && productOps.selectedProductForInvestors)}
           onClose={() => {
             productOps.setIsInvestorsModalOpen(false);
             productOps.setSelectedProductForInvestors(null);
           }}
           onSave={productOps.handleLinkInvestors}
         />
-      )}
 
       <BarcodeScanner
         isOpen={showBarcodeScanner}

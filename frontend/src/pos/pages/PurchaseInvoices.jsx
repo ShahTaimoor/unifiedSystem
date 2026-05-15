@@ -3,7 +3,6 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import {
   FileText,
   Search,
-  Eye,
   Edit,
   Trash2,
   CheckCircle,
@@ -12,6 +11,7 @@ import {
   TrendingUp,
   Printer,
   Calendar,
+
 
 } from 'lucide-react';
 import {
@@ -116,14 +116,6 @@ const PurchaseInvoiceCard = ({ invoice, onEdit, onDelete, onConfirm, onView, onP
         </div>
 
         <div className="flex items-center space-x-2">
-          <button
-            onClick={() => onView(invoice)}
-            className="text-gray-600 hover:text-gray-800"
-            title="View Invoice"
-          >
-            <Eye className="h-4 w-4" />
-          </button>
-
           <button
             onClick={() => onPrint && onPrint(invoice)}
             className="text-green-600 hover:text-green-800"
@@ -329,14 +321,6 @@ export const PurchaseInvoices = () => {
       accessor: () => '',
       render: (value, item) => (
         <div className="flex space-x-2">
-          <button
-            onClick={() => handleView(item)}
-            className="text-gray-600 hover:text-gray-800"
-            title="View Invoice"
-          >
-            <Eye className="h-4 w-4" />
-          </button>
-
           <button
             onClick={() => handlePrint(item)}
             className="text-green-600 hover:text-green-800"
@@ -665,13 +649,6 @@ export const PurchaseInvoices = () => {
                     </div>
                     <div className="flex items-center flex-nowrap gap-1 flex-shrink-0">
                       <button
-                        onClick={() => handleView(invoice)}
-                        className="shrink-0 text-gray-600 hover:text-gray-800 p-1"
-                        title="View Invoice"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
                         onClick={() => handlePrint(invoice)}
                         className="shrink-0 text-green-600 hover:text-green-800 p-1"
                         title="Print Invoice"
@@ -791,16 +768,8 @@ export const PurchaseInvoices = () => {
                     </span>
                   </div>
 
-                  {/* Actions */}
                   <div className="col-span-2 flex justify-end">
                     <div className="flex items-center flex-nowrap gap-1">
-                      <button
-                        onClick={() => handleView(invoice)}
-                        className="shrink-0 text-gray-600 hover:text-gray-800 p-1"
-                        title="View Invoice"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
                       <button
                         onClick={() => handlePrint(invoice)}
                         className="shrink-0 text-green-600 hover:text-green-800 p-1"

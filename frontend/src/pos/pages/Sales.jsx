@@ -266,12 +266,17 @@ export const Sales = ({ tabId, editData }) => {
 
       // Set the cart items
       if (editData.items && editData.items.length > 0) {
-        const formattedItems = editData.items.map(item => ({
-          product: item.product,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice || item.price || (item.product?.pricing?.retail || 0),
-          totalPrice: item.totalPrice || (item.quantity * (item.unitPrice || item.price || (item.product?.pricing?.retail || 0)))
-        }));
+        const formattedItems = editData.items.map((item, idx) => {
+          // Comprehensive fallback for product ID: product, product_id, productId, id, _id, or a generated manual ID if missing
+          const productValue = item.product ?? item.product_id ?? item.productId ?? item.id ?? item._id ?? `manual_unknown_${idx}_${Date.now()}`;
+          return {
+            product: typeof productValue === 'object' ? productValue : { _id: productValue, name: item.name || item.productName || item.product?.name || 'Product' },
+            product_id: typeof productValue === 'string' ? productValue : productValue?._id || productValue?.id,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice || item.price || (item.product?.pricing?.retail || 0),
+            totalPrice: item.totalPrice || (item.quantity * (item.unitPrice || item.price || (item.product?.pricing?.retail || 0)))
+          };
+        });
         setCart(formattedItems);
       }
 
@@ -1274,7 +1279,7 @@ export const Sales = ({ tabId, editData }) => {
       orderType: mapBusinessTypeToOrderType(selectedCustomer?.businessType),
       customer: selectedCustomer?.id || selectedCustomer?._id,
       items: cart.map(item => {
-        const productId = item.product?._id ?? item.product?.id;
+        const productId = item.product?._id ?? item.product?.id ?? item.product_id ?? item.productId;
         const isManualLine =
           item.product?.isManual === true ||
           (typeof productId === 'string' && productId.startsWith('manual_'));
@@ -1283,7 +1288,7 @@ export const Sales = ({ tabId, editData }) => {
           quantity: Math.round(item.quantity),
           unitPrice: item.unitPrice,
           isManual: isManualLine,
-          name: item.product?.name
+          name: item.product?.name || item.name
         };
         if (isManualLine) {
           const uc = Number(
@@ -1336,22 +1341,35 @@ export const Sales = ({ tabId, editData }) => {
       const updateData = {
         orderType: mapBusinessTypeToOrderType(selectedCustomer?.businessType),
         customer: selectedCustomer?.id || selectedCustomer?._id,
-        items: cart.map(item => {
-          const productId = item.product?._id ?? item.product?.id;
+        items: cart.map((item, idx) => {
+          // Robust product ID extraction: handle object (_id or id) or direct string
+          const productId = (
+            (item.product && typeof item.product === 'object' ? (item.product?._id || item.product?.id) : item.product) || 
+            item.product_id || 
+            item.productId ||
+            item.id ||
+            item._id ||
+            `manual_emergency_${idx}_${Date.now()}`
+          );
+          
+          if (!productId) return null;
+
           const isManualLine =
+            item.isManual === true ||
             item.product?.isManual === true ||
-            (typeof productId === 'string' && productId.startsWith('manual_'));
-          const itemSubtotal = item.quantity * item.unitPrice;
-          const itemDiscountAmount = 0; // Can be calculated if needed
-          const itemTaxAmount = 0; // Can be calculated if needed
+            (typeof productId === 'string' && (productId.startsWith('manual_') || productId.startsWith('manual_unknown_') || productId.startsWith('manual_emergency_')));
+          
+          const itemSubtotal = Number(item.quantity || 0) * Number(item.unitPrice || 0);
+          const itemDiscountAmount = 0; 
+          const itemTaxAmount = 0; 
           const itemTotal = itemSubtotal - itemDiscountAmount + itemTaxAmount;
 
           const base = {
             product: productId,
-            quantity: Math.round(item.quantity),
-            unitPrice: item.unitPrice,
+            quantity: Number(item.quantity) || 0,
+            unitPrice: Number(item.unitPrice) || 0,
             isManual: isManualLine,
-            name: item.product?.name,
+            name: item.product?.name || item.name,
             discountPercent: 0,
             taxRate: 0,
             subtotal: itemSubtotal,
@@ -1379,12 +1397,18 @@ export const Sales = ({ tabId, editData }) => {
             base.pieces = item.pieces;
           }
           return base;
-        }),
+        }).filter(Boolean),
         notes: notes || '',
-        amountReceived: amountPaid ?? 0,
+        amountReceived: Number(amountPaid) || 0,
         billDate: billDate || undefined,
         discount: totalDiscountAmount > 0 ? totalDiscountAmount : undefined
       };
+      if (updateData.items.length === 0) {
+        showErrorToast({ message: 'At least one valid item is required to update the order' });
+        resetSubmittingState();
+        return;
+      }
+
       handleUpdateOrder(orderId, updateData);
     } else {
       handleCreateOrder(orderData);

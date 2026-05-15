@@ -1625,6 +1625,7 @@ class AccountingService {
     const supplierId = bankPayment.supplier_id || bankPayment.supplierId;
     const customerId = bankPayment.customer_id || bankPayment.customerId;
     const amount = parseFloat(bankPayment.amount);
+    const particular = bankPayment.particular || bankPayment.notes;
 
     // Validation: Must have either customer or supplier, not both
     if (customerId && supplierId) {
@@ -1638,15 +1639,14 @@ class AccountingService {
     const partyType = supplierId ? 'supplier' : 'customer';
     const partyId = supplierId || customerId;
     const debitAccount = supplierId ? '2000' : '1100'; // AP for supplier, AR for customer
+    const paymentNumber = bankPayment.payment_number || bankPayment.paymentNumber;
 
     // Entry 1: Debit AP (2000) for supplier OR AR (1100) for customer
     const entry1 = {
       accountCode: debitAccount,
       debitAmount: amount,
       creditAmount: 0,
-      description: supplierId
-        ? `Payment to Supplier: ${bankPayment.payment_number || bankPayment.paymentNumber}`
-        : `Refund to Customer: ${bankPayment.payment_number || bankPayment.paymentNumber}`
+      description: particular || paymentNumber || 'Bank Payment'
     };
 
     // Entry 2: Credit Bank Account (1001)
@@ -1654,13 +1654,13 @@ class AccountingService {
       accountCode: '1001', // Bank Account
       debitAmount: 0,
       creditAmount: amount,
-      description: `Bank Payment: ${bankPayment.payment_number || bankPayment.paymentNumber || bankPayment.id}`
+      description: `Bank Payment: ${paymentNumber || bankPayment.id}`
     };
 
     return await this.createTransaction(entry1, entry2, {
       referenceType: 'bank_payment',
       referenceId: bankPayment.id,
-      referenceNumber: bankPayment.payment_number || bankPayment.paymentNumber,
+      referenceNumber: paymentNumber,
       customerId: customerId || null,
       supplierId: supplierId || null,
       partyType: partyType,

@@ -18,7 +18,7 @@ router.get('/', [
       status: req.query.status,
       search: req.query.search
     });
-    
+
     res.json({
       success: true,
       data: investors
@@ -41,7 +41,7 @@ router.get('/:id', [
 ], async (req, res) => {
   try {
     const result = await investorService.getInvestorById(req.params.id);
-    
+
     res.json({
       success: true,
       data: result
@@ -69,7 +69,7 @@ router.post('/', [
 ], async (req, res) => {
   try {
     const investor = await investorService.createInvestor(req.body, req.user._id);
-    
+
     res.status(201).json({
       success: true,
       message: 'Investor created successfully',
@@ -105,7 +105,7 @@ router.put('/:id', [
 ], async (req, res) => {
   try {
     const investor = await investorService.updateInvestor(req.params.id, req.body, req.user._id);
-    
+
     res.json({
       success: true,
       message: 'Investor updated successfully',
@@ -141,7 +141,7 @@ router.delete('/:id', [
 ], async (req, res) => {
   try {
     const result = await investorService.deleteInvestor(req.params.id);
-    
+
     res.json({
       success: true,
       message: result.message
@@ -219,7 +219,7 @@ router.post('/:id/payout', [
       req.user?.id || req.user?._id || null,
       { paymentMethod, debitAccountCode }
     );
-    
+
     res.json({
       success: true,
       message: 'Payout recorded successfully',
@@ -257,7 +257,7 @@ router.post('/:id/investment', [
 ], async (req, res) => {
   try {
     const investor = await investorService.recordInvestment(req.params.id, req.body.amount);
-    
+
     res.json({
       success: true,
       message: 'Investment recorded successfully',
@@ -293,7 +293,7 @@ router.get('/:id/profit-shares', [
       req.query.startDate,
       req.query.endDate
     );
-    
+
     res.json({
       success: true,
       data: profitShares
@@ -320,7 +320,7 @@ router.get('/profit-shares/summary', [
       req.query.startDate,
       req.query.endDate
     );
-    
+
     res.json({
       success: true,
       data: summary
@@ -343,7 +343,7 @@ router.get('/profit-shares/order/:orderId', [
 ], async (req, res) => {
   try {
     const profitShares = await profitDistributionService.getProfitSharesForOrder(req.params.orderId);
-    
+
     res.json({
       success: true,
       data: profitShares
@@ -366,20 +366,20 @@ router.get('/:id/products', [
 ], async (req, res) => {
   try {
     const products = await investorService.getProductsForInvestor(req.params.id);
-    
+
     // Sort products by name
     products.sort((a, b) => {
       const nameA = (a.name || '').toUpperCase();
       const nameB = (b.name || '').toUpperCase();
       return nameA.localeCompare(nameB);
     });
-    
+
     // Map products to include the share percentage for this specific investor
     const productsWithShares = products.map(product => {
       const investorData = product.investors.find(
         inv => inv.investor.toString() === req.params.id
       );
-      
+
       return {
         _id: product._id,
         name: product.name,
@@ -392,7 +392,7 @@ router.get('/:id/products', [
         linkedAt: investorData?.addedAt
       };
     });
-    
+
     res.json({
       success: true,
       data: productsWithShares
