@@ -666,6 +666,10 @@ router.put('/:id', [
 
       // Validate products and stock availability
       for (const item of req.body.items) {
+        // Handle manual items
+        const isManual = item.isManual || (typeof item.product === 'string' && item.product.startsWith('manual_'));
+        if (isManual) continue;
+
         // Try to find as product first, then as variant
         let product = await productRepository.findById(item.product);
         let isVariant = false;
@@ -713,32 +717,39 @@ router.put('/:id', [
       const newOrderItems = [];
 
       for (const item of req.body.items) {
-        // Try to find as product first, then as variant (for tax rate and cost)
-        let productForTax = await productRepository.findById(item.product);
-        let isVariantForTax = false;
-        if (!productForTax) {
-          productForTax = await productVariantRepository.findById(item.product);
-          if (productForTax) {
-            isVariantForTax = true;
+        // Handle manual items
+        const isManual = item.isManual || (typeof item.product === 'string' && item.product.startsWith('manual_'));
+        
+        let productForTax = null;
+        if (!isManual) {
+          // Try to find as product first, then as variant (for tax rate and cost)
+          productForTax = await productRepository.findById(item.product);
+          if (!productForTax) {
+            productForTax = await productVariantRepository.findById(item.product);
           }
         }
 
-        const itemSubtotal = item.quantity * item.unitPrice;
-        const itemDiscount = itemSubtotal * ((item.discountPercent || 0) / 100);
+        const itemSubtotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
+        const itemDiscount = itemSubtotal * ((Number(item.discountPercent || 0)) / 100);
         const itemTaxable = itemSubtotal - itemDiscount;
         const taxRate = globalTax.rateDecimal;
         const itemTax = itemTaxable * taxRate;
 
-        // Get unit cost for P&L (COGS) - same logic as createSale
-        let unitCost = 0;
-        const productId = productForTax?.id || productForTax?._id;
-        if (productId) {
+        // Get unit cost for P&L (COGS) - use provided cost for manual, DB cost for real products
+        let unitCost = Number(item.unitCost ?? item.cost_price ?? 0);
+        
+        if (!isManual && productForTax) {
+          const productId = productForTax.id || productForTax._id;
           const inv = await inventoryRepository.findByProduct(productId);
+          let dbUnitCost = 0;
           if (inv && inv.cost) {
             const costObj = typeof inv.cost === 'string' ? JSON.parse(inv.cost) : inv.cost;
-            unitCost = costObj.average ?? costObj.lastPurchase ?? 0;
+            dbUnitCost = costObj.average ?? costObj.lastPurchase ?? 0;
           }
-          if (unitCost === 0) unitCost = productForTax?.pricing?.cost ?? productForTax?.cost_price ?? 0;
+          if (dbUnitCost === 0) dbUnitCost = productForTax.pricing?.cost ?? productForTax.cost_price ?? 0;
+          
+          // Only overwrite if DB cost is found, otherwise trust the request (allows manual overrides)
+          if (dbUnitCost > 0) unitCost = dbUnitCost;
         }
 
         newOrderItems.push({
@@ -1008,7 +1019,7 @@ router.put('/:id', [
     let finalOrder = updatedOrder || order;
     try {
       finalOrder = await salesService.getSalesOrderById(finalOrder.id || finalOrder._id);
-    } catch(e) {
+    } catch (e) {
       console.error('Failed to get fully enriched order on update:', e);
     }
 
