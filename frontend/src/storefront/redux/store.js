@@ -4,7 +4,6 @@ import cartSlice from './slices/cart/cartSlice'
 import categoriesReducer from './slices/categories/categoriesSlice'
 import productsReducer from './slices/products/productSlice'
 import ordersReducer from './slices/order/orderSlice'
-import companyReducer from './slices/company/companySlice'
 import { setStoreReference } from './slices/auth/axiosInstance'
 
 export const store = configureStore({
@@ -14,14 +13,13 @@ export const store = configureStore({
         products: productsReducer,
         categories: categoriesReducer,
         orders: ordersReducer,
-        company: companyReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
             serializableCheck: {
                 // Ignore these field paths in all actions
                 ignoredActionPaths: [
-                    'payload.timestamp', 
+                    'payload.timestamp',
                     'payload.error.stack',
                 ],
                 // Ignore these paths in the state

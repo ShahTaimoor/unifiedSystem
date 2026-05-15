@@ -105,11 +105,6 @@ const Navbar = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const { items: cartItems = [] } = useSelector((state) => state.cart);
-  const cartRef = useRef(null);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   const { openDrawer } = useAuthDrawer();
@@ -120,72 +115,12 @@ const Navbar = () => {
     [cartItems]
   );
 
-  // Fetch cart when user is authenticated (on mount and when user changes)
+  // Fetch cart when user is authenticated
   useEffect(() => {
     if (user) {
       dispatch(fetchCart());
     }
   }, [dispatch, user]);
-
-  useEffect(() => {
-    // Check if user is on mobile/tablet (< 1024px)
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    // Listen for the beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    // Listen for the appinstalled event
-    const handleAppInstalled = () => {
-      setShowInstallButton(false);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallButton(false);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-      window.removeEventListener('resize', checkMobile);
-    };
-  }, []);
-
-  // Mobile-only scroll detection
-  useEffect(() => {
-    // Only enable scroll detection on mobile
-    if (window.innerWidth < 1024) {
-      const handleScroll = () => {
-        setIsScrolled(window.scrollY > 100);
-      };
-
-      window.addEventListener('scroll', handleScroll);
-      return () => window.removeEventListener('scroll', handleScroll);
-    }
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    setDeferredPrompt(null);
-    setShowInstallButton(false);
-  };
 
   const handleBuyNow = () => {
     if (!user) {
@@ -200,7 +135,7 @@ const Navbar = () => {
 
   return (
     <>
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block`}>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Left side: Logo + Brand */}
@@ -305,7 +240,6 @@ const Navbar = () => {
         </div>
       </div>
     </nav>
-
 
     {/* Checkout Dialog */}
     <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>

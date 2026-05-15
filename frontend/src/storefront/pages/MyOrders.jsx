@@ -4,7 +4,7 @@ import OneLoader from '@/storefront/components/ui/OneLoader';
 import { Alert, AlertDescription, AlertTitle } from '@/storefront/components/ui/alert';
 import { Label } from '@/storefront/components/ui/label';
 import OrderData from '@/storefront/components/custom/OrderData';
-import { fetchOrders, deleteOrder } from '@/storefront/redux/slices/order/orderSlice';
+import { fetchOrders } from '@/storefront/redux/slices/order/orderSlice';
 import { getPakistaniDate } from '@/storefront/utils/orderHelpers';
 
 const MyOrders = () => {
@@ -21,12 +21,6 @@ const MyOrders = () => {
     dispatch(fetchOrders());
   }, [dispatch]);
 
-  const handleDeleteOrder = async (orderId) => {
-    try {
-      await dispatch(deleteOrder(orderId)).unwrap();
-    } catch (error) {
-    }
-  };
 
   const filteredOrders = (!fromDate || !toDate) ? orders : orders.filter(order => {
     const orderDate = new Date(order.createdAt)
@@ -91,7 +85,7 @@ const MyOrders = () => {
           ) : (
             filteredOrders.map((order) => (
               <div key={order._id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
-                <OrderData {...order} user={user} onDelete={handleDeleteOrder} />
+                <OrderData {...order} user={user} />
               </div>
             ))
           )}

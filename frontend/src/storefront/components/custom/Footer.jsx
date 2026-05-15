@@ -29,7 +29,6 @@ const Footer = () => {
     <footer className="relative overflow-hidden bg-black text-white pb-20 lg:pb-0 -mt-16 lg:mt-0">
       {/* Modern background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Animated gradient orbs */}
         <div className="absolute -top-40 -left-40 w-80 h-80 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full filter blur-3xl animate-pulse-slow"></div>
         <div
           className="absolute -bottom-40 -right-40 w-80 h-80 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-full filter blur-3xl animate-pulse-slow"
@@ -97,11 +96,8 @@ const Footer = () => {
                     </svg>
                   </div>
                   <div className="space-y-1">
-                    {CONTACT_INFO.whatsapp.map((phone, index) => (
-                      <p key={index} className="text-slate-300 text-sm">
-                        {phone}
-                      </p>
-                    ))}
+                    <p className="text-slate-300 text-sm">+92 3114000096</p>
+                    <p className="text-slate-300 text-sm">+92 3129991116</p>
                   </div>
                 </div>
               </div>
@@ -121,12 +117,10 @@ const Footer = () => {
                   </div>
                   <div>
                     <p className="text-slate-300 text-sm leading-relaxed">
-                      {LOCATION.address.map((line, index) => (
-                        <span key={index}>
-                          {line}
-                          {index < LOCATION.address.length - 1 && <br />}
-                        </span>
-                      ))}
+                      Grand Dil jan Plaza, Block A,<br />
+                      Shop #7,8,9, Opposite Fahad CNG Pump,<br />
+                      Near Toyota Khyber, Ring Road<br />
+                      Peshawar, KPK, Pakistan
                     </p>
                   </div>
                 </div>
@@ -153,7 +147,7 @@ const Footer = () => {
               <p className="text-slate-400 text-sm">
                 © {currentYear}{' '}
                 <span className="text-red-500 font-semibold">
-                  {COMPANY_INFO.name}
+                  GULTRADERS
                 </span>
                 . {COPYRIGHT_TEXT}
               </p>
