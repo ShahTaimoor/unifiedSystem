@@ -5,6 +5,7 @@ import PrintDocument from './PrintDocument';
 import { PrintModal, PrintWrapper } from './print';
 import { PRINT_PAGE_STYLE, THERMAL_PRINT_PAGE_STYLE } from './print/printPageStyle';
 import { getInvoicePdfPayload } from '../utils/invoicePdfUtils';
+import { useSensitiveDataPermissions } from '../hooks/useSensitiveDataPermissions';
 
 /**
  * DirectPrintInvoice - Triggers print dialog directly without opening the preview modal.
@@ -98,7 +99,9 @@ const InvoicePrintModal = ({
   onAfterPrint
 }) => {
   const { companyInfo: companySettings } = useCompanyInfo();
+  const { getPartyPermissions } = useSensitiveDataPermissions();
   const resolvedDocumentTitle = documentTitle || 'Invoice';
+  const { canViewBalance, canViewPhone } = getPartyPermissions(partyLabel);
 
   const customerId =
     orderData?.customer_id ||
@@ -130,7 +133,7 @@ const InvoicePrintModal = ({
       autoPrint={autoPrint}
       onAfterPrint={onAfterPrint}
       pageStyle={pageStyle}
-      getPdfData={() => getInvoicePdfPayload(orderData, companySettings, resolvedDocumentTitle, partyLabel, ledgerBalance)}
+      getPdfData={() => getInvoicePdfPayload(orderData, companySettings, resolvedDocumentTitle, partyLabel, canViewBalance ? ledgerBalance : null, { canViewBalance, canViewPhone })}
     >
       <PrintDocument
         companySettings={companySettings || {}}

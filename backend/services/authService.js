@@ -19,6 +19,35 @@ class AuthService {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
   }
 
+  /**
+   * Refresh an expired (or valid) JWT. Decodes without expiration check,
+   * verifies the user still exists and is active, then issues a new token.
+   * Returns null if the token is structurally invalid or the user is gone/inactive.
+   */
+  async refreshToken(token) {
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === '') {
+      throw new Error('Server configuration error: JWT_SECRET is missing');
+    }
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET, { ignoreExpiration: true });
+    } catch {
+      return null;
+    }
+    if (!decoded?.userId) return null;
+    // Reject 2FA challenge tokens
+    if (decoded.type === '2fa_challenge') return null;
+
+    const user = await userRepository.findById(decoded.userId);
+    if (!user) return null;
+
+    const status = user.status || (user.isActive ? 'active' : 'inactive');
+    if (status !== 'active') return null;
+
+    const newToken = this.createAuthToken(user);
+    return { token: newToken, user };
+  }
+
   createTwoFactorChallengeToken(userId) {
     if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === '') {
       throw new Error('Server configuration error: JWT_SECRET is missing');
@@ -272,7 +301,7 @@ class AuthService {
    * @returns {Promise<{user: User, message: string}>}
    */
   async updateProfile(userId, updateData) {
-    const { firstName, lastName, email, phone, address, city, username } = updateData;
+    const { firstName, lastName, email, phone } = updateData;
 
     const emailVal = email !== undefined && email !== null ? String(email).trim() : '';
     if (emailVal) {
@@ -282,32 +311,17 @@ class AuthService {
       }
     }
 
-    const existingUser = await userRepository.findById(userId);
-    if (!existingUser) {
-      throw new Error('User not found');
-    }
-
     const updateFields = {};
     if (firstName !== undefined) updateFields.firstName = firstName;
     if (lastName !== undefined) updateFields.lastName = lastName;
     if (emailVal) updateFields.email = emailVal.toLowerCase();
     if (phone !== undefined) updateFields.phone = phone;
-    if (address !== undefined) updateFields.address = address;
-    if (city !== undefined) updateFields.city = city;
-
-    // Handle username in preferences
-    if (username !== undefined) {
-      updateFields.preferences = {
-        ...(existingUser.preferences || {}),
-        username: username
-      };
-      // Also update firstName if it's the primary display name
-      if (!updateFields.firstName) {
-        updateFields.firstName = username;
-      }
-    }
 
     const user = await userRepository.updateProfile(userId, updateFields);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
     return {
       user: user.toSafeObject(),
       message: 'Profile updated successfully'

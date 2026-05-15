@@ -1,39 +1,31 @@
-const { query } = require("../../config/postgres");
+const { query } = require('../../config/postgres');
 const {
   ensureItemConfirmationStatus,
   computeOrderConfirmationStatus,
   recalculateTotalsFromItems,
-  getSalesOrderLineTotal,
-} = require("../../utils/orderConfirmationUtils");
+  getSalesOrderLineTotal
+} = require('../../utils/orderConfirmationUtils');
 
 class SalesOrderRepository {
   async findById(id) {
     const result = await query(
-      "SELECT * FROM sales_orders WHERE id = $1 AND deleted_at IS NULL",
-      [id],
+      'SELECT * FROM sales_orders WHERE id = $1 AND deleted_at IS NULL',
+      [id]
     );
     const order = result.rows[0] || null;
     if (order) {
-      if (typeof order.items === "string") {
-        try {
-          order.items = JSON.parse(order.items);
-        } catch (_) {
-          order.items = [];
-        }
+      if (typeof order.items === 'string') {
+        try { order.items = JSON.parse(order.items); } catch (_) { order.items = []; }
       }
-      if (typeof order.conversions === "string") {
-        try {
-          order.conversions = JSON.parse(order.conversions);
-        } catch (_) {
-          order.conversions = [];
-        }
+      if (typeof order.conversions === 'string') {
+        try { order.conversions = JSON.parse(order.conversions); } catch (_) { order.conversions = []; }
       }
     }
     return order;
   }
 
   async findAll(filters = {}, options = {}) {
-    let sql = "SELECT * FROM sales_orders WHERE deleted_at IS NULL";
+    let sql = 'SELECT * FROM sales_orders WHERE deleted_at IS NULL';
     const params = [];
     let paramCount = 1;
 
@@ -54,7 +46,7 @@ class SalesOrderRepository {
         sql += ` OR customer_id = ANY($${paramCount++}::uuid[])`;
         params.push(filters.searchCustomerIds);
       }
-      sql += ")";
+      sql += ')';
     }
     if (filters.soNumberIlike) {
       sql += ` AND so_number ILIKE $${paramCount++}`;
@@ -64,11 +56,7 @@ class SalesOrderRepository {
       sql += ` AND notes ILIKE $${paramCount++}`;
       params.push(`%${filters.notesIlike}%`);
     }
-    if (
-      filters.customerIds &&
-      filters.customerIds.length > 0 &&
-      !filters.searchTerm
-    ) {
+    if (filters.customerIds && filters.customerIds.length > 0 && !filters.searchTerm) {
       sql += ` AND customer_id = ANY($${paramCount++}::uuid[])`;
       params.push(filters.customerIds);
     }
@@ -81,7 +69,7 @@ class SalesOrderRepository {
       params.push(filters.createdAtTo);
     }
 
-    sql += " ORDER BY created_at DESC";
+    sql += ' ORDER BY created_at DESC';
     if (options.limit) {
       sql += ` LIMIT $${paramCount++}`;
       params.push(options.limit);
@@ -93,20 +81,12 @@ class SalesOrderRepository {
 
     const result = await query(sql, params);
     const rows = result.rows;
-    rows.forEach((order) => {
-      if (typeof order.items === "string") {
-        try {
-          order.items = JSON.parse(order.items);
-        } catch (_) {
-          order.items = [];
-        }
+    rows.forEach(order => {
+      if (typeof order.items === 'string') {
+        try { order.items = JSON.parse(order.items); } catch (_) { order.items = []; }
       }
-      if (typeof order.conversions === "string") {
-        try {
-          order.conversions = JSON.parse(order.conversions);
-        } catch (_) {
-          order.conversions = [];
-        }
+      if (typeof order.conversions === 'string') {
+        try { order.conversions = JSON.parse(order.conversions); } catch (_) { order.conversions = []; }
       }
     });
     return rows;
@@ -115,18 +95,17 @@ class SalesOrderRepository {
   async findOne(filters = {}) {
     if (filters.soNumber) {
       const result = await query(
-        "SELECT * FROM sales_orders WHERE so_number = $1 AND deleted_at IS NULL LIMIT 1",
-        [(filters.soNumber || "").toUpperCase()],
+        'SELECT * FROM sales_orders WHERE so_number = $1 AND deleted_at IS NULL LIMIT 1',
+        [(filters.soNumber || '').toUpperCase()]
       );
       return result.rows[0] || null;
     }
-    if (filters._id || filters.id)
-      return this.findById(filters._id || filters.id);
+    if (filters._id || filters.id) return this.findById(filters._id || filters.id);
     return null;
   }
 
   async findBySONumber(soNumber, options = {}) {
-    return this.findOne({ soNumber: (soNumber || "").toUpperCase() });
+    return this.findOne({ soNumber: (soNumber || '').toUpperCase() });
   }
 
   async findByCustomer(customerId, options = {}) {
@@ -139,7 +118,7 @@ class SalesOrderRepository {
     const offset = (page - 1) * limit;
     const getAll = options.getAll === true;
 
-    let countSql = "SELECT COUNT(*) FROM sales_orders WHERE deleted_at IS NULL";
+    let countSql = 'SELECT COUNT(*) FROM sales_orders WHERE deleted_at IS NULL';
     const countParams = [];
     let paramCount = 1;
     if (filter.customerId || filter.customer) {
@@ -159,7 +138,7 @@ class SalesOrderRepository {
         countSql += ` OR customer_id = ANY($${paramCount++}::uuid[])`;
         countParams.push(filter.searchCustomerIds);
       }
-      countSql += ")";
+      countSql += ')';
     }
     if (filter.soNumberIlike) {
       countSql += ` AND so_number ILIKE $${paramCount++}`;
@@ -169,11 +148,7 @@ class SalesOrderRepository {
       countSql += ` AND notes ILIKE $${paramCount++}`;
       countParams.push(`%${filter.notesIlike}%`);
     }
-    if (
-      filter.customerIds &&
-      filter.customerIds.length > 0 &&
-      !filter.searchTerm
-    ) {
+    if (filter.customerIds && filter.customerIds.length > 0 && !filter.searchTerm) {
       countSql += ` AND customer_id = ANY($${paramCount++}::uuid[])`;
       countParams.push(filter.customerIds);
     }
@@ -190,7 +165,7 @@ class SalesOrderRepository {
 
     const salesOrders = await this.findAll(filter, {
       limit: getAll ? total : limit,
-      offset: getAll ? 0 : offset,
+      offset: getAll ? 0 : offset
     });
 
     return {
@@ -198,13 +173,7 @@ class SalesOrderRepository {
       total,
       pagination: getAll
         ? { current: 1, pages: 1, total, hasNext: false, hasPrev: false }
-        : {
-            current: page,
-            pages: Math.ceil(total / limit),
-            total,
-            hasNext: page < Math.ceil(total / limit),
-            hasPrev: page > 1,
-          },
+        : { current: page, pages: Math.ceil(total / limit), total, hasNext: page < Math.ceil(total / limit), hasPrev: page > 1 }
     };
   }
 
@@ -216,8 +185,8 @@ class SalesOrderRepository {
   generateSONumber() {
     const now = new Date();
     const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
     const t = String(now.getTime()).slice(-4);
     return `SO-${y}${m}${d}-${t}`;
   }
@@ -226,80 +195,48 @@ class SalesOrderRepository {
     const rawItems = data.items || [];
     const items = ensureItemConfirmationStatus(rawItems);
     const tax = data.tax ?? 0;
-    const { subtotal, total } = recalculateTotalsFromItems(
-      items,
-      getSalesOrderLineTotal,
-      tax,
-    );
+    const { subtotal, total } = recalculateTotalsFromItems(items, getSalesOrderLineTotal, tax);
     const computedSubtotal = data.subtotal ?? subtotal;
     const computedTotal = data.total ?? total;
     const confirmationStatus = computeOrderConfirmationStatus(items);
-    const orderType =
-      data.orderType ?? data.order_type ?? data.orderType ?? "retail";
+    const orderType = data.orderType ?? data.order_type ?? data.orderType ?? 'retail';
 
-    let soNumber = (data.soNumber || data.so_number || "").toUpperCase();
-    if (!soNumber) {
-      soNumber = this.generateSONumber();
-    }
-
-    let result;
-    let attempts = 0;
-    while (attempts < 5) {
-      try {
-        result = await query(
-          `INSERT INTO sales_orders (
-            so_number, customer_id, items, subtotal, tax, is_tax_exempt, total, status, confirmation_status,
-            order_type, order_date, expected_delivery, confirmed_date, last_invoiced_date, notes, terms,
-            conversions, ledger_posted, auto_posted, posted_at, ledger_reference_id, invoice_id, auto_converted,
-            created_by, last_modified_by, shipping_address, shipping_phone, shipping_city, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-          RETURNING *`,
-          [
-            soNumber,
-            data.customer || data.customerId,
-            JSON.stringify(items),
-            computedSubtotal,
-            tax,
-            data.isTaxExempt !== false,
-            computedTotal,
-            data.status || "draft",
-            confirmationStatus,
-            orderType,
-            data.orderDate || data.order_date || new Date(),
-            data.expectedDelivery || data.expected_delivery || null,
-            data.confirmedDate || data.confirmed_date || null,
-            data.lastInvoicedDate || data.lastInvoiced_date || null,
-            data.notes || null,
-            data.terms || null,
-            data.conversions ? JSON.stringify(data.conversions) : "[]",
-            data.ledgerPosted === true,
-            data.autoPosted === true,
-            data.postedAt || data.posted_at || null,
-            data.ledgerReferenceId || data.ledger_reference_id || null,
-            data.invoiceId || data.invoice_id || null,
-            data.autoConverted === true,
-            data.createdBy || data.created_by,
-            data.lastModifiedBy || data.last_modified_by || null,
-            data.shippingAddress || data.shipping_address || null,
-            data.shippingPhone || data.shipping_phone || null,
-            data.shippingCity || data.shipping_city || null,
-          ],
-        );
-        break;
-      } catch (error) {
-        if (
-          error.code === "23505" &&
-          error.constraint === "sales_orders_so_number_key" &&
-          !data.soNumber &&
-          !data.so_number
-        ) {
-          attempts += 1;
-          soNumber = this.generateSONumber();
-          continue;
-        }
-        throw error;
-      }
-    }
+    const result = await query(
+      `INSERT INTO sales_orders (
+        so_number, customer_id, items, subtotal, tax, is_tax_exempt, total, status, confirmation_status,
+        order_type, order_date, expected_delivery, confirmed_date, last_invoiced_date, notes, terms,
+        conversions, ledger_posted, auto_posted, posted_at, ledger_reference_id, invoice_id, auto_converted,
+        created_by, last_modified_by, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *`,
+      [
+        (data.soNumber || data.so_number || '').toUpperCase(),
+        data.customer || data.customerId,
+        JSON.stringify(items),
+        computedSubtotal,
+        tax,
+        data.isTaxExempt !== false,
+        computedTotal,
+        data.status || 'draft',
+        confirmationStatus,
+        orderType,
+        data.orderDate || data.order_date || new Date(),
+        data.expectedDelivery || data.expected_delivery || null,
+        data.confirmedDate || data.confirmed_date || null,
+        data.lastInvoicedDate || data.lastInvoiced_date || null,
+        data.notes || null,
+        data.terms || null,
+        data.conversions ? JSON.stringify(data.conversions) : '[]',
+        data.ledgerPosted === true,
+        data.autoPosted === true,
+        data.postedAt || data.posted_at || null,
+        data.ledgerReferenceId || data.ledger_reference_id || null,
+        data.invoiceId || data.invoice_id || null,
+        data.autoConverted === true,
+        data.createdBy || data.created_by,
+        data.lastModifiedBy || data.last_modified_by || null
+      ]
+    );
     return result.rows[0];
   }
 
@@ -312,69 +249,36 @@ class SalesOrderRepository {
     const params = [];
     let paramCount = 1;
     const map = {
-      customer: "customer_id",
-      customerId: "customer_id",
-      items: "items",
-      subtotal: "subtotal",
-      tax: "tax",
-      isTaxExempt: "is_tax_exempt",
-      total: "total",
-      status: "status",
-      confirmationStatus: "confirmation_status",
-      orderType: "order_type",
-      order_type: "order_type",
-      orderDate: "order_date",
-      expectedDelivery: "expected_delivery",
-      confirmedDate: "confirmed_date",
-      lastInvoicedDate: "last_invoiced_date",
-      notes: "notes",
-      terms: "terms",
-      conversions: "conversions",
-      ledgerPosted: "ledger_posted",
-      autoPosted: "auto_posted",
-      postedAt: "posted_at",
-      ledgerReferenceId: "ledger_reference_id",
-      invoiceId: "invoice_id",
-      lastModifiedBy: "last_modified_by",
-      shippingAddress: "shipping_address",
-      shipping_address: "shipping_address",
-      shippingPhone: "shipping_phone",
-      shipping_phone: "shipping_phone",
-      shippingCity: "shipping_city",
-      shipping_city: "shipping_city",
+      customer: 'customer_id', customerId: 'customer_id',
+      items: 'items', subtotal: 'subtotal', tax: 'tax', isTaxExempt: 'is_tax_exempt', total: 'total',
+      status: 'status', confirmationStatus: 'confirmation_status',
+      orderType: 'order_type', order_type: 'order_type',
+      orderDate: 'order_date', expectedDelivery: 'expected_delivery',
+      confirmedDate: 'confirmed_date', lastInvoicedDate: 'last_invoiced_date', notes: 'notes', terms: 'terms',
+      conversions: 'conversions', ledgerPosted: 'ledger_posted', autoPosted: 'auto_posted',
+      postedAt: 'posted_at', ledgerReferenceId: 'ledger_reference_id', invoiceId: 'invoice_id',
+      lastModifiedBy: 'last_modified_by'
     };
     for (const [k, col] of Object.entries(map)) {
       if (data[k] !== undefined) {
         updates.push(`${col} = $${paramCount++}`);
-        params.push(
-          typeof data[k] === "object" || Array.isArray(data[k])
-            ? JSON.stringify(data[k])
-            : data[k],
-        );
+        params.push((typeof data[k] === 'object' || Array.isArray(data[k])) ? JSON.stringify(data[k]) : data[k]);
       }
     }
     if (updates.length === 0) return this.findById(id);
-    updates.push("updated_at = CURRENT_TIMESTAMP");
+    updates.push('updated_at = CURRENT_TIMESTAMP');
     params.push(id);
     const result = await query(
-      `UPDATE sales_orders SET ${updates.join(", ")} WHERE id = $${paramCount} AND deleted_at IS NULL RETURNING *`,
-      params,
+      `UPDATE sales_orders SET ${updates.join(', ')} WHERE id = $${paramCount} AND deleted_at IS NULL RETURNING *`,
+      params
     );
     const order = result.rows[0] || null;
     if (order) {
-      if (typeof order.items === "string") {
-        try {
-          order.items = JSON.parse(order.items);
-        } catch (_) {
-          order.items = [];
-        }
+      if (typeof order.items === 'string') {
+        try { order.items = JSON.parse(order.items); } catch (_) { order.items = []; }
       }
-      if (typeof order.conversions === "string") {
-        try {
-          order.conversions = JSON.parse(order.conversions);
-        } catch (_) {
-          order.conversions = [];
-        }
+      if (typeof order.conversions === 'string') {
+        try { order.conversions = JSON.parse(order.conversions); } catch (_) { order.conversions = []; }
       }
     }
     return order;
@@ -382,8 +286,8 @@ class SalesOrderRepository {
 
   async softDelete(id) {
     const result = await query(
-      "UPDATE sales_orders SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *",
-      [id],
+      'UPDATE sales_orders SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *',
+      [id]
     );
     return result.rows[0] || null;
   }

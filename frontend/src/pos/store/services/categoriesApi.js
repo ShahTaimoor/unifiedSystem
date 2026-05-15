@@ -9,13 +9,6 @@ export const categoriesApi = api.injectEndpoints({
         params,
       }),
       keepUnusedDataFor: 90,
-      transformResponse: (response) => {
-        const result = response.data || response;
-        return {
-          categories: result.categories || result.items || [],
-          pagination: result.pagination || {}
-        };
-      },
       providesTags: [{ type: 'Categories', id: 'LIST' }],
     }),
     getCategoryTree: builder.query({

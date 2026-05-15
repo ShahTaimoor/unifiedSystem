@@ -24,8 +24,7 @@ import {
 } from 'lucide-react';
 import { useGetReportQuery } from '../store/services/salesPerformanceApi';
 import { LoadingSpinner, LoadingCard } from '../components/LoadingSpinner';
-import { Button } from '@/pos/components/ui/button';
-import BaseModal from './BaseModal';
+import { Button } from '@/components/ui/button';
 
 const SalesPerformanceDetailModal = ({ isOpen, onClose, report, onDelete, onExport }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -132,273 +131,456 @@ const SalesPerformanceDetailModal = ({ isOpen, onClose, report, onDelete, onExpo
   if (!isOpen || !report) return null;
 
   return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={report.reportName}
-      subtitle={
-        <div className="flex items-center space-x-4 mt-1">
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-            {getStatusIcon(report.status)}
-            <span className="ml-1 capitalize">{report.status}</span>
-          </span>
-          <span className="text-sm text-gray-500">
-            Generated {formatDate(report.generatedAt)}
-          </span>
-          <span className="text-sm text-gray-500">
-            Views: {report.viewCount || 0}
-          </span>
-          {report.isFavorite && (
-            <Star className="h-4 w-4 text-yellow-500 fill-current" />
-          )}
-        </div>
-      }
-      maxWidth="full"
-      variant="scrollable"
-      footer={
-        <div className="flex justify-between items-center w-full">
-          <div className="text-xs text-gray-500 font-mono">
-            Report ID: {report.reportId}
-          </div>
-          <Button onClick={onClose} variant="secondary">
-            Close
-          </Button>
-        </div>
-      }
-    >
-      <div className="flex flex-col h-full">
-        {/* Tabs */}
-        <div className="border-b border-gray-200/50 px-6 bg-white/30 backdrop-blur-md sticky top-0 z-10">
-          <nav className="-mb-px flex space-x-8 overflow-x-auto">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center transition-all`}
-              >
-                <tab.icon className="h-4 w-4 mr-2" />
-                {tab.label}
-              </button>
-            ))}
-          </nav>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-[100dvh] pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+          <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="p-12 flex justify-center">
-              <LoadingSpinner size="lg" />
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl sm:w-full">
+          {/* Header */}
+          <div className="bg-white px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <BarChart3 className="h-6 w-6 text-blue-600 mr-3" />
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {report.reportName}
+                  </h3>
+                  <div className="flex items-center space-x-4 mt-1">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
+                      {getStatusIcon(report.status)}
+                      <span className="ml-1 capitalize">{report.status}</span>
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Generated {formatDate(report.generatedAt)}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Views: {report.viewCount || 0}
+                    </span>
+                    {report.isFavorite && (
+                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
             </div>
-          ) : error ? (
-            <div className="p-12 text-center">
-              <AlertCircle className="mx-auto h-12 w-12 text-red-500/80" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">Error loading report</h3>
-              <p className="mt-2 text-sm text-gray-500">{error.message}</p>
-            </div>
-          ) : (
-            <div className="p-6">
-              {/* Overview Tab */}
-              {activeTab === 'overview' && detailedReport && (
-                <div className="space-y-8">
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                      { label: 'Total Revenue', value: formatCurrency(detailedReport.summary?.totalRevenue || 0), icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50/50' },
-                      { label: 'Total Orders', value: (detailedReport.summary?.totalOrders || 0).toLocaleString(), icon: ShoppingCart, color: 'text-blue-600', bg: 'bg-blue-50/50' },
-                      { label: 'Avg Order Value', value: formatCurrency(detailedReport.summary?.averageOrderValue || 0), icon: Target, color: 'text-purple-600', bg: 'bg-purple-50/50' },
-                      { label: 'Total Customers', value: (detailedReport.summary?.totalCustomers || 0).toLocaleString(), icon: Users, color: 'text-orange-600', bg: 'bg-orange-50/50' }
-                    ].map((stat, i) => (
-                      <div key={i} className={`${stat.bg} backdrop-blur-sm rounded-xl p-6 border border-white/40 shadow-sm hover:shadow-md transition-all`}>
-                        <div className="flex items-center">
-                          <stat.icon className={`h-10 w-10 ${stat.color} opacity-80`} />
-                          <div className="ml-5">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{stat.label}</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+          </div>
+
+
+
+          {/* Tabs */}
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8 px-6">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+                >
+                  <tab.icon className="h-4 w-4 mr-2" />
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Content */}
+          <div className="max-h-96 overflow-y-auto">
+            {isLoading ? (
+              <div className="p-6">
+                <LoadingCard />
+              </div>
+            ) : error ? (
+              <div className="p-6 text-center">
+                <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Error loading report</h3>
+                <p className="mt-1 text-sm text-gray-500">{error.message}</p>
+              </div>
+            ) : (
+              <div className="p-6">
+                {/* Overview Tab */}
+                {activeTab === 'overview' && detailedReport && (
+                  <div className="space-y-6">
+                    {/* Summary Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      <div className="card">
+                        <div className="card-content">
+                          <div className="flex items-center">
+                            <TrendingUp className="h-8 w-8 text-green-600" />
+                            <div className="ml-4">
+                              <p className="text-sm font-medium text-gray-500">Total Revenue</p>
+                              <p className="text-2xl font-semibold text-gray-900">
+                                {formatCurrency(detailedReport.summary?.totalRevenue || 0)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="card">
+                        <div className="card-content">
+                          <div className="flex items-center">
+                            <ShoppingCart className="h-8 w-8 text-blue-600" />
+                            <div className="ml-4">
+                              <p className="text-sm font-medium text-gray-500">Total Orders</p>
+                              <p className="text-2xl font-semibold text-gray-900">
+                                {(detailedReport.summary?.totalOrders || 0).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="card">
+                        <div className="card-content">
+                          <div className="flex items-center">
+                            <Target className="h-8 w-8 text-purple-600" />
+                            <div className="ml-4">
+                              <p className="text-sm font-medium text-gray-500">Avg Order Value</p>
+                              <p className="text-2xl font-semibold text-gray-900">
+                                {formatCurrency(detailedReport.summary?.averageOrderValue || 0)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="card">
+                        <div className="card-content">
+                          <div className="flex items-center">
+                            <Users className="h-8 w-8 text-orange-600" />
+                            <div className="ml-4">
+                              <p className="text-sm font-medium text-gray-500">Total Customers</p>
+                              <p className="text-2xl font-semibold text-gray-900">
+                                {(detailedReport.summary?.totalCustomers || 0).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Comparison */}
+                    {detailedReport.comparison && (
+                      <div className="card">
+                        <div className="card-header">
+                          <h3 className="text-lg font-medium text-gray-900">Period Comparison</h3>
+                        </div>
+                        <div className="card-content">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="text-center">
+                              <p className="text-sm text-gray-500">Revenue Change</p>
+                              <div className={`flex items-center justify-center mt-2 ${
+                                detailedReport.comparison.changes.revenueChangePercentage >= 0 
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                              }`}>
+                                {detailedReport.comparison.changes.revenueChangePercentage >= 0 ? (
+                                  <TrendingUp className="h-4 w-4 mr-1" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4 mr-1" />
+                                )}
+                                {formatPercentage(detailedReport.comparison.changes.revenueChangePercentage)}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm text-gray-500">Orders Change</p>
+                              <div className={`flex items-center justify-center mt-2 ${
+                                detailedReport.comparison.changes.orderChangePercentage >= 0 
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                              }`}>
+                                {detailedReport.comparison.changes.orderChangePercentage >= 0 ? (
+                                  <TrendingUp className="h-4 w-4 mr-1" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4 mr-1" />
+                                )}
+                                {formatPercentage(detailedReport.comparison.changes.orderChangePercentage)}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm text-gray-500">AOV Change</p>
+                              <div className={`flex items-center justify-center mt-2 ${
+                                detailedReport.comparison.changes.aovChangePercentage >= 0 
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                              }`}>
+                                {detailedReport.comparison.changes.aovChangePercentage >= 0 ? (
+                                  <TrendingUp className="h-4 w-4 mr-1" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4 mr-1" />
+                                )}
+                                {formatPercentage(detailedReport.comparison.changes.aovChangePercentage)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Top Products Tab */}
+                {activeTab === 'products' && detailedReport?.topProducts && (
+                  <div className="space-y-4">
+                    {detailedReport.topProducts.map((product, index) => (
+                      <div key={product.product._id} className="card">
+                        <div className="card-content">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">#{index + 1}</span>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900">{product.product.name}</h4>
+                                <p className="text-sm text-gray-500">Category: {typeof product.product?.category === 'object' ? (product.product?.category?.name ?? 'N/A') : (product.product?.category || 'N/A')}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-semibold text-gray-900">
+                                {formatCurrency(product.metrics.totalRevenue)}
+                              </p>
+                              <div className={`text-sm ${
+                                product.trend.revenueChangePercentage >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {product.trend.revenueChangePercentage >= 0 ? (
+                                  <TrendingUp className="h-4 w-4 inline mr-1" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4 inline mr-1" />
+                                )}
+                                {formatPercentage(product.trend.revenueChangePercentage)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-500">Quantity</p>
+                              <p className="font-medium">{product.metrics.totalQuantity}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Orders</p>
+                              <p className="font-medium">{product.metrics.totalOrders}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Profit</p>
+                              <p className="font-medium">{formatCurrency(product.metrics.profit)}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Margin</p>
+                              <p className="font-medium">{product.metrics.margin.toFixed(1)}%</p>
+                            </div>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
+                )}
 
-                  {/* Comparison */}
-                  {detailedReport.comparison && (
-                    <div className="bg-white/40 backdrop-blur-md rounded-xl border border-white/40 shadow-sm overflow-hidden">
-                      <div className="px-6 py-4 border-b border-white/20 bg-white/20">
-                        <h3 className="text-lg font-bold text-gray-900">Period Comparison</h3>
-                      </div>
-                      <div className="p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                          {[
-                            { label: 'Revenue Change', value: detailedReport.comparison.changes.revenueChangePercentage },
-                            { label: 'Orders Change', value: detailedReport.comparison.changes.orderChangePercentage },
-                            { label: 'AOV Change', value: detailedReport.comparison.changes.aovChangePercentage }
-                          ].map((item, i) => (
-                            <div key={i} className="text-center group">
-                              <p className="text-sm font-medium text-gray-500 mb-3">{item.label}</p>
-                              <div className={`inline-flex items-center justify-center px-4 py-2 rounded-full text-lg font-bold transition-transform group-hover:scale-110 ${
-                                item.value >= 0 ? 'text-green-600 bg-green-50/50' : 'text-red-600 bg-red-50/50'
-                              }`}>
-                                {item.value >= 0 ? <TrendingUp className="h-5 w-5 mr-2" /> : <TrendingDown className="h-5 w-5 mr-2" />}
-                                {formatPercentage(item.value)}
+                {/* Top Customers Tab */}
+                {activeTab === 'customers' && detailedReport?.topCustomers && (
+                  <div className="space-y-4">
+                    {detailedReport.topCustomers.map((customer, index) => (
+                      <div key={customer.customer._id} className="card">
+                        <div className="card-content">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-green-600">#{index + 1}</span>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900">{customer.customer.displayName}</h4>
+                                <p className="text-sm text-gray-500 capitalize">
+                                  {customer.customer.businessType} • {customer.customer.customerTier}
+                                </p>
                               </div>
                             </div>
-                          ))}
+                            <div className="text-right">
+                              <div>
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">Revenue</p>
+                                <p className="text-lg font-semibold text-gray-900">
+                                  {formatCurrency(customer.metrics.totalRevenue)}
+                                </p>
+                                <div className={`text-sm ${
+                                  customer.trend.revenueChangePercentage >= 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {customer.trend.revenueChangePercentage >= 0 ? (
+                                    <TrendingUp className="h-4 w-4 inline mr-1" />
+                                  ) : (
+                                    <TrendingDown className="h-4 w-4 inline mr-1" />
+                                  )}
+                                  {formatPercentage(customer.trend.revenueChangePercentage)}
+                                </div>
+                              </div>
+                              <div className="mt-2">
+                                <p className="text-xs text-gray-500 uppercase tracking-wide">Profit</p>
+                                <p className="text-base font-semibold text-gray-900">
+                                  {formatCurrency(customer.metrics.totalProfit)}
+                                </p>
+                                <div className={`text-sm ${
+                                  customer.trend.profitChangePercentage >= 0 ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {customer.trend.profitChangePercentage >= 0 ? (
+                                    <TrendingUp className="h-4 w-4 inline mr-1" />
+                                  ) : (
+                                    <TrendingDown className="h-4 w-4 inline mr-1" />
+                                  )}
+                                  {formatPercentage(customer.trend.profitChangePercentage)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-500">Orders</p>
+                              <p className="font-medium">{customer.metrics.totalOrders}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Avg Order Value</p>
+                              <p className="font-medium">{formatCurrency(customer.metrics.averageOrderValue)}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Last Order</p>
+                              <p className="font-medium">{formatDate(customer.metrics.lastOrderDate)}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Margin</p>
+                              <p className="font-medium">{customer.metrics.margin?.toFixed(1) || 0}%</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
-              {/* Top Products Tab */}
-              {activeTab === 'products' && detailedReport?.topProducts && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {detailedReport.topProducts.map((product, index) => (
-                    <div key={product.product._id} className="bg-white/40 backdrop-blur-md rounded-xl p-5 border border-white/40 shadow-sm hover:shadow-md transition-all group">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex-shrink-0 w-10 h-10 bg-blue-100/50 rounded-lg flex items-center justify-center font-bold text-blue-600 border border-blue-200/50">
-                            {index + 1}
+                {/* Top Sales Reps Tab */}
+                {activeTab === 'salesreps' && detailedReport?.topSalesReps && (
+                  <div className="space-y-4">
+                    {detailedReport.topSalesReps.map((salesRep, index) => (
+                      <div key={salesRep.salesRep._id} className="card">
+                        <div className="card-content">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-purple-600">#{index + 1}</span>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900">
+                                  {salesRep.salesRep.firstName} {salesRep.salesRep.lastName}
+                                </h4>
+                                <p className="text-sm text-gray-500">{salesRep.salesRep.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-semibold text-gray-900">
+                                {formatCurrency(salesRep.metrics.totalRevenue)}
+                              </p>
+                              <div className={`text-sm ${
+                                salesRep.trend.revenueChangePercentage >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {salesRep.trend.revenueChangePercentage >= 0 ? (
+                                  <TrendingUp className="h-4 w-4 inline mr-1" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4 inline mr-1" />
+                                )}
+                                {formatPercentage(salesRep.trend.revenueChangePercentage)}
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{product.product.name}</h4>
-                            <p className="text-xs text-gray-500 font-medium uppercase">{typeof product.product?.category === 'object' ? (product.product?.category?.name ?? 'N/A') : (product.product?.category || 'N/A')}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-gray-900">
-                            {formatCurrency(product.metrics.totalRevenue)}
-                          </p>
-                          <div className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${
-                            product.trend.revenueChangePercentage >= 0 ? 'text-green-600 bg-green-50/50' : 'text-red-600 bg-red-50/50'
-                          }`}>
-                            {product.trend.revenueChangePercentage >= 0 ? '+' : ''}{product.trend.revenueChangePercentage.toFixed(1)}%
+                          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-500">Orders</p>
+                              <p className="font-medium">{salesRep.metrics.totalOrders}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Customers</p>
+                              <p className="font-medium">{salesRep.metrics.totalCustomers}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Conversion Rate</p>
+                              <p className="font-medium">{(salesRep.metrics.conversionRate * 100).toFixed(1)}%</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Avg Order Value</p>
+                              <p className="font-medium">{formatCurrency(salesRep.metrics.averageOrderValue)}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-4 gap-2 pt-4 border-t border-white/20">
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold">Qty</p>
-                          <p className="text-sm font-bold text-gray-900">{product.metrics.totalQuantity}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold">Orders</p>
-                          <p className="text-sm font-bold text-gray-900">{product.metrics.totalOrders}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold">Profit</p>
-                          <p className="text-sm font-bold text-gray-900">{formatCurrency(product.metrics.profit)}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold">Margin</p>
-                          <p className="text-sm font-bold text-gray-900">{product.metrics.margin.toFixed(1)}%</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
-              {/* Top Customers Tab */}
-              {activeTab === 'customers' && detailedReport?.topCustomers && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {detailedReport.topCustomers.map((customer, index) => (
-                    <div key={customer.customer._id} className="bg-white/40 backdrop-blur-md rounded-xl p-5 border border-white/40 shadow-sm hover:shadow-md transition-all group">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex-shrink-0 w-10 h-10 bg-green-100/50 rounded-lg flex items-center justify-center font-bold text-green-600 border border-green-200/50">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <h4 className="text-base font-bold text-gray-900 group-hover:text-green-600 transition-colors">{customer.customer.displayName}</h4>
-                            <p className="text-xs text-gray-500 font-medium uppercase">
-                              {customer.customer.businessType} • {customer.customer.customerTier}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-gray-900">
-                            {formatCurrency(customer.metrics.totalRevenue)}
-                          </p>
-                          <div className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full inline-block ${
-                            customer.trend.revenueChangePercentage >= 0 ? 'text-green-600 bg-green-50/50' : 'text-red-600 bg-red-50/50'
-                          }`}>
-                            {customer.trend.revenueChangePercentage >= 0 ? '+' : ''}{customer.trend.revenueChangePercentage.toFixed(1)}%
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 pt-4 border-t border-white/20">
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold">Orders</p>
-                          <p className="text-sm font-bold text-gray-900">{customer.metrics.totalOrders}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold">AOV</p>
-                          <p className="text-sm font-bold text-gray-900">{formatCurrency(customer.metrics.averageOrderValue)}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold">Profit</p>
-                          <p className="text-sm font-bold text-gray-900">{formatCurrency(customer.metrics.totalProfit)}</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] text-gray-500 uppercase font-bold">Margin</p>
-                          <p className="text-sm font-bold text-gray-900">{customer.metrics.margin?.toFixed(1) || 0}%</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Insights Tab */}
-              {activeTab === 'insights' && detailedReport?.insights && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {detailedReport.insights.map((insight, index) => (
-                    <div key={index} className={`backdrop-blur-md rounded-xl p-6 border transition-all hover:shadow-lg ${getInsightColor(insight.type)}`}>
-                      <div className="flex items-start">
-                        <div className="p-2 bg-white/50 rounded-lg border border-white/40 shadow-sm">
+                {/* Insights Tab */}
+                {activeTab === 'insights' && detailedReport?.insights && (
+                  <div className="space-y-4">
+                    {detailedReport.insights.map((insight, index) => (
+                      <div key={index} className={`border rounded-lg p-4 ${getInsightColor(insight.type)}`}>
+                        <div className="flex items-start">
                           {getInsightIcon(insight.type)}
-                        </div>
-                        <div className="ml-4 flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-base font-bold text-gray-900">{insight.title}</h4>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                              insight.impact === 'high' ? 'bg-red-500 text-white' :
-                              insight.impact === 'medium' ? 'bg-yellow-500 text-white' :
-                              'bg-green-500 text-white'
+                          <div className="ml-3 flex-1">
+                            <h4 className="text-sm font-medium text-gray-900">{insight.title}</h4>
+                            <p className="mt-1 text-sm text-gray-600">{insight.description}</p>
+                            {insight.actionable && insight.suggestedActions && insight.suggestedActions.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-sm font-medium text-gray-700">Suggested Actions:</p>
+                                <ul className="mt-1 text-sm text-gray-600 list-disc list-inside">
+                                  {insight.suggestedActions.map((action, actionIndex) => (
+                                    <li key={actionIndex}>{action}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-3">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              insight.impact === 'high' ? 'bg-red-100 text-red-800' :
+                              insight.impact === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
                             }`}>
-                              {insight.impact}
+                              {insight.impact} impact
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 leading-relaxed">{insight.description}</p>
-                          {insight.actionable && insight.suggestedActions?.length > 0 && (
-                            <div className="mt-4 bg-white/30 rounded-lg p-3 border border-white/20">
-                              <p className="text-xs font-bold text-gray-700 uppercase mb-2">Recommended Actions:</p>
-                              <ul className="space-y-1">
-                                {insight.suggestedActions.map((action, ai) => (
-                                  <li key={ai} className="text-xs text-gray-600 flex items-start">
-                                    <span className="text-blue-500 mr-2">•</span>
-                                    {action}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="bg-gray-50 px-6 py-4 flex justify-between">
+            <div className="text-sm text-gray-500">
+              Report ID: {report.reportId}
             </div>
-          )}
+            <div className="flex space-x-3">
+              <Button
+                onClick={onClose}
+                variant="secondary"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
-    </BaseModal>
+    </div>
   );
 };
 

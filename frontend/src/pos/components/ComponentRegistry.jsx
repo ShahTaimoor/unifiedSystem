@@ -5,6 +5,7 @@ const componentLoader = {
   '/dashboard': () => import('../pages/Dashboard').then(module => module.default || module.Dashboard),
   '/sales': () => import('../pages/Sales').then(module => module.Sales),
   '/purchase': () => import('../pages/Purchase').then(module => module.Purchase),
+  '/import-purchase': () => import('../pages/ImportPurchase').then(module => module.default || module.ImportPurchase),
   '/products': () => import('../pages/Products').then(module => module.default || module.Products),
   '/customers': () => import('../pages/Customers').then(module => module.Customers),
   '/customer-analytics': () => import('../pages/CustomerAnalytics').then(module => module.default || module.CustomerAnalytics),
@@ -18,7 +19,7 @@ const componentLoader = {
   '/sales-orders': () => import('../pages/SalesOrders').then(module => module.SalesOrders),
   '/purchase-orders': () => import('../pages/PurchaseOrders').then(module => module.PurchaseOrders),
   '/purchase-invoices': () => import('../pages/PurchaseInvoices').then(module => module.default || module.PurchaseInvoices),
-  '/purchase-by-supplier': () => import('../pages/PurchaseBySupplierReport').then(module => module.default),
+  '/market-prices': () => import('../pages/MarketPrices').then(module => module.default || module.MarketPrices),
   '/reports': () => import('../pages/Reports').then(module => module.Reports),
   '/pl-statements': () => import('../pages/PLStatements').then(module => module.PLStatements),
   '/balance-sheet-statement': () => import('../pages/BalanceSheetStatement').then(module => module.BalanceSheetStatement),
@@ -57,6 +58,11 @@ export const componentRegistry = {
   },
   '/purchase': {
     title: 'Purchase',
+    icon: 'Truck',
+    allowMultiple: true
+  },
+  '/import-purchase': {
+    title: 'Import Purchase',
     icon: 'Truck',
     allowMultiple: true
   },
@@ -117,9 +123,10 @@ export const componentRegistry = {
     icon: 'Search',
     allowMultiple: true
   },
-  '/purchase-by-supplier': {
-    title: 'Products by Supplier',
-    icon: 'BarChart3'
+  '/market-prices': {
+    title: 'Current Purchase Market Prices',
+    icon: 'Tag',
+    allowMultiple: true
   },
   '/reports': {
     title: 'Reports',
@@ -165,7 +172,7 @@ export const componentRegistry = {
     allowMultiple: true
   },
   '/cash-receiving': {
-    title: 'Cash Receiving',
+    title: 'Multi Cash Receipt',
     icon: 'Receipt',
     allowMultiple: true
   },

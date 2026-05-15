@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { Button } from '@/pos/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 /**
  * BaseModal - Reusable modal overlay and container
@@ -23,7 +23,7 @@ import { Button } from '@/pos/components/ui/button';
  *   - className: string - Additional classes for the content container
  *   - contentClassName: string - Additional classes for scrollable content area
  *   - headerClassName: string - Additional classes for header
- *   - zIndex: number - z-index for overlay (default: 50)
+ *   - footerClassName: string - Extra classes on footer wrapper (optional)
  */
 const BaseModal = ({
   isOpen,
@@ -42,7 +42,8 @@ const BaseModal = ({
   contentClassName = '',
   headerClassName = '',
   zIndex = 50,
-  footer
+  footer,
+  footerClassName = '',
 }) => {
   useEffect(() => {
     if (!isOpen) return;
@@ -68,7 +69,7 @@ const BaseModal = ({
   }, [isOpen, onClose, closeOnEscape, lockBodyScroll]);
 
   const handleBackdropClick = (e) => {
-    if (closeOnBackdrop) {
+    if (e.target === e.currentTarget && closeOnBackdrop) {
       onClose();
     }
   };
@@ -93,17 +94,18 @@ const BaseModal = ({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-slate-950/30 backdrop-blur-sm z-50 overflow-auto transition-all duration-300"
+      className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 overflow-auto"
       style={{ zIndex }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
     >
-      <div className={`${wrapperClasses} flex ${variant === 'centered' ? 'items-center justify-center min-h-full' : 'pt-10 sm:pt-20'} relative w-full min-w-0`}>
+      <div className={`${wrapperClasses} flex ${variant === 'centered' ? 'items-center justify-center min-h-full' : 'pt-20'} relative w-full min-w-0`}>
         <div
-          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-2xl rounded-xl bg-white border border-gray-200 flex flex-col transition-all duration-300 animate-in zoom-in-95 ${variant === 'scrollable' ? 'max-h-[90vh]' : ''
-            } ${className}`}
+          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-lg rounded-md bg-white flex flex-col ${
+            variant === 'scrollable' ? 'max-h-[90vh]' : ''
+          } ${className}`}
           onClick={(e) => e.stopPropagation()}
         >
           {(title || subtitle || headerExtra || showCloseButton) && (
@@ -135,13 +137,15 @@ const BaseModal = ({
           )}
 
           <div
-            className={`flex-1 ${variant === 'scrollable' ? 'overflow-y-auto' : ''} ${contentClassName}`}
+            className={`${
+              variant === 'scrollable' ? 'min-h-0 flex-1 overflow-y-auto' : 'flex-none overflow-visible'
+            } ${contentClassName}`}
           >
             {children}
           </div>
 
           {footer && (
-            <div className="flex-shrink-0 p-5 border-t border-gray-100 bg-slate-50/50 rounded-b-xl">
+            <div className={`flex-shrink-0 p-5 border-t border-gray-200 bg-gray-50 rounded-b-md ${footerClassName}`}>
               {footer}
             </div>
           )}

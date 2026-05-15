@@ -18,7 +18,7 @@ import { useGetAnomaliesQuery, useGetSummaryQuery } from '../store/services/anom
 import { formatCurrency } from '../utils/formatters';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { showErrorToast, handleApiError } from '../utils/errorHandler';
-import { Button } from '@/pos/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 const AnomalyDetection = () => {
   const [filters, setFilters] = useState({
@@ -40,7 +40,7 @@ const AnomalyDetection = () => {
 
   React.useEffect(() => {
     if (error) {
-      showErrorToast(handleApiError(error));
+      showErrorToast(error);
     }
   }, [error]);
 

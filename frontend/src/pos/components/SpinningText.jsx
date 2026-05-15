@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/pos/lib/utils';
+import { cn } from '@/lib/utils';
 
 const SpinningText = ({
   text = 'LOADING — LOADING — ',

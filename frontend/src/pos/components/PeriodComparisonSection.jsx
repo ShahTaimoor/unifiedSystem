@@ -53,7 +53,7 @@ export const PeriodComparisonSection = ({
     const field = fieldMap[metric.title] || 'total';
     const currentValue = extractValue(mainComparison.currentData, field);
     const previousValue = extractValue(mainComparison.previousData, field);
-
+    
     const percentageChange = previousValue !== 0 && previousValue !== null
       ? ((currentValue - previousValue) / previousValue) * 100
       : currentValue > 0 ? 100 : 0;
@@ -80,10 +80,10 @@ export const PeriodComparisonSection = ({
   // Combined chart data: one row per metric with current & previous
   const combinedChartData = comparisons.length > 0
     ? comparisons.map((c) => ({
-      metric: c.title.replace('Total ', '').replace(' ', '\n'),
-      current: c.currentValue,
-      previous: c.previousValue
-    }))
+        metric: c.title.replace('Total ', '').replace(' ', '\n'),
+        current: c.currentValue,
+        previous: c.previousValue
+      }))
     : [];
 
   return (
@@ -127,7 +127,7 @@ export const PeriodComparisonSection = ({
       {!isLoading && (
         <>
           {/* Summary cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {comparisons.map((comparison, index) => (
               <PeriodComparisonCard
                 key={index}
@@ -198,5 +198,4 @@ export const PeriodComparisonSection = ({
 };
 
 export default PeriodComparisonSection;
-
 

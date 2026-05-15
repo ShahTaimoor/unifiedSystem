@@ -1,5 +1,5 @@
-import { Input } from '@/pos/components/ui/input';
-import { cn } from '@/pos/lib/utils';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 /**
  * Shared header for order/detail cards: section title + "Show details" checkbox.

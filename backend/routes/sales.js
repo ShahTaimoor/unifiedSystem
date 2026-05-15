@@ -5,6 +5,7 @@ const path = require('path');
 const StockMovementService = require('../services/stockMovementService');
 const salesService = require('../services/salesService');
 const AccountingService = require('../services/accountingService');
+const { query: pgQuery } = require('../config/postgres');
 const profitDistributionService = require('../services/profitDistributionService');
 const salesRepository = require('../repositories/SalesRepository');
 const productRepository = require('../repositories/ProductRepository');
@@ -220,18 +221,15 @@ router.get('/period-summary', [
     dateTo.setDate(dateTo.getDate() + 1);
     dateTo.setHours(0, 0, 0, 0);
 
-    const raw = await salesRepository.findByDateRange(dateFrom, dateTo);
-    const orders = Array.isArray(raw) ? raw : [];
-    const totalRevenue = orders.reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0);
-    const totalOrders = orders.length;
-    const itemsArr = (o) => (o && Array.isArray(o.items) ? o.items : []);
-    const totalItems = orders.reduce((sum, order) =>
-      sum + itemsArr(order).reduce((itemSum, item) => itemSum + (item.quantity || 0), 0), 0);
+    const agg = await salesRepository.getDashboardSaleAggregates(dateFrom, dateTo);
+    const totalRevenue = agg.totalRevenue;
+    const totalOrders = agg.totalOrders;
+    const totalItems = agg.totalItems;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const totalDiscounts = orders.reduce((sum, order) => sum + (parseFloat(order?.discount) || 0), 0);
+    const totalDiscounts = agg.totalDiscounts;
     const revenueByType = {
-      retail: orders.filter(o => o && o.order_type === 'retail').reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0),
-      wholesale: orders.filter(o => o && o.order_type === 'wholesale').reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0)
+      retail: agg.revRetail,
+      wholesale: agg.revWholesale
     };
     const summary = {
       total: totalRevenue,
@@ -654,6 +652,9 @@ router.put('/:id', [
       order.payment.amountPaid = amt;
       order.payment.status = amt >= (parseFloat(order.pricing?.total ?? order.total) || 0) ? 'paid' : (amt > 0 ? 'partial' : 'pending');
     }
+    if (req.body.paymentMethod !== undefined) {
+      order.payment.method = req.body.paymentMethod || order.payment.method || 'cash';
+    }
 
     if (req.body.isTaxExempt !== undefined) {
       order.pricing.isTaxExempt = !!req.body.isTaxExempt;
@@ -666,10 +667,6 @@ router.put('/:id', [
 
       // Validate products and stock availability
       for (const item of req.body.items) {
-        // Handle manual items
-        const isManual = item.isManual || (typeof item.product === 'string' && item.product.startsWith('manual_'));
-        if (isManual) continue;
-
         // Try to find as product first, then as variant
         let product = await productRepository.findById(item.product);
         let isVariant = false;
@@ -717,39 +714,32 @@ router.put('/:id', [
       const newOrderItems = [];
 
       for (const item of req.body.items) {
-        // Handle manual items
-        const isManual = item.isManual || (typeof item.product === 'string' && item.product.startsWith('manual_'));
-        
-        let productForTax = null;
-        if (!isManual) {
-          // Try to find as product first, then as variant (for tax rate and cost)
-          productForTax = await productRepository.findById(item.product);
-          if (!productForTax) {
-            productForTax = await productVariantRepository.findById(item.product);
+        // Try to find as product first, then as variant (for tax rate and cost)
+        let productForTax = await productRepository.findById(item.product);
+        let isVariantForTax = false;
+        if (!productForTax) {
+          productForTax = await productVariantRepository.findById(item.product);
+          if (productForTax) {
+            isVariantForTax = true;
           }
         }
 
-        const itemSubtotal = (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0);
-        const itemDiscount = itemSubtotal * ((Number(item.discountPercent || 0)) / 100);
+        const itemSubtotal = item.quantity * item.unitPrice;
+        const itemDiscount = itemSubtotal * ((item.discountPercent || 0) / 100);
         const itemTaxable = itemSubtotal - itemDiscount;
         const taxRate = globalTax.rateDecimal;
         const itemTax = itemTaxable * taxRate;
 
-        // Get unit cost for P&L (COGS) - use provided cost for manual, DB cost for real products
-        let unitCost = Number(item.unitCost ?? item.cost_price ?? 0);
-        
-        if (!isManual && productForTax) {
-          const productId = productForTax.id || productForTax._id;
+        // Get unit cost for P&L (COGS) - same logic as createSale
+        let unitCost = 0;
+        const productId = productForTax?.id || productForTax?._id;
+        if (productId) {
           const inv = await inventoryRepository.findByProduct(productId);
-          let dbUnitCost = 0;
           if (inv && inv.cost) {
             const costObj = typeof inv.cost === 'string' ? JSON.parse(inv.cost) : inv.cost;
-            dbUnitCost = costObj.average ?? costObj.lastPurchase ?? 0;
+            unitCost = costObj.average ?? costObj.lastPurchase ?? 0;
           }
-          if (dbUnitCost === 0) dbUnitCost = productForTax.pricing?.cost ?? productForTax.cost_price ?? 0;
-          
-          // Only overwrite if DB cost is found, otherwise trust the request (allows manual overrides)
-          if (dbUnitCost > 0) unitCost = dbUnitCost;
+          if (unitCost === 0) unitCost = productForTax?.pricing?.cost ?? productForTax?.cost_price ?? 0;
         }
 
         newOrderItems.push({
@@ -863,6 +853,9 @@ router.put('/:id', [
       updateData.amountPaid = parseFloat(req.body.amountReceived) || 0;
       updateData.paymentStatus = order.payment?.status ?? (updateData.amountPaid >= (parseFloat(order.pricing?.total ?? order.total) || 0) ? 'paid' : (updateData.amountPaid > 0 ? 'partial' : 'pending'));
     }
+    if (req.body.paymentMethod !== undefined) {
+      updateData.paymentMethod = req.body.paymentMethod || order.payment?.method || order.payment_method || 'cash';
+    }
     if (req.body.orderType !== undefined) {
       updateData.orderType = req.body.orderType;
     }
@@ -890,7 +883,8 @@ router.put('/:id', [
             total: newTotal,
             transactionDate: billDateChanged ? newSaleDate : undefined,
             customerId: customerChanged ? customerIdForLedger : undefined,
-            referenceNumber: refNum
+            referenceNumber: refNum,
+            notes: updatedOrder.notes
           });
         }
       }
@@ -899,23 +893,53 @@ router.put('/:id', [
     }
 
     // Post amount received change to account ledger so balance reflects the update
-    if (!customerChanged && req.body.amountReceived !== undefined) {
+    if (req.body.amountReceived !== undefined) {
       const oldAmountPaid = parseFloat(order.amount_paid) || 0;
       const newAmountPaid = parseFloat(req.body.amountReceived) || 0;
+      const paymentMethodForAdjustment = req.body.paymentMethod || order.payment_method || order.payment?.method || 'cash';
+      const pmAdj = String(paymentMethodForAdjustment || 'cash').toLowerCase();
+      const bankIdForAdjustment = pmAdj === 'bank' || pmAdj === 'bank_transfer'
+        ? (req.body.bankAccount || req.body.payment?.bankAccount || null)
+        : null;
       if (Math.abs(newAmountPaid - oldAmountPaid) >= 0.01) {
         try {
+          const customerIdForPaymentLedger =
+            customerIdForLedger ?? updatedOrder?.customer_id ?? updatedOrder?.customer ?? order.customer ?? order.customer_id;
           await AccountingService.recordSalePaymentAdjustment({
             saleId: order.id || order._id,
             orderNumber: order.order_number || order.orderNumber,
-            customerId: order.customer_id,
+            customerId: customerIdForPaymentLedger,
             oldAmountPaid,
             newAmountPaid,
-            paymentMethod: order.payment_method || order.payment?.method || 'cash',
+            paymentMethod: paymentMethodForAdjustment,
+            bankId: bankIdForAdjustment,
+            transactionDate: newSaleDate || new Date(),
             createdBy: req.user?.id || req.user?._id
           });
         } catch (ledgerErr) {
           console.error('Failed to post sale payment adjustment to ledger:', ledgerErr);
         }
+      }
+    }
+
+    // Keep sale-payment ledger bank mapping in sync even when amount does not change.
+    if (req.body.paymentMethod !== undefined) {
+      const paymentMethodForBankSync = req.body.paymentMethod || order.payment_method || order.payment?.method || 'cash';
+      const pmSync = String(paymentMethodForBankSync || 'cash').toLowerCase();
+      const bankIdForBankSync = pmSync === 'bank' || pmSync === 'bank_transfer'
+        ? (req.body.bankAccount || req.body.payment?.bankAccount || null)
+        : null;
+      try {
+        await pgQuery(
+          `UPDATE account_ledger
+           SET bank_id = $1
+           WHERE reference_type = 'sale_payment'
+             AND reference_id::text = $2
+             AND reversed_at IS NULL`,
+          [bankIdForBankSync, String(req.params.id)]
+        );
+      } catch (bankSyncErr) {
+        console.error('Failed to sync sale payment bank mapping on edit:', bankSyncErr);
       }
     }
 
@@ -1019,7 +1043,7 @@ router.put('/:id', [
     let finalOrder = updatedOrder || order;
     try {
       finalOrder = await salesService.getSalesOrderById(finalOrder.id || finalOrder._id);
-    } catch (e) {
+    } catch(e) {
       console.error('Failed to get fully enriched order on update:', e);
     }
 
@@ -1173,29 +1197,20 @@ router.get('/today/summary', [
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
 
-    const raw = await salesRepository.findByDateRange(startOfDay, endOfDay);
-    const orders = Array.isArray(raw) ? raw : [];
-
-    const totalRev = orders.reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0);
-    const itemsArr = (o) => (o && Array.isArray(o.items) ? o.items : []);
-    const totalItems = orders.reduce((sum, order) =>
-      sum + itemsArr(order).reduce((itemSum, item) => itemSum + (item.quantity || 0), 0), 0);
+    const agg = await salesRepository.getDashboardSaleAggregates(startOfDay, endOfDay);
+    const totalRev = agg.totalRevenue;
     const summary = {
-      totalOrders: orders.length,
+      totalOrders: agg.totalOrders,
       totalRevenue: totalRev,
-      totalItems: totalItems,
-      averageOrderValue: orders.length > 0 ? totalRev / orders.length : 0,
+      totalItems: agg.totalItems,
+      averageOrderValue: agg.totalOrders > 0 ? totalRev / agg.totalOrders : 0,
       orderTypes: {
-        retail: orders.filter(o => o && o.order_type === 'retail').length,
-        wholesale: orders.filter(o => o && o.order_type === 'wholesale').length,
-        return: orders.filter(o => o && o.order_type === 'return').length,
-        exchange: orders.filter(o => o && o.order_type === 'exchange').length
+        retail: agg.cntRetail,
+        wholesale: agg.cntWholesale,
+        return: agg.cntReturn,
+        exchange: agg.cntExchange
       },
-      paymentMethods: orders.reduce((acc, order) => {
-        const m = order?.payment_method || 'cash';
-        acc[m] = (acc[m] || 0) + 1;
-        return acc;
-      }, {})
+      paymentMethods: agg.paymentMethods
     };
 
     res.json({ summary });
@@ -1225,18 +1240,15 @@ router.get('/period/summary', [
     dateTo.setDate(dateTo.getDate() + 1);
     dateTo.setHours(0, 0, 0, 0);
 
-    const raw = await salesRepository.findByDateRange(dateFrom, dateTo);
-    const orders = Array.isArray(raw) ? raw : [];
-    const totalRevenue = orders.reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0);
-    const totalOrders = orders.length;
-    const itemsArr = (o) => (o && Array.isArray(o.items) ? o.items : []);
-    const totalItems = orders.reduce((sum, order) =>
-      sum + itemsArr(order).reduce((itemSum, item) => itemSum + (item.quantity || 0), 0), 0);
+    const agg = await salesRepository.getDashboardSaleAggregates(dateFrom, dateTo);
+    const totalRevenue = agg.totalRevenue;
+    const totalOrders = agg.totalOrders;
+    const totalItems = agg.totalItems;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const totalDiscounts = orders.reduce((sum, order) => sum + (parseFloat(order?.discount) || 0), 0);
+    const totalDiscounts = agg.totalDiscounts;
     const revenueByType = {
-      retail: orders.filter(o => o && o.order_type === 'retail').reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0),
-      wholesale: orders.filter(o => o && o.order_type === 'wholesale').reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0)
+      retail: agg.revRetail,
+      wholesale: agg.revWholesale
     };
     const summary = {
       total: totalRevenue,

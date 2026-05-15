@@ -4,6 +4,7 @@ const categoryRepository = require('../repositories/postgres/CategoryRepository'
 const inventoryRepository = require('../repositories/postgres/InventoryRepository');
 const investorRepository = require('../repositories/postgres/InvestorRepository');
 const AccountingService = require('./accountingService');
+const settingsService = require('./settingsService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -98,7 +99,7 @@ function toApiProduct(row, categoryMap = null) {
     updated_at: row.updated_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    imageUrl: row.image_url || row.imageUrl || null
+    imageUrl: row.image_url || null
   };
 }
 
@@ -149,14 +150,12 @@ class ProductServicePostgres {
     } else if (queryParams.search) {
       filters.search = queryParams.search;
     }
-    if (queryParams.category && queryParams.category !== 'all' && isValidUuid(queryParams.category)) {
-      filters.categoryId = queryParams.category;
-    }
+    if (queryParams.category) filters.categoryId = queryParams.category;
     else if (queryParams.categories) {
       try {
         const arr = JSON.parse(queryParams.categories);
         if (Array.isArray(arr) && arr.length > 0) filters.categoryId = arr[0];
-      } catch (_) { }
+      } catch (_) {}
     }
     if (queryParams.status === 'active') filters.isActive = true;
     else if (queryParams.status === 'inactive') filters.isActive = false;
@@ -193,16 +192,6 @@ class ProductServicePostgres {
     if (!getAll && (!Number.isFinite(limit) || limit < 1)) limit = 20;
 
     const filters = this.buildFilter(queryParams);
-    if (queryParams.category && queryParams.category !== 'all' && !isValidUuid(queryParams.category)) {
-      const resolvedId = await resolveCategoryId(queryParams.category);
-      if (resolvedId) {
-        filters.categoryId = resolvedId;
-      } else {
-        // If category name doesn't exist, force empty result or ignore filter?
-        // Let's ignore it for now or set to a non-existent UUID.
-        filters.categoryId = '00000000-0000-0000-0000-000000000000';
-      }
-    }
     const listMode = queryParams.listMode === 'minimal' ? 'minimal' : 'full';
     const result = await productRepository.findWithPagination(filters, {
       page,
@@ -520,7 +509,7 @@ class ProductServicePostgres {
               // Ensure product has the required field from the repository update result
               const cost = Number(product.cost_price ?? product.costPrice ?? 0);
               const validatedUserId = isValidUuid(userId) ? userId : null;
-
+              
               await AccountingService.recordStockAdjustment(id, delta, cost, {
                 createdBy: validatedUserId,
                 reason: updateData.reason || 'Manual Adjustment'
@@ -638,6 +627,29 @@ class ProductServicePostgres {
     const ids = [...new Set(productIds.map(id => String(id)).filter(Boolean))];
     if (ids.length === 0) return prices;
     try {
+      const companySettings = await settingsService.getCompanySettings();
+      const useMarketPurchasePrices = companySettings?.orderSettings?.useMarketPurchasePrices === true;
+      if (useMarketPurchasePrices) {
+        const marketResult = await query(
+          `SELECT DISTINCT ON (product_id) product_id, purchase_price, effective_date
+           FROM market_purchase_prices
+           WHERE product_id = ANY($1::uuid[])
+           ORDER BY product_id, created_at DESC, id DESC`,
+          [ids]
+        );
+        for (const row of marketResult.rows || []) {
+          const pid = row.product_id && (row.product_id.toString ? row.product_id.toString() : String(row.product_id));
+          if (pid) {
+            prices[pid] = {
+              productId: pid,
+              lastPurchasePrice: parseFloat(row.purchase_price) || 0,
+              invoiceNumber: null,
+              purchaseDate: row.effective_date || null
+            };
+          }
+        }
+      }
+
       const result = await query(
         `SELECT DISTINCT ON (product_id) product_id, unit_cost as last_purchase_price, reference_number as invoice_number, created_at as purchase_date
          FROM stock_movements
@@ -647,7 +659,7 @@ class ProductServicePostgres {
       );
       for (const row of result.rows || []) {
         const pid = row.product_id && (row.product_id.toString ? row.product_id.toString() : String(row.product_id));
-        if (pid) {
+        if (pid && !prices[pid]) {
           prices[pid] = {
             productId: pid,
             lastPurchasePrice: parseFloat(row.last_purchase_price) || 0,
@@ -687,60 +699,9 @@ class ProductServicePostgres {
     const results = { updated: 0, failed: 0 };
     for (const id of productIds) {
       try {
-        let finalUpdates = { ...updates };
-
-        // Handle Price Updates (increase, decrease, percentage)
-        if (updates.priceType && updates.priceValue !== undefined) {
-          const current = await productRepository.findById(id);
-          if (current) {
-            const priceType = updates.priceType; // 'retail', 'wholesale', 'cost'
-            const method = updates.updateMethod || 'set';
-            const value = Number(updates.priceValue);
-            
-            let currentPrice = 0;
-            if (priceType === 'retail') currentPrice = Number(current.selling_price || 0);
-            else if (priceType === 'wholesale') currentPrice = Number(current.wholesale_price || current.selling_price || 0);
-            else if (priceType === 'cost') currentPrice = Number(current.cost_price || 0);
-
-            let newPrice = value;
-            if (method === 'increase') newPrice = currentPrice + value;
-            else if (method === 'decrease') newPrice = currentPrice - value;
-            else if (method === 'percentage') newPrice = currentPrice * (1 + value / 100);
-
-            finalUpdates = {
-              pricing: {
-                [priceType]: Math.max(0, newPrice)
-              }
-            };
-          }
-        }
-
-        // Handle Stock Adjustments (increase, decrease)
-        if (updates.stockAdjustment !== undefined) {
-          const current = await productRepository.findById(id);
-          if (current) {
-            const method = updates.stockMethod || 'set';
-            const value = Number(updates.stockAdjustment);
-            
-            const existingInv = await inventoryRepository.findOne({ productId: id, product: id });
-            const currentStock = Number(existingInv?.current_stock ?? existingInv?.currentStock ?? current.stock_quantity ?? 0);
-
-            let newStock = value;
-            if (method === 'increase') newStock = currentStock + value;
-            else if (method === 'decrease') newStock = currentStock - value;
-
-            finalUpdates = {
-              inventory: {
-                currentStock: Math.max(0, newStock)
-              }
-            };
-          }
-        }
-
-        await this.updateProduct(id, finalUpdates, null);
+        await this.updateProduct(id, updates, null);
         results.updated++;
-      } catch (err) {
-        console.error(`Bulk update failed for product ${id}:`, err);
+      } catch (_) {
         results.failed++;
       }
     }
@@ -837,7 +798,7 @@ class ProductServicePostgres {
   async bulkCreateProducts(productsData, userId, req = null, options = {}) {
     const { autoCreateCategories = true } = options;
     const results = { created: 0, failed: 0, errors: [] };
-
+    
     for (const item of productsData) {
       try {
         // Map Excel-style fields to DB-style fields (handles both spaces and underscores)
@@ -874,13 +835,13 @@ class ProductServicePostgres {
         results.created++;
       } catch (error) {
         results.failed++;
-        results.errors.push({
-          name: item.name || 'Unknown',
-          error: error.message
+        results.errors.push({ 
+          name: item.name || 'Unknown', 
+          error: error.message 
         });
       }
     }
-
+    
     return results;
   }
 }

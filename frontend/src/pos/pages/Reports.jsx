@@ -1,10 +1,8 @@
-import React, { useState, useMemo, useEffect } from "react";
-import {
-  useTableRowVirtualizer,
-  getVirtualTablePadding,
-} from "../hooks/useTableRowVirtualizer";
-import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { toast } from "sonner";
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
+import { useTableRowVirtualizer, getVirtualTablePadding } from '../hooks/useTableRowVirtualizer';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { toast } from 'sonner';
 import {
   TrendingUp,
   Users,
@@ -22,9 +20,18 @@ import {
   Printer,
   Wallet,
   Building2,
-} from "lucide-react";
-import ExcelExportButton from "../components/ExcelExportButton";
-import PdfExportButton from "../components/PdfExportButton";
+  MoreHorizontal,
+  FileText
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
+import ExcelExportButton from '../components/ExcelExportButton';
+import PdfExportButton from '../components/PdfExportButton';
 import {
   useGetSalesReportQuery,
   useGetProductReportQuery,
@@ -34,28 +41,35 @@ import {
   useGetPartyBalanceReportQuery,
   useGetFinancialReportQuery,
   useGetBankCashSummaryQuery,
-} from "../store/services/reportsApi";
-import { useGetBanksQuery } from "../store/services/banksApi";
-import DateFilter from "../components/DateFilter";
-import PrintReportModal from "../components/PrintReportModal";
-import PageShell from "../components/PageShell";
-import { getCurrentDatePakistan, getDateDaysAgo } from "../utils/dateUtils";
+} from '../store/services/reportsApi';
+import { useGetBanksQuery } from '../store/services/banksApi';
+import { useGetSuppliersQuery } from '../store/services/suppliersApi';
+import DateFilter from '../components/DateFilter';
+import PrintReportModal from '../components/PrintReportModal';
+import PageShell from '../components/PageShell';
+import { getCurrentDatePakistan, getDateDaysAgo } from '../utils/dateUtils';
 
-import { useCompanyInfo } from "../hooks/useCompanyInfo";
+import { useCompanyInfo } from '../hooks/useCompanyInfo';
 
 export const Reports = () => {
   const { companyInfo: companySettings } = useCompanyInfo();
+  
+  // Refs for responsive actions
+  const excelExportRef = useRef(null);
+  const pdfExportRef = useRef(null);
+
   const showCostPrice = companySettings.orderSettings?.showCostPrice !== false;
-  const [activeTab, setActiveTab] = useState("party-balance");
-  const [partyType, setPartyType] = useState("customer");
-  const [salesGroupBy, setSalesGroupBy] = useState("daily");
-  const [inventoryType, setInventoryType] = useState("stock-summary");
-  const [financialType, setFinancialType] = useState("trial-balance");
-  const [inventoryProductSearch, setInventoryProductSearch] = useState("");
-  const debouncedInventoryProductSearch = useDebouncedValue(
-    inventoryProductSearch,
-    400,
-  );
+  const [activeTab, setActiveTab] = useState('party-balance');
+  const [partyType, setPartyType] = useState('customer');
+  const [salesGroupBy, setSalesGroupBy] = useState('daily');
+  const [inventoryType, setInventoryType] = useState('stock-summary');
+  const [financialType, setFinancialType] = useState('trial-balance');
+  const [inventoryProductSearch, setInventoryProductSearch] = useState('');
+  const debouncedInventoryProductSearch = useDebouncedValue(inventoryProductSearch, 400);
+  const [inventorySupplierId, setInventorySupplierId] = useState('');
+  const [inventorySortBy, setInventorySortBy] = useState('name');
+  const [topProductsSupplierId, setTopProductsSupplierId] = useState('');
+  const [topProductsSortBy, setTopProductsSortBy] = useState('revenue');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   /** Party Balances table: client-side paging */
   const [partyBalancePage, setPartyBalancePage] = useState(1);
@@ -66,63 +80,69 @@ export const Reports = () => {
   const [stockSummaryPage, setStockSummaryPage] = useState(1);
   const [stockSummaryPageSize, setStockSummaryPageSize] = useState(50);
   const STOCK_SUMMARY_PAGE_SIZES = [50, 100, 200, 500, 2000, 5000];
-  const INVENTORY_PAGINATED_TYPES = ["stock-summary", "summary", "valuation"];
+  const INVENTORY_PAGINATED_TYPES = ['stock-summary', 'summary', 'valuation'];
   const [dateRange, setDateRange] = useState({
     from: getDateDaysAgo(30),
-    to: getCurrentDatePakistan(),
+    to: getCurrentDatePakistan()
   });
-  const [bankCashFilterMode, setBankCashFilterMode] = useState("month");
-  const [bankCashMonth, setBankCashMonth] = useState(
-    getCurrentDatePakistan().slice(0, 7),
-  );
+  const [bankCashFilterMode, setBankCashFilterMode] = useState('month');
+  const [bankCashMonth, setBankCashMonth] = useState(getCurrentDatePakistan().slice(0, 7));
   const [bankCashDateRange, setBankCashDateRange] = useState({
     from: getDateDaysAgo(30),
-    to: getCurrentDatePakistan(),
+    to: getCurrentDatePakistan()
   });
   const [selectedBankIds, setSelectedBankIds] = useState([]);
+  /** When true, report API calls append `nocache=1` so the backend skips the reports TTL cache (see reportsService.reportsCache). */
+  const [reportNoCache, setReportNoCache] = useState(false);
+
+  const reportNoCacheParams = reportNoCache ? { nocache: '1' } : {};
 
   const handleRefresh = () => {
-    refetchSummary();
-    if (activeTab === "party-balance") refetchParty();
-    if (activeTab === "sales") refetchSales();
-    if (activeTab === "inventory") refetchInventory();
-    if (activeTab === "financial") refetchFinancial();
-    if (activeTab === "bank-cash") refetchBankCash();
+    flushSync(() => {
+      setReportNoCache(true);
+    });
+
+    const promises = [refetchSummary()];
+    if (activeTab === 'party-balance') promises.push(refetchParty());
+    if (activeTab === 'sales') promises.push(refetchSales());
+    if (activeTab === 'top-products') promises.push(refetchProductReport());
+    if (activeTab === 'top-customers') promises.push(refetchCustomerReport());
+    if (activeTab === 'inventory') promises.push(refetchInventory());
+    if (activeTab === 'financial') promises.push(refetchFinancial());
+    if (activeTab === 'bank-cash') promises.push(refetchBankCash());
+
+    Promise.all(promises).finally(() => {
+      setReportNoCache(false);
+    });
   };
+
 
   // Fetch Summary Cards
   const {
     data: summaryData,
     isLoading: summaryLoading,
-    refetch: refetchSummary,
+    refetch: refetchSummary
   } = useGetSummaryCardsQuery({
     dateFrom: dateRange.from,
     dateTo: dateRange.to,
+    ...reportNoCacheParams
   });
 
   // Fetch Party Balance Report
   const {
     data: partyReportData,
     isLoading: partyLoading,
-    refetch: refetchParty,
-  } = useGetPartyBalanceReportQuery(
-    {
-      partyType,
-    },
-    {
-      skip: activeTab !== "party-balance",
-    },
-  );
+    refetch: refetchParty
+  } = useGetPartyBalanceReportQuery({
+    partyType,
+    ...reportNoCacheParams
+  }, {
+    skip: activeTab !== 'party-balance'
+  });
 
-  const partyBalanceAllRows = useMemo(
-    () => partyReportData?.data || [],
-    [partyReportData?.data],
-  );
+  const partyBalanceAllRows = useMemo(() => partyReportData?.data || [], [partyReportData?.data]);
   const partyBalanceTotal = partyBalanceAllRows.length;
-  const partyBalanceTotalPages = Math.max(
-    1,
-    Math.ceil(partyBalanceTotal / partyPageSize) || 1,
-  );
+  const partyBalanceTotalPages = Math.max(1, Math.ceil(partyBalanceTotal / partyPageSize) || 1);
 
   useEffect(() => {
     setPartyBalancePage(1);
@@ -140,138 +160,128 @@ export const Reports = () => {
     const page = Math.min(partyBalancePage, partyBalanceTotalPages);
     const start = (page - 1) * partyPageSize;
     return partyBalanceAllRows.slice(start, start + partyPageSize);
-  }, [
-    partyBalanceAllRows,
-    partyBalancePage,
-    partyBalanceTotalPages,
-    partyPageSize,
-  ]);
+  }, [partyBalanceAllRows, partyBalancePage, partyBalanceTotalPages, partyPageSize]);
 
-  const partyRangeStart =
-    partyBalanceTotal === 0
-      ? 0
-      : (Math.min(partyBalancePage, partyBalanceTotalPages) - 1) *
-          partyPageSize +
-        1;
-  const partyRangeEnd =
-    partyBalanceTotal === 0
-      ? 0
-      : Math.min(
-          partyRangeStart + partyBalancePaginatedRows.length - 1,
-          partyBalanceTotal,
-        );
+  const partyRangeStart = partyBalanceTotal === 0 ? 0 : (Math.min(partyBalancePage, partyBalanceTotalPages) - 1) * partyPageSize + 1;
+  const partyRangeEnd = partyBalanceTotal === 0 ? 0 : Math.min(partyRangeStart + partyBalancePaginatedRows.length - 1, partyBalanceTotal);
 
   // Fetch Sales Report
   const {
     data: salesReportData,
     isLoading: salesLoading,
-    refetch: refetchSales,
-  } = useGetSalesReportQuery(
-    {
-      dateFrom: dateRange.from,
-      dateTo: dateRange.to,
-      groupBy: salesGroupBy,
-    },
-    {
-      skip: activeTab !== "sales",
-    },
-  );
+    refetch: refetchSales
+  } = useGetSalesReportQuery({
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+    groupBy: salesGroupBy,
+    ...reportNoCacheParams
+  }, {
+    skip: activeTab !== 'sales'
+  });
+
+  const {
+    data: productReportData,
+    isLoading: productReportLoading,
+    refetch: refetchProductReport
+  } = useGetProductReportQuery({
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+    limit: 100,
+    ...(topProductsSupplierId.trim() ? { supplierId: topProductsSupplierId.trim() } : {}),
+    ...(topProductsSortBy === 'supplier' ? { sortBy: 'supplier' } : {}),
+    ...reportNoCacheParams
+  }, {
+    skip: activeTab !== 'top-products'
+  });
+
+  const {
+    data: customerReportData,
+    isLoading: customerReportLoading,
+    refetch: refetchCustomerReport
+  } = useGetCustomerReportQuery({
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+    limit: 100,
+    ...reportNoCacheParams
+  }, {
+    skip: activeTab !== 'top-customers'
+  });
 
   // Fetch Inventory Report
   const {
     data: inventoryReportData,
     isLoading: inventoryLoading,
-    refetch: refetchInventory,
-  } = useGetInventoryReportQuery(
-    {
-      type: inventoryType,
-      ...(debouncedInventoryProductSearch.trim()
-        ? { search: debouncedInventoryProductSearch.trim() }
-        : {}),
-      ...(inventoryType === "stock-summary" && {
-        dateFrom: dateRange.from,
-        dateTo: dateRange.to,
-      }),
-    },
-    {
-      skip: activeTab !== "inventory",
-    },
+    refetch: refetchInventory
+  } = useGetInventoryReportQuery({
+    type: inventoryType,
+    ...(debouncedInventoryProductSearch.trim() ? { search: debouncedInventoryProductSearch.trim() } : {}),
+    ...(inventoryType === 'stock-summary' && { dateFrom: dateRange.from, dateTo: dateRange.to }),
+    ...(inventorySupplierId.trim() ? { supplierId: inventorySupplierId.trim() } : {}),
+    ...(inventorySortBy === 'supplier' ? { sortBy: 'supplier' } : {}),
+    ...reportNoCacheParams
+  }, {
+    skip: activeTab !== 'inventory'
+  });
+
+  const { data: inventorySuppliersData } = useGetSuppliersQuery(
+    { limit: 500 },
+    { skip: activeTab !== 'inventory' && activeTab !== 'top-products' }
   );
+  const inventorySupplierOptions = inventorySuppliersData?.data?.suppliers || inventorySuppliersData?.suppliers || [];
 
   // Fetch Financial Report
   const {
     data: financialReportData,
     isLoading: financialLoading,
-    refetch: refetchFinancial,
-  } = useGetFinancialReportQuery(
-    {
-      dateFrom: dateRange.from,
-      dateTo: dateRange.to,
-      type: financialType,
-    },
-    {
-      skip: activeTab !== "financial",
-    },
-  );
+    refetch: refetchFinancial
+  } = useGetFinancialReportQuery({
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+    type: financialType,
+    ...reportNoCacheParams
+  }, {
+    skip: activeTab !== 'financial'
+  });
 
   // Fetch Bank & Cash Summary
   const bankCashDateParams = useMemo(() => {
-    if (bankCashFilterMode === "month" && bankCashMonth) {
+    if (bankCashFilterMode === 'month' && bankCashMonth) {
       return { month: bankCashMonth };
     }
     return {
       dateFrom: bankCashDateRange.from,
-      dateTo: bankCashDateRange.to,
+      dateTo: bankCashDateRange.to
     };
-  }, [
-    bankCashFilterMode,
-    bankCashMonth,
-    bankCashDateRange.from,
-    bankCashDateRange.to,
-  ]);
+  }, [bankCashFilterMode, bankCashMonth, bankCashDateRange.from, bankCashDateRange.to]);
 
   const {
     data: bankCashSummaryData,
     isLoading: bankCashLoading,
-    refetch: refetchBankCash,
-  } = useGetBankCashSummaryQuery(
-    {
-      ...bankCashDateParams,
-      ...(selectedBankIds.length ? { bankIds: selectedBankIds.join(",") } : {}),
-    },
-    {
-      skip: activeTab !== "bank-cash",
-    },
-  );
+    refetch: refetchBankCash
+  } = useGetBankCashSummaryQuery({
+    ...bankCashDateParams,
+    ...(selectedBankIds.length ? { bankIds: selectedBankIds.join(',') } : {}),
+    ...reportNoCacheParams
+  }, {
+    skip: activeTab !== 'bank-cash'
+  });
 
-  const { data: banksData } = useGetBanksQuery(
-    { limit: 500 },
-    { skip: activeTab !== "bank-cash" },
-  );
+  const { data: banksData } = useGetBanksQuery({ limit: 500 }, { skip: activeTab !== 'bank-cash' });
   const availableBanks = banksData?.data?.banks || banksData?.banks || [];
 
-  const isInventoryPaginated =
-    INVENTORY_PAGINATED_TYPES.includes(inventoryType);
+  const isInventoryPaginated = INVENTORY_PAGINATED_TYPES.includes(inventoryType);
 
   const stockSummaryAllRows = useMemo(() => {
-    if (activeTab !== "inventory" || !isInventoryPaginated) return [];
+    if (activeTab !== 'inventory' || !isInventoryPaginated) return [];
     return inventoryReportData?.data || [];
   }, [activeTab, isInventoryPaginated, inventoryReportData?.data]);
 
   const stockSummaryTotal = stockSummaryAllRows.length;
-  const stockSummaryTotalPages = Math.max(
-    1,
-    Math.ceil(stockSummaryTotal / stockSummaryPageSize) || 1,
-  );
+  const stockSummaryTotalPages = Math.max(1, Math.ceil(stockSummaryTotal / stockSummaryPageSize) || 1);
 
   useEffect(() => {
     setStockSummaryPage(1);
-  }, [
-    inventoryType,
-    dateRange.from,
-    dateRange.to,
-    debouncedInventoryProductSearch,
-  ]);
+  }, [inventoryType, dateRange.from, dateRange.to, debouncedInventoryProductSearch, inventorySupplierId, inventorySortBy]);
 
   useEffect(() => {
     setStockSummaryPage(1);
@@ -291,534 +301,269 @@ export const Reports = () => {
     stockSummaryPage,
     stockSummaryTotalPages,
     stockSummaryPageSize,
-    isInventoryPaginated,
+    isInventoryPaginated
   ]);
 
   const stockRangeStart =
-    stockSummaryTotal === 0
-      ? 0
-      : (Math.min(stockSummaryPage, stockSummaryTotalPages) - 1) *
-          stockSummaryPageSize +
-        1;
+    stockSummaryTotal === 0 ? 0 : (Math.min(stockSummaryPage, stockSummaryTotalPages) - 1) * stockSummaryPageSize + 1;
   const stockRangeEnd =
     stockSummaryTotal === 0
       ? 0
-      : Math.min(
-          stockRangeStart + stockSummaryPaginatedRows.length - 1,
-          stockSummaryTotal,
-        );
+      : Math.min(stockRangeStart + stockSummaryPaginatedRows.length - 1, stockSummaryTotal);
 
   const summary = summaryData || {};
   const handleToggleBank = (bankId) => {
     setSelectedBankIds((prev) =>
-      prev.includes(bankId)
-        ? prev.filter((id) => id !== bankId)
-        : [...prev, bankId],
+      prev.includes(bankId) ? prev.filter((id) => id !== bankId) : [...prev, bankId]
     );
   };
 
   // Define columns for different reports
   const getColumns = () => {
     switch (activeTab) {
-      case "party-balance":
+      case 'party-balance':
         return [
+          { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
           {
-            header: "S.NO",
-            render: (row, idx) => (idx ?? 0) + 1,
-            align: "right",
-            key: "sno",
-          },
-          {
-            header: "Party Name",
+            header: 'Party Name',
             render: (row) => (
               <div>
-                <div className="font-medium">
-                  {row.businessName || row.name}
-                </div>
-                {row.businessName &&
-                  row.businessName !== row.contactPerson &&
-                  row.contactPerson && (
-                    <div className="text-xs text-gray-500">
-                      Contact: {row.contactPerson}
-                    </div>
-                  )}
+                <div className="font-medium">{row.businessName || row.name}</div>
+                {row.businessName && row.businessName !== row.contactPerson && row.contactPerson && (
+                  <div className="text-xs text-gray-500">Contact: {row.contactPerson}</div>
+                )}
               </div>
-            ),
+            )
           },
-          { header: "City", key: "city" },
+          { header: 'City', key: 'city' },
           {
-            header: "Opening Bal.",
+            header: 'Opening Bal.',
             render: (row) => (row.openingBalance ?? 0).toLocaleString(),
-            align: "right",
+            align: 'right',
           },
           {
-            header: "Ledger Dr",
+            header: 'Ledger Dr',
             render: (row) => (row.totalDebit || 0).toLocaleString(),
-            align: "right",
+            align: 'right',
           },
           {
-            header: "Ledger Cr",
+            header: 'Ledger Cr',
             render: (row) => (row.totalCredit || 0).toLocaleString(),
-            align: "right",
+            align: 'right',
           },
           {
-            header: "Net Balance",
+            header: 'Net Balance',
             render: (row) => (row.balance || 0).toLocaleString(),
-            align: "right",
+            align: 'right',
             bold: true,
           },
         ];
-      case "sales":
-        if (salesGroupBy === "daily") {
+      case 'sales':
+        if (salesGroupBy === 'daily') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            {
-              header: "Date",
-              render: (row) => new Date(row.date).toLocaleDateString(),
-            },
-            { header: "Orders", key: "totalOrders", align: "right" },
-            {
-              header: "Subtotal",
-              render: (row) => (row.subtotal || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Discount",
-              render: (row) => (row.discount || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Net Total",
-              render: (row) => (row.total || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'Date', render: (row) => new Date(row.date).toLocaleDateString() },
+            { header: 'Orders', key: 'totalOrders', align: 'right' },
+            { header: 'Subtotal', render: (row) => (row.subtotal || 0).toLocaleString(), align: 'right' },
+            { header: 'Discount', render: (row) => (row.discount || 0).toLocaleString(), align: 'right' },
+            { header: 'Net Total', render: (row) => (row.total || 0).toLocaleString(), align: 'right', bold: true },
           ];
         }
-        if (salesGroupBy === "monthly") {
+        if (salesGroupBy === 'monthly') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            { header: "Month", key: "month" },
-            { header: "Orders", key: "totalOrders", align: "right" },
-            {
-              header: "Revenue",
-              render: (row) => (row.total || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'Month', key: 'month' },
+            { header: 'Orders', key: 'totalOrders', align: 'right' },
+            { header: 'Revenue', render: (row) => (row.total || 0).toLocaleString(), align: 'right', bold: true },
           ];
         }
-        if (salesGroupBy === "product") {
+        if (salesGroupBy === 'product') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            { header: "Product", key: "productName" },
-            { header: "SKU", key: "sku" },
-            {
-              header: "Qty Sold",
-              render: (row) => (row.totalQuantity || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Revenue",
-              render: (row) => (row.totalRevenue || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'Product', key: 'productName' },
+            { header: 'SKU', key: 'sku' },
+            { header: 'Qty Sold', render: (row) => (row.totalQuantity || 0).toLocaleString(), align: 'right' },
+            { header: 'Revenue', render: (row) => (row.totalRevenue || 0).toLocaleString(), align: 'right', bold: true },
           ];
         }
-        if (salesGroupBy === "category") {
+        if (salesGroupBy === 'category') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            { header: "Category", key: "categoryName" },
-            {
-              header: "Items Sold",
-              render: (row) => (row.itemCount || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Revenue",
-              render: (row) => (row.totalRevenue || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'Category', key: 'categoryName' },
+            { header: 'Items Sold', render: (row) => (row.itemCount || 0).toLocaleString(), align: 'right' },
+            { header: 'Revenue', render: (row) => (row.totalRevenue || 0).toLocaleString(), align: 'right', bold: true },
           ];
         }
-        if (salesGroupBy === "city") {
+        if (salesGroupBy === 'city') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            { header: "City", key: "city" },
-            { header: "Orders", key: "totalOrders", align: "right" },
-            {
-              header: "Revenue",
-              render: (row) => (row.totalRevenue || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'City', key: 'city' },
+            { header: 'Orders', key: 'totalOrders', align: 'right' },
+            { header: 'Revenue', render: (row) => (row.totalRevenue || 0).toLocaleString(), align: 'right', bold: true },
           ];
         }
-        if (salesGroupBy === "invoice") {
+        if (salesGroupBy === 'invoice') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            { header: "Invoice #", key: "invoiceNo" },
-            {
-              header: "Date",
-              render: (row) => new Date(row.date).toLocaleDateString(),
-            },
-            {
-              header: "Customer",
-              render: (row) => row.customerName || row.name || "N/A",
-            },
-            {
-              header: "Total",
-              render: (row) => (row.total || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
-            { header: "Status", key: "status" },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'Invoice #', key: 'invoiceNo' },
+            { header: 'Date', render: (row) => new Date(row.date).toLocaleDateString() },
+            { header: 'Customer', render: (row) => row.customerName || row.name || 'N/A' },
+            { header: 'Total', render: (row) => (row.total || 0).toLocaleString(), align: 'right', bold: true },
+            { header: 'Status', key: 'status' },
           ];
         }
         return [];
-      case "inventory":
-        if (inventoryType === "stock-summary") {
+      case 'inventory':
+        if (inventoryType === 'stock-summary') {
           return [
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
             {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
+              header: 'Supplier',
+              render: (row) => row.supplierName || '—',
+              key: 'supplierName'
             },
-            { header: "Product Name", key: "name" },
-            ...(showCostPrice
-              ? [
-                  {
-                    header: "Last Purchase Price",
-                    render: (row) =>
-                      (row.lastPurchasePrice || 0).toLocaleString(),
-                    align: "right",
-                  },
-                  {
-                    header: "Op. Amount",
-                    render: (row) => (row.openingAmount || 0).toLocaleString(),
-                    align: "right",
-                  },
-                  {
-                    header: "Purchase Amt",
-                    render: (row) => (row.purchaseAmount || 0).toLocaleString(),
-                    align: "right",
-                  },
-                  {
-                    header: "Pur.Ret Amt",
-                    render: (row) =>
-                      (row.purchaseReturnAmount || 0).toLocaleString(),
-                    align: "right",
-                  },
-                  {
-                    header: "Sale Amt",
-                    render: (row) => (row.saleAmount || 0).toLocaleString(),
-                    align: "right",
-                  },
-                  {
-                    header: "Sale Ret Amt",
-                    render: (row) =>
-                      (row.saleReturnAmount || 0).toLocaleString(),
-                    align: "right",
-                  },
-                  {
-                    header: "Damage Amt",
-                    render: (row) => (row.damageAmount || 0).toLocaleString(),
-                    align: "right",
-                  },
-                  {
-                    header: "Closing Amt",
-                    render: (row) => (row.closingAmount || 0).toLocaleString(),
-                    align: "right",
-                    bold: true,
-                  },
-                ]
-              : []),
+            { header: 'Product Name', key: 'name' },
+            ...(showCostPrice ? [
+              { header: 'Last Purchase Price', render: (row) => (row.lastPurchasePrice || 0).toLocaleString(), align: 'right' },
+              { header: 'Op. Amount', render: (row) => (row.openingAmount || 0).toLocaleString(), align: 'right' },
+              { header: 'Purchase Amt', render: (row) => (row.purchaseAmount || 0).toLocaleString(), align: 'right' },
+              { header: 'Pur.Ret Amt', render: (row) => (row.purchaseReturnAmount || 0).toLocaleString(), align: 'right' },
+              { header: 'Sale Amt', render: (row) => (row.saleAmount || 0).toLocaleString(), align: 'right' },
+              { header: 'Sale Ret Amt', render: (row) => (row.saleReturnAmount || 0).toLocaleString(), align: 'right' },
+              { header: 'Damage Amt', render: (row) => (row.damageAmount || 0).toLocaleString(), align: 'right' },
+              { header: 'Closing Amt', render: (row) => (row.closingAmount || 0).toLocaleString(), align: 'right', bold: true },
+            ] : []),
+            { header: 'Op. Qty', render: (row) => (row.openingQty || 0).toLocaleString(), align: 'right' },
+            { header: 'Purchase Qty', render: (row) => (row.purchaseQty || 0).toLocaleString(), align: 'right' },
+            { header: 'Pur.Ret Qty', render: (row) => (row.purchaseReturnQty || 0).toLocaleString(), align: 'right' },
+            { header: 'Sale Qty', render: (row) => (row.saleQty || 0).toLocaleString(), align: 'right' },
+            { header: 'Sale Ret Qty', render: (row) => (row.saleReturnQty || 0).toLocaleString(), align: 'right' },
+            { header: 'Damage Qty', render: (row) => (row.damageQty || 0).toLocaleString(), align: 'right' },
+            { header: 'Closing Qty', render: (row) => (row.closingQty || 0).toLocaleString(), align: 'right', bold: true },
+            { header: 'Current Stock', render: (row) => (row.currentStock || 0).toLocaleString(), align: 'right', bold: true },
             {
-              header: "Op. Qty",
-              render: (row) => (row.openingQty || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Purchase Qty",
-              render: (row) => (row.purchaseQty || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Pur.Ret Qty",
-              render: (row) => (row.purchaseReturnQty || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Sale Qty",
-              render: (row) => (row.saleQty || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Sale Ret Qty",
-              render: (row) => (row.saleReturnQty || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Damage Qty",
-              render: (row) => (row.damageQty || 0).toLocaleString(),
-              align: "right",
-            },
-            {
-              header: "Closing Qty",
-              render: (row) => (row.closingQty || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
-            {
-              header: "Current Stock",
-              render: (row) => (row.currentStock || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
-            {
-              header: "Reconcile Delta",
+              header: 'Reconcile Delta',
               render: (row) => {
                 const delta = Number(row.reconciliationDelta || 0);
-                const cls =
-                  delta === 0
-                    ? "text-green-700"
-                    : delta > 0
-                      ? "text-red-700"
-                      : "text-amber-700";
+                const cls = delta === 0 ? 'text-green-700' : delta > 0 ? 'text-red-700' : 'text-amber-700';
                 return <span className={cls}>{delta.toLocaleString()}</span>;
               },
-              align: "right",
-              bold: true,
+              align: 'right',
+              bold: true
             },
-            {
-              header: "Retail Val.",
-              render: (row) => (row.retailValuation || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
-            {
-              header: "Sale Price1",
-              render: (row) => (row.salePrice1 || 0).toLocaleString(),
-              align: "right",
-            },
+            { header: 'Retail Val.', render: (row) => (row.retailValuation || 0).toLocaleString(), align: 'right', bold: true },
+            { header: 'Sale Price1', render: (row) => (row.salePrice1 || 0).toLocaleString(), align: 'right' },
           ];
         }
         const baseCols = [
+          { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
           {
-            header: "S.NO",
-            render: (row, idx) => (idx ?? 0) + 1,
-            align: "right",
-            key: "sno",
+            header: 'Supplier',
+            render: (row) => row.supplierName || '—',
+            key: 'supplierName'
           },
-          { header: "Product Name", key: "name" },
-          { header: "SKU", key: "sku" },
-          { header: "Category", key: "categoryName" },
-          {
-            header: "Stock",
-            render: (row) =>
-              `${(row.stockQuantity || 0).toLocaleString()} ${row.unit || ""}`,
-            align: "right",
-          },
+          { header: 'Product Name', key: 'name' },
+          { header: 'SKU', key: 'sku' },
+          { header: 'Category', key: 'categoryName' },
+          { header: 'Stock', render: (row) => `${(row.stockQuantity || 0).toLocaleString()} ${row.unit || ''}`, align: 'right' },
         ];
-        if (inventoryType === "valuation") {
+        if (inventoryType === 'valuation') {
           return [
             ...baseCols,
-            ...(showCostPrice
-              ? [
-                  {
-                    header: "Cost Price",
-                    render: (row) => (row.costPrice || 0).toLocaleString(),
-                    align: "right",
-                  },
-                  {
-                    header: "Valuation",
-                    render: (row) => (row.valuation || 0).toLocaleString(),
-                    align: "right",
-                    bold: true,
-                  },
-                ]
-              : []),
-            {
-              header: "Retail Val.",
-              render: (row) => (row.retailValuation || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
+            ...(showCostPrice ? [
+              { header: 'Cost Price', render: (row) => (row.costPrice || 0).toLocaleString(), align: 'right' },
+              { header: 'Valuation', render: (row) => (row.valuation || 0).toLocaleString(), align: 'right', bold: true },
+            ] : []),
+            { header: 'Retail Val.', render: (row) => (row.retailValuation || 0).toLocaleString(), align: 'right', bold: true },
           ];
         }
         // Current Stock: show only stock info (no Status column). Low Stock tab is separate.
-        if (inventoryType === "summary") {
+        if (inventoryType === 'summary') {
           return [
             ...baseCols,
-            {
-              header: "Min Level",
-              render: (row) => (row.minStockLevel || 0).toLocaleString(),
-              align: "right",
-            },
+            { header: 'Min Level', render: (row) => (row.minStockLevel || 0).toLocaleString(), align: 'right' },
           ];
         }
         // Low Stock tab: include Status
         return [
           ...baseCols,
-          {
-            header: "Min Level",
-            render: (row) => (row.minStockLevel || 0).toLocaleString(),
-            align: "right",
-          },
-          {
-            header: "Status",
-            render: (row) =>
-              row.stockQuantity <= row.minStockLevel ? (
-                <span className="text-red-600 font-bold">Low Stock</span>
-              ) : (
-                <span className="text-green-600">Normal</span>
-              ),
-          },
+          { header: 'Min Level', render: (row) => (row.minStockLevel || 0).toLocaleString(), align: 'right' },
+          { header: 'Status', render: (row) => row.stockQuantity <= row.minStockLevel ? <span className="text-red-600 font-bold">Low Stock</span> : <span className="text-green-600">Normal</span> },
         ];
-      case "financial":
-        if (financialType === "trial-balance") {
+      case 'financial':
+        if (financialType === 'trial-balance') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            { header: "Code", key: "accountCode" },
-            { header: "Account Name", key: "accountName" },
-            {
-              header: "Debit Balance",
-              render: (row) =>
-                row.debitBalance > 0 ? row.debitBalance.toLocaleString() : "-",
-              align: "right",
-            },
-            {
-              header: "Credit Balance",
-              render: (row) =>
-                row.creditBalance > 0
-                  ? row.creditBalance.toLocaleString()
-                  : "-",
-              align: "right",
-            },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'Code', key: 'accountCode' },
+            { header: 'Account Name', key: 'accountName' },
+            { header: 'Debit Balance', render: (row) => row.debitBalance > 0 ? row.debitBalance.toLocaleString() : '-', align: 'right' },
+            { header: 'Credit Balance', render: (row) => row.creditBalance > 0 ? row.creditBalance.toLocaleString() : '-', align: 'right' },
           ];
         }
-        if (financialType === "pl-statement") {
+        if (financialType === 'pl-statement') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            { header: "Category", key: "category" },
-            { header: "Account", key: "accountName" },
-            {
-              header: "Type",
-              key: "accountType",
-              render: (row) => (
-                <span className="capitalize">{row.accountType}</span>
-              ),
-            },
-            {
-              header: "Amount",
-              render: (row) => (row.amount || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'Category', key: 'category' },
+            { header: 'Account', key: 'accountName' },
+            { header: 'Type', key: 'accountType', render: (row) => <span className="capitalize">{row.accountType}</span> },
+            { header: 'Amount', render: (row) => (row.amount || 0).toLocaleString(), align: 'right', bold: true },
           ];
         }
-        if (financialType === "balance-sheet") {
+        if (financialType === 'balance-sheet') {
           return [
-            {
-              header: "S.NO",
-              render: (row, idx) => (idx ?? 0) + 1,
-              align: "right",
-              key: "sno",
-            },
-            {
-              header: "Type",
-              key: "accountType",
-              render: (row) => (
-                <span className="capitalize font-bold">{row.accountType}</span>
-              ),
-            },
-            { header: "Category", key: "category" },
-            { header: "Account", key: "accountName" },
-            {
-              header: "Balance",
-              render: (row) => (row.balance || 0).toLocaleString(),
-              align: "right",
-              bold: true,
-            },
+            { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+            { header: 'Type', key: 'accountType', render: (row) => <span className="capitalize font-bold">{row.accountType}</span> },
+            { header: 'Category', key: 'category' },
+            { header: 'Account', key: 'accountName' },
+            { header: 'Balance', render: (row) => (row.balance || 0).toLocaleString(), align: 'right', bold: true },
           ];
         }
         return [];
-      case "bank-cash":
+      case 'bank-cash':
         return [
+          { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
+          { header: 'Bank', render: (row) => row.bankName || 'N/A' },
+          { header: 'Account', render: (row) => row.accountNumber || row.accountName || '-' },
+          { header: 'Opening', render: (row) => (row.openingBalance || 0).toLocaleString(), align: 'right' },
+          { header: 'Receipts', render: (row) => (row.totalReceipts || 0).toLocaleString(), align: 'right' },
+          { header: 'Payments', render: (row) => (row.totalPayments || 0).toLocaleString(), align: 'right' },
+          { header: 'Balance', render: (row) => (row.balance || 0).toLocaleString(), align: 'right', bold: true },
+        ];
+      case 'top-products':
+        return [
+          { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
           {
-            header: "S.NO",
-            render: (row, idx) => (idx ?? 0) + 1,
-            align: "right",
-            key: "sno",
+            header: 'Supplier',
+            render: (row) => row.supplierName || '—',
+            key: 'supplierName'
           },
-          { header: "Bank", render: (row) => row.bankName || "N/A" },
+          { header: 'Product', render: (row) => row.product?.name || '—' },
+          { header: 'SKU', render: (row) => row.product?.sku || '—' },
+          { header: 'Qty sold', render: (row) => (row.totalQuantity || 0).toLocaleString(), align: 'right' },
+          { header: 'Revenue', render: (row) => (row.totalRevenue || 0).toLocaleString(), align: 'right', bold: true },
+          { header: 'Line items', render: (row) => (row.totalOrders || 0).toLocaleString(), align: 'right' },
+          { header: 'Avg price', render: (row) => (row.averagePrice || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }), align: 'right' },
+        ];
+      case 'top-customers':
+        return [
+          { header: 'S.NO', render: (row, idx) => (idx ?? 0) + 1, align: 'right', key: 'sno' },
           {
-            header: "Account",
-            render: (row) => row.accountNumber || row.accountName || "-",
+            header: 'Customer',
+            render: (row) =>
+              row.customer?.businessName ||
+              row.customer?.business_name ||
+              row.customer?.name ||
+              [row.customer?.firstName, row.customer?.lastName].filter(Boolean).join(' ') ||
+              '—'
           },
+          { header: 'Orders', render: (row) => (row.totalOrders || 0).toLocaleString(), align: 'right' },
+          { header: 'Revenue', render: (row) => (row.totalRevenue || 0).toLocaleString(), align: 'right', bold: true },
+          { header: 'Units', render: (row) => (row.totalItems || 0).toLocaleString(), align: 'right' },
+          { header: 'Avg order', render: (row) => (row.averageOrderValue || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }), align: 'right' },
           {
-            header: "Opening",
-            render: (row) => (row.openingBalance || 0).toLocaleString(),
-            align: "right",
-          },
-          {
-            header: "Receipts",
-            render: (row) => (row.totalReceipts || 0).toLocaleString(),
-            align: "right",
-          },
-          {
-            header: "Payments",
-            render: (row) => (row.totalPayments || 0).toLocaleString(),
-            align: "right",
-          },
-          {
-            header: "Balance",
-            render: (row) => (row.balance || 0).toLocaleString(),
-            align: "right",
-            bold: true,
+            header: 'Last order',
+            render: (row) =>
+              row.lastOrderDate ? new Date(row.lastOrderDate).toLocaleDateString() : '—'
           },
         ];
       default:
@@ -826,23 +571,16 @@ export const Reports = () => {
     }
   };
 
-  const virtualizePartyRows =
-    activeTab === "party-balance" && partyBalancePaginatedRows.length > 35;
+  const virtualizePartyRows = activeTab === 'party-balance' && partyBalancePaginatedRows.length > 35;
   const virtualizeStockSummaryRows =
-    activeTab === "inventory" &&
-    isInventoryPaginated &&
-    stockSummaryPaginatedRows.length > 35;
+    activeTab === 'inventory' && isInventoryPaginated && stockSummaryPaginatedRows.length > 35;
 
-  const { scrollRef: partyTableScrollRef, virtualizer: partyRowVirtualizer } =
-    useTableRowVirtualizer({
-      rowCount: partyBalancePaginatedRows.length,
-      enabled: virtualizePartyRows,
-      estimateSize: 52,
-    });
-  const {
-    scrollRef: stockSummaryTableScrollRef,
-    virtualizer: stockSummaryRowVirtualizer,
-  } = useTableRowVirtualizer({
+  const { scrollRef: partyTableScrollRef, virtualizer: partyRowVirtualizer } = useTableRowVirtualizer({
+    rowCount: partyBalancePaginatedRows.length,
+    enabled: virtualizePartyRows,
+    estimateSize: 52,
+  });
+  const { scrollRef: stockSummaryTableScrollRef, virtualizer: stockSummaryRowVirtualizer } = useTableRowVirtualizer({
     rowCount: stockSummaryPaginatedRows.length,
     enabled: virtualizeStockSummaryRows,
     estimateSize: 52,
@@ -850,138 +588,162 @@ export const Reports = () => {
 
   const getReportTitle = () => {
     switch (activeTab) {
-      case "party-balance":
-        return `${partyType === "customer" ? "Customer" : "Supplier"} Balance Report`;
-      case "sales":
+      case 'party-balance':
+        return `${partyType === 'customer' ? 'Customer' : 'Supplier'} Balance Report`;
+      case 'sales':
         return `Sales Analysis (${salesGroupBy.charAt(0).toUpperCase() + salesGroupBy.slice(1)})`;
-      case "inventory":
-        return `Inventory ${inventoryType === "stock-summary" ? "Stock Summary" : inventoryType === "summary" ? "Current Stock" : inventoryType === "low-stock" ? "Low Stock" : "Valuation"} Report`;
-      case "financial":
-        return financialType === "trial-balance"
-          ? "Trial Balance"
-          : financialType === "pl-statement"
-            ? "Profit & Loss Statement"
-            : "Balance Sheet";
-      case "bank-cash":
-        return "Bank & Cash Summary";
+      case 'inventory':
+        return `Inventory ${inventoryType === 'stock-summary' ? 'Stock Summary' : inventoryType === 'summary' ? 'Current Stock' : inventoryType === 'low-stock' ? 'Low Stock' : 'Valuation'} Report`;
+      case 'financial':
+        return financialType === 'trial-balance' ? 'Trial Balance' : financialType === 'pl-statement' ? 'Profit & Loss Statement' : 'Balance Sheet';
+      case 'bank-cash':
+        return 'Bank & Cash Summary';
+      case 'top-products':
+        return 'Top Products by Revenue';
+      case 'top-customers':
+        return 'Top Customers by Revenue';
       default:
-        return "Business Report";
+        return 'Business Report';
     }
   };
 
   const getReportData = () => {
     switch (activeTab) {
-      case "party-balance":
+      case 'party-balance':
         return partyReportData?.data || [];
-      case "sales":
+      case 'sales':
         return salesReportData?.data || [];
-      case "inventory":
+      case 'inventory':
         return inventoryReportData?.data || [];
-      case "financial":
+      case 'financial':
         return financialReportData?.data || [];
-      case "bank-cash":
+      case 'bank-cash':
         return bankCashSummaryData?.banks || [];
+      case 'top-products':
+        return productReportData?.products || [];
+      case 'top-customers':
+        return customerReportData?.customers || [];
       default:
         return [];
     }
   };
 
   const getSummaryData = () => {
-    if (activeTab === "party-balance") {
+    if (activeTab === 'party-balance') {
       return {
-        [`Total ${partyType === "customer" ? "Customer" : "Supplier"} Balance`]:
-          partyType === "customer"
-            ? summary.totalCustomerBalance
-            : summary.totalSupplierBalance,
+        [`Total ${partyType === 'customer' ? 'Customer' : 'Supplier'} Balance`]:
+          partyType === 'customer' ? summary.totalCustomerBalance : summary.totalSupplierBalance
       };
     }
-    if (activeTab === "sales") {
+    if (activeTab === 'sales') {
       return {
-        "Total Orders": salesReportData?.summary?.totalOrders || 0,
-        "Total Revenue": salesReportData?.summary?.totalRevenue || 0,
-        "Avg Order Value": salesReportData?.summary?.averageOrderValue || 0,
+        'Total Orders': salesReportData?.summary?.totalOrders || 0,
+        'Total Revenue': salesReportData?.summary?.totalRevenue || 0,
+        'Avg Order Value': salesReportData?.summary?.averageOrderValue || 0
       };
     }
-    if (activeTab === "inventory") {
+    if (activeTab === 'inventory') {
       const base = {
-        "Total Items": inventoryReportData?.summary?.totalItems || 0,
-        "Total Cost": inventoryReportData?.summary?.totalCost || 0,
-        "Above minimum": inventoryReportData?.summary?.inStockCount || 0,
-        "Low Stock": inventoryReportData?.summary?.lowStockCount ?? 0,
-        "Out of Stock": inventoryReportData?.summary?.outOfStockCount || 0,
+        'Total Items': inventoryReportData?.summary?.totalItems || 0,
+        'Total Cost': inventoryReportData?.summary?.totalCost || 0,
+        'Above minimum': inventoryReportData?.summary?.inStockCount || 0,
+        'Low Stock': inventoryReportData?.summary?.lowStockCount ?? 0,
+        'Out of Stock': inventoryReportData?.summary?.outOfStockCount || 0
       };
-      if (inventoryType === "stock-summary") {
+      if (inventoryType === 'stock-summary') {
         const valData = {
           ...base,
-          "Retail Valuation":
-            inventoryReportData?.summary?.totalRetailValuation ?? 0,
+          'Retail Valuation': inventoryReportData?.summary?.totalRetailValuation ?? 0
         };
         if (showCostPrice) {
-          valData["Wholesale Valuation"] =
-            inventoryReportData?.summary?.totalWholesaleValuation ?? 0;
-          valData["Total Cost"] = inventoryReportData?.summary?.totalCost || 0;
+          valData['Wholesale Valuation'] = inventoryReportData?.summary?.totalWholesaleValuation ?? 0;
+          valData['Total Cost'] = inventoryReportData?.summary?.totalCost || 0;
         }
         return valData;
       }
       return {
         ...base,
-        "Retail Valuation":
-          inventoryReportData?.summary?.totalRetailValuation ?? 0,
+        'Retail Valuation': inventoryReportData?.summary?.totalRetailValuation ?? 0
       };
     }
-    if (activeTab === "financial") {
-      if (financialType === "trial-balance") {
+    if (activeTab === 'financial') {
+      if (financialType === 'trial-balance') {
         return {
-          "Total Debit": financialReportData?.summary?.totalDebit || 0,
-          "Total Credit": financialReportData?.summary?.totalCredit || 0,
-          Difference:
-            (financialReportData?.summary?.totalDebit || 0) -
-            (financialReportData?.summary?.totalCredit || 0),
+          'Total Debit': financialReportData?.summary?.totalDebit || 0,
+          'Total Credit': financialReportData?.summary?.totalCredit || 0,
+          'Difference': (financialReportData?.summary?.totalDebit || 0) - (financialReportData?.summary?.totalCredit || 0)
         };
       }
-      if (financialType === "pl-statement") {
+      if (financialType === 'pl-statement') {
         return {
-          "Total Revenue": financialReportData?.summary?.totalRevenue || 0,
-          "Total Expenses": financialReportData?.summary?.totalExpenses || 0,
-          "Net Profit": financialReportData?.summary?.netProfit || 0,
+          'Total Revenue': financialReportData?.summary?.totalRevenue || 0,
+          'Total Expenses': financialReportData?.summary?.totalExpenses || 0,
+          'Net Profit': financialReportData?.summary?.netProfit || 0
         };
       }
-      if (financialType === "balance-sheet") {
+      if (financialType === 'balance-sheet') {
         return {
-          "Total Assets": financialReportData?.summary?.totalAssets || 0,
-          "Total Liabilities":
-            financialReportData?.summary?.totalLiabilities || 0,
-          "Total Equity": financialReportData?.summary?.totalEquity || 0,
-          "L + E":
-            (financialReportData?.summary?.totalLiabilities || 0) +
-            (financialReportData?.summary?.totalEquity || 0),
+          'Total Assets': financialReportData?.summary?.totalAssets || 0,
+          'Total Liabilities': financialReportData?.summary?.totalLiabilities || 0,
+          'Total Equity': financialReportData?.summary?.totalEquity || 0,
+          'L + E': (financialReportData?.summary?.totalLiabilities || 0) + (financialReportData?.summary?.totalEquity || 0)
         };
       }
     }
-    if (activeTab === "bank-cash") {
+    if (activeTab === 'bank-cash') {
       return {
-        "Total Bank Balance":
-          bankCashSummaryData?.totals?.totalBankBalance || 0,
-        "Cash Balance": bankCashSummaryData?.cash?.balance || 0,
+        'Total Bank Balance': bankCashSummaryData?.totals?.totalBankBalance || 0,
+        'Cash Balance': bankCashSummaryData?.cash?.balance || 0,
+        'Combined Balance': bankCashSummaryData?.totals?.combinedBalance || 0
+      };
+    }
+    if (activeTab === 'top-products') {
+      const rows = productReportData?.products || [];
+      const tableRevenue = rows.reduce((s, r) => s + (Number(r.totalRevenue) || 0), 0);
+      const tableQty = rows.reduce((s, r) => s + (Number(r.totalQuantity) || 0), 0);
+      return {
+        'Products with sales': productReportData?.total ?? 0,
+        'Revenue (top 100 rows)': tableRevenue,
+        'Units (top 100 rows)': tableQty
+      };
+    }
+    if (activeTab === 'top-customers') {
+      const rows = customerReportData?.customers || [];
+      const tableRevenue = rows.reduce((s, r) => s + (Number(r.totalRevenue) || 0), 0);
+      const tableOrders = rows.reduce((s, r) => s + (Number(r.totalOrders) || 0), 0);
+      return {
+        'Customers with orders': customerReportData?.total ?? 0,
+        'Revenue (top 100 rows)': tableRevenue,
+        'Orders (top 100 rows)': tableOrders
       };
     }
     return null;
   };
 
   const getSummaryTrend = (title) => {
-    if (activeTab === "party-balance") return "Current Total";
-    if (activeTab === "sales") return "In Selected Period";
-    if (activeTab === "inventory") {
-      if (title === "Total Cost") return "Cost Price";
-      if (title === "Wholesale Valuation") return "Wholesale Price";
-      if (title === "Retail Valuation") return "Retail Price";
-      if (title === "Above minimum") return "Qty above minimum level";
-      if (title === "Low Stock") return "Qty ≤ minimum (still in hand)";
-      if (title === "Out of Stock") return "Qty = 0";
-      return "Current Status";
+    if (activeTab === 'party-balance') return 'Current Total';
+    if (activeTab === 'sales') return 'In Selected Period';
+    if (activeTab === 'inventory') {
+      if (title === 'Total Cost') return 'Cost Price';
+      if (title === 'Wholesale Valuation') return 'Wholesale Price';
+      if (title === 'Retail Valuation') return 'Retail Price';
+      if (title === 'Above minimum') return 'Qty above minimum level';
+      if (title === 'Low Stock') return 'Qty ≤ minimum (still in hand)';
+      if (title === 'Out of Stock') return 'Qty = 0';
+      return 'Current Status';
     }
-    if (activeTab === "bank-cash") return "Current Total";
-    return "";
+    if (activeTab === 'bank-cash') return 'Current Total';
+    if (activeTab === 'top-products') {
+      if (title === 'Products with sales') {
+        return topProductsSupplierId ? 'SKUs matching supplier filter' : 'Distinct SKUs matching filters';
+      }
+      return 'In Selected Period';
+    }
+    if (activeTab === 'top-customers') {
+      if (title === 'Customers with orders') return 'Distinct buyers in period';
+      return 'In Selected Period';
+    }
+    return '';
   };
 
   const getExportData = () => {
@@ -991,490 +753,316 @@ export const Reports = () => {
 
     // Map UI columns to ExcelJS columns
     switch (activeTab) {
-      case "party-balance":
+      case 'party-balance':
         columns = [
-          { header: "S.NO", key: "sno", width: 8, type: "number" },
-          { header: "Party Name", key: "businessName", width: 35 },
-          { header: "City", key: "city", width: 15 },
-          {
-            header: "Opening Bal.",
-            key: "openingBalance",
-            width: 15,
-            type: "currency",
-          },
-          {
-            header: "Ledger Dr",
-            key: "totalDebit",
-            width: 15,
-            type: "currency",
-          },
-          {
-            header: "Ledger Cr",
-            key: "totalCredit",
-            width: 15,
-            type: "currency",
-          },
-          {
-            header: "Net Balance",
-            key: "balance",
-            width: 20,
-            type: "currency",
-          },
+          { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+          { header: 'Party Name', key: 'businessName', width: 35 },
+          { header: 'City', key: 'city', width: 15 },
+          { header: 'Opening Bal.', key: 'openingBalance', width: 15, type: 'currency' },
+          { header: 'Ledger Dr', key: 'totalDebit', width: 15, type: 'currency' },
+          { header: 'Ledger Cr', key: 'totalCredit', width: 15, type: 'currency' },
+          { header: 'Net Balance', key: 'balance', width: 20, type: 'currency' }
         ];
         break;
-      case "sales":
-        if (salesGroupBy === "daily") {
+      case 'sales':
+        if (salesGroupBy === 'daily') {
           columns = [
-            { header: "S.NO", key: "sno", width: 8, type: "number" },
-            { header: "Date", key: "date", width: 15 },
-            { header: "Orders", key: "totalOrders", width: 10, type: "number" },
-            {
-              header: "Subtotal",
-              key: "subtotal",
-              width: 15,
-              type: "currency",
-            },
-            {
-              header: "Discount",
-              key: "discount",
-              width: 15,
-              type: "currency",
-            },
-            { header: "Net Total", key: "total", width: 15, type: "currency" },
+            { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+            { header: 'Date', key: 'date', width: 15 },
+            { header: 'Orders', key: 'totalOrders', width: 10, type: 'number' },
+            { header: 'Subtotal', key: 'subtotal', width: 15, type: 'currency' },
+            { header: 'Discount', key: 'discount', width: 15, type: 'currency' },
+            { header: 'Net Total', key: 'total', width: 15, type: 'currency' }
           ];
-        } else if (salesGroupBy === "product") {
+        } else if (salesGroupBy === 'product') {
           columns = [
-            { header: "S.NO", key: "sno", width: 8, type: "number" },
-            { header: "Image", key: "imageUrl", width: 12, type: "image" },
-            { header: "Product", key: "productName", width: 40 },
-            { header: "SKU", key: "sku", width: 15 },
-            {
-              header: "Qty Sold",
-              key: "totalQuantity",
-              width: 12,
-              type: "number",
-            },
-            {
-              header: "Revenue",
-              key: "totalRevenue",
-              width: 15,
-              type: "currency",
-            },
+            { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+            { header: 'Image', key: 'imageUrl', width: 12, type: 'image' },
+            { header: 'Product', key: 'productName', width: 40 },
+            { header: 'SKU', key: 'sku', width: 15 },
+            { header: 'Qty Sold', key: 'totalQuantity', width: 12, type: 'number' },
+            { header: 'Revenue', key: 'totalRevenue', width: 15, type: 'currency' }
           ];
         } else {
           columns = [
-            { header: "S.NO", key: "sno", width: 8, type: "number" },
-            {
-              header: "Group",
-              key:
-                salesGroupBy === "monthly"
-                  ? "month"
-                  : salesGroupBy === "category"
-                    ? "categoryName"
-                    : "name",
-              width: 25,
-            },
-            {
-              header: "Orders/Items",
-              key: "totalOrders",
-              width: 15,
-              type: "number",
-            },
-            {
-              header: "Revenue",
-              key: "totalRevenue",
-              width: 20,
-              type: "currency",
-            },
+            { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+            { header: 'Group', key: salesGroupBy === 'monthly' ? 'month' : salesGroupBy === 'category' ? 'categoryName' : 'name', width: 25 },
+            { header: 'Orders/Items', key: 'totalOrders', width: 15, type: 'number' },
+            { header: 'Revenue', key: 'totalRevenue', width: 20, type: 'currency' }
           ];
         }
         break;
-      case "inventory":
-        if (inventoryType === "stock-summary") {
+      case 'inventory':
+        if (inventoryType === 'stock-summary') {
           columns = [
-            { header: "S.NO", key: "sno", width: 8, type: "number" },
-            { header: "Image", key: "imageUrl", width: 10, type: "image" },
-            { header: "Product Name", key: "name", width: 30 },
-            { header: "SKU", key: "sku", width: 15 },
-            { header: "Category", key: "categoryName", width: 20 },
-            { header: "Op. Qty", key: "openingQty", width: 10, type: "number" },
-            {
-              header: "Purchase Qty",
-              key: "purchaseQty",
-              width: 10,
-              type: "number",
-            },
-            {
-              header: "Pur.Ret Qty",
-              key: "purchaseReturnQty",
-              width: 10,
-              type: "number",
-            },
-            { header: "Sale Qty", key: "saleQty", width: 10, type: "number" },
-            {
-              header: "Sale Ret Qty",
-              key: "saleReturnQty",
-              width: 10,
-              type: "number",
-            },
-            {
-              header: "Damage Qty",
-              key: "damageQty",
-              width: 10,
-              type: "number",
-            },
-            {
-              header: "Closing Qty",
-              key: "closingQty",
-              width: 10,
-              type: "number",
-            },
-            {
-              header: "Current Stock",
-              key: "currentStock",
-              width: 12,
-              type: "number",
-            },
-            {
-              header: "Reconcile Delta",
-              key: "reconciliationDelta",
-              width: 14,
-              type: "number",
-            },
-            {
-              header: "Retail Val.",
-              key: "retailValuation",
-              width: 14,
-              type: "currency",
-            },
-            {
-              header: "Sale Price1",
-              key: "salePrice1",
-              width: 12,
-              type: "currency",
-            },
-            ...(showCostPrice
-              ? [
-                  {
-                    header: "Last Purch. Price",
-                    key: "lastPurchasePrice",
-                    width: 12,
-                    type: "currency",
-                  },
-                  {
-                    header: "Op. Amount",
-                    key: "openingAmount",
-                    width: 12,
-                    type: "currency",
-                  },
-                  {
-                    header: "Purchase Amt",
-                    key: "purchaseAmount",
-                    width: 12,
-                    type: "currency",
-                  },
-                  {
-                    header: "Pur.Ret Amt",
-                    key: "purchaseReturnAmount",
-                    width: 12,
-                    type: "currency",
-                  },
-                  {
-                    header: "Sale Amt",
-                    key: "saleAmount",
-                    width: 12,
-                    type: "currency",
-                  },
-                  {
-                    header: "Sale Ret Amt",
-                    key: "saleReturnAmount",
-                    width: 12,
-                    type: "currency",
-                  },
-                  {
-                    header: "Damage Amt",
-                    key: "damageAmount",
-                    width: 12,
-                    type: "currency",
-                  },
-                  {
-                    header: "Closing Amt",
-                    key: "closingAmount",
-                    width: 12,
-                    type: "currency",
-                  },
-                ]
-              : []),
+            { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+            { header: 'Image', key: 'imageUrl', width: 12, type: 'image' },
+            { header: 'Supplier', key: 'supplierName', width: 28 },
+            { header: 'Product Name', key: 'name', width: 40 },
+            { header: 'SKU', key: 'sku', width: 15 },
+            { header: 'Category', key: 'categoryName', width: 20 },
+            { header: 'Op. Qty', key: 'openingQty', width: 12, type: 'number' },
+            { header: 'Purchase Qty', key: 'purchaseQty', width: 12, type: 'number' },
+            { header: 'Sale Qty', key: 'saleQty', width: 12, type: 'number' },
+            { header: 'Sale Amt', key: 'saleAmount', width: 15, type: 'currency' },
+            { header: 'Current Stock', key: 'currentStock', width: 15, type: 'number' },
+            ...(showCostPrice ? [
+              { header: 'Op. Amount', key: 'openingAmount', width: 15, type: 'currency' },
+              { header: 'Purchase Amt', key: 'purchaseAmount', width: 15, type: 'currency' },
+              { header: 'Last Pur. Price', key: 'lastPurchasePrice', width: 15, type: 'currency' },
+              { header: 'Closing Amt', key: 'closingAmount', width: 15, type: 'currency' }
+            ] : [])
           ];
         } else {
           columns = [
-            { header: "S.NO", key: "sno", width: 8, type: "number" },
-            { header: "Image", key: "imageUrl", width: 12, type: "image" },
-            { header: "Product Name", key: "name", width: 40 },
-            { header: "SKU", key: "sku", width: 15 },
-            { header: "Category", key: "categoryName", width: 20 },
-            {
-              header: "Stock",
-              key: "stockQuantity",
-              width: 12,
-              type: "number",
-            },
-            {
-              header: "Cost Price",
-              key: "costPrice",
-              width: 15,
-              type: "currency",
-            },
-            {
-              header: "Valuation",
-              key: "valuation",
-              width: 15,
-              type: "currency",
-            },
+            { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+            { header: 'Image', key: 'imageUrl', width: 12, type: 'image' },
+            { header: 'Supplier', key: 'supplierName', width: 28 },
+            { header: 'Product Name', key: 'name', width: 40 },
+            { header: 'SKU', key: 'sku', width: 15 },
+            { header: 'Category', key: 'categoryName', width: 20 },
+            { header: 'Stock', key: 'stockQuantity', width: 12, type: 'number' },
+            { header: 'Cost Price', key: 'costPrice', width: 15, type: 'currency' },
+            { header: 'Valuation', key: 'valuation', width: 15, type: 'currency' }
           ];
         }
         break;
-      case "financial":
-        if (financialType === "trial-balance") {
+      case 'financial':
+        if (financialType === 'trial-balance') {
           columns = [
-            { header: "S.NO", key: "sno", width: 8, type: "number" },
-            { header: "Account Name", key: "accountName", width: 35 },
-            { header: "Category", key: "category", width: 20 },
-            {
-              header: "Debit",
-              key: "debitBalance",
-              width: 20,
-              type: "currency",
-            },
-            {
-              header: "Credit",
-              key: "creditBalance",
-              width: 20,
-              type: "currency",
-            },
+            { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+            { header: 'Account Name', key: 'accountName', width: 35 },
+            { header: 'Category', key: 'category', width: 20 },
+            { header: 'Debit', key: 'debitBalance', width: 20, type: 'currency' },
+            { header: 'Credit', key: 'creditBalance', width: 20, type: 'currency' }
           ];
         } else {
           columns = [
-            { header: "S.NO", key: "sno", width: 8, type: "number" },
-            { header: "Account Name", key: "accountName", width: 35 },
-            { header: "Category", key: "category", width: 20 },
-            {
-              header: "Amount/Balance",
-              key: "amount",
-              width: 20,
-              type: "currency",
-            },
+            { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+            { header: 'Account Name', key: 'accountName', width: 35 },
+            { header: 'Category', key: 'category', width: 20 },
+            { header: 'Amount/Balance', key: 'amount', width: 20, type: 'currency' }
           ];
-          if (financialType === "balance-sheet") {
-            columns[3].key = "balance";
+          if (financialType === 'balance-sheet') {
+            columns[3].key = 'balance';
           }
         }
         break;
-      case "bank-cash":
+      case 'bank-cash':
         columns = [
-          { header: "S.NO", key: "sno", width: 8, type: "number" },
-          { header: "Bank Name", key: "bankName", width: 30 },
-          { header: "Account", key: "accountNumber", width: 25 },
-          {
-            header: "Opening",
-            key: "openingBalance",
-            width: 15,
-            type: "currency",
-          },
-          {
-            header: "Receipts",
-            key: "totalReceipts",
-            width: 15,
-            type: "currency",
-          },
-          {
-            header: "Payments",
-            key: "totalPayments",
-            width: 15,
-            type: "currency",
-          },
-          { header: "Balance", key: "balance", width: 20, type: "currency" },
+          { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+          { header: 'Bank Name', key: 'bankName', width: 30 },
+          { header: 'Account', key: 'accountNumber', width: 25 },
+          { header: 'Opening', key: 'openingBalance', width: 15, type: 'currency' },
+          { header: 'Receipts', key: 'totalReceipts', width: 15, type: 'currency' },
+          { header: 'Payments', key: 'totalPayments', width: 15, type: 'currency' },
+          { header: 'Balance', key: 'balance', width: 20, type: 'currency' }
+        ];
+        break;
+      case 'top-products':
+        columns = [
+          { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+          { header: 'Supplier', key: 'supplierName', width: 28 },
+          { header: 'Product', key: 'productName', width: 40 },
+          { header: 'SKU', key: 'sku', width: 18 },
+          { header: 'Qty sold', key: 'totalQuantity', width: 12, type: 'number' },
+          { header: 'Revenue', key: 'totalRevenue', width: 15, type: 'currency' },
+          { header: 'Line items', key: 'totalOrders', width: 12, type: 'number' },
+          { header: 'Avg price', key: 'averagePrice', width: 14, type: 'currency' }
+        ];
+        break;
+      case 'top-customers':
+        columns = [
+          { header: 'S.NO', key: 'sno', width: 8, type: 'number' },
+          { header: 'Customer', key: 'customerLabel', width: 36 },
+          { header: 'Orders', key: 'totalOrders', width: 10, type: 'number' },
+          { header: 'Revenue', key: 'totalRevenue', width: 15, type: 'currency' },
+          { header: 'Units', key: 'totalItems', width: 10, type: 'number' },
+          { header: 'Avg order', key: 'averageOrderValue', width: 14, type: 'currency' },
+          { header: 'Last order', key: 'lastOrderLabel', width: 14 }
         ];
         break;
     }
 
-    const totalColumnWidth = columns.reduce(
-      (sum, col) => sum + (col.width || 15),
-      0,
-    );
-    const orientation = totalColumnWidth > 110 ? "landscape" : "portrait";
-    const paperSize = totalColumnWidth > 140 ? "a3" : "a4";
-
     return {
       title: reportTitle,
-      filename: `${reportTitle.replace(/ /g, "_")}_${new Date().toLocaleDateString()}.xlsx`,
-      orientation,
-      paperSize,
+      filename: `${reportTitle.replace(/ /g, '_')}_${new Date().toLocaleDateString()}.xlsx`,
       columns,
       data: data.map((item, i) => ({
         ...item,
         sno: i + 1,
+        productName: item.product?.name,
+        sku: item.product?.sku,
+        customerLabel:
+          item.customer?.businessName ||
+          [item.customer?.firstName, item.customer?.lastName].filter(Boolean).join(' ') ||
+          item.businessName ||
+          item.name,
+        lastOrderLabel: item.lastOrderDate
+          ? new Date(item.lastOrderDate).toLocaleDateString()
+          : '',
         name:
           item.businessName ||
           item.name ||
           item.accountName ||
           item.productName ||
-          item.bankName,
+          item.bankName ||
+          item.product?.name
       })),
       summary: (() => {
-        if (activeTab === "inventory" && inventoryType === "stock-summary") {
+        if (activeTab === 'inventory' && inventoryType === 'stock-summary') {
           return {
             rows: [
               {
-                label: "GRAND TOTAL:",
+                label: 'GRAND TOTAL:',
                 name: `${data.length} Items`,
                 openingQty: inventoryReportData?.summary?.totalOpeningQty || 0,
-                openingAmount:
-                  inventoryReportData?.summary?.totalOpeningAmount || 0,
-                purchaseQty:
-                  inventoryReportData?.summary?.totalPurchaseQty || 0,
-                purchaseAmount:
-                  inventoryReportData?.summary?.totalPurchaseAmount || 0,
-                purchaseReturnQty:
-                  inventoryReportData?.summary?.totalPurchaseReturnQty || 0,
-                purchaseReturnAmount:
-                  inventoryReportData?.summary?.totalPurchaseReturnAmount || 0,
+                openingAmount: inventoryReportData?.summary?.totalOpeningAmount || 0,
+                purchaseQty: inventoryReportData?.summary?.totalPurchaseQty || 0,
+                purchaseAmount: inventoryReportData?.summary?.totalPurchaseAmount || 0,
+                purchaseReturnQty: inventoryReportData?.summary?.totalPurchaseReturnQty || 0,
+                purchaseReturnAmount: inventoryReportData?.summary?.totalPurchaseReturnAmount || 0,
                 saleQty: inventoryReportData?.summary?.totalSaleQty || 0,
                 saleAmount: inventoryReportData?.summary?.totalSaleAmount || 0,
-                saleReturnQty:
-                  inventoryReportData?.summary?.totalSaleReturnQty || 0,
-                saleReturnAmount:
-                  inventoryReportData?.summary?.totalSaleReturnAmount || 0,
+                saleReturnQty: inventoryReportData?.summary?.totalSaleReturnQty || 0,
+                saleReturnAmount: inventoryReportData?.summary?.totalSaleReturnAmount || 0,
                 damageQty: inventoryReportData?.summary?.totalDamageQty || 0,
-                damageAmount:
-                  inventoryReportData?.summary?.totalDamageAmount || 0,
+                damageAmount: inventoryReportData?.summary?.totalDamageAmount || 0,
                 closingQty: inventoryReportData?.summary?.totalClosingQty || 0,
                 closingAmount: inventoryReportData?.summary?.totalCost || 0,
-                currentStock:
-                  inventoryReportData?.summary?.totalCurrentStock || 0,
-              },
-            ],
+                currentStock: inventoryReportData?.summary?.totalCurrentStock || 0
+              }
+            ]
           };
         }
-        if (activeTab === "party-balance") {
+        if (activeTab === 'party-balance') {
           return {
             rows: [
               {
-                label: "GRAND TOTAL:",
-                openingBalance:
-                  partyReportData?.summary?.totalOpeningBalance || 0,
+                label: 'GRAND TOTAL:',
+                openingBalance: partyReportData?.summary?.totalOpeningBalance || 0,
                 totalDebit: partyReportData?.summary?.totalDebit || 0,
                 totalCredit: partyReportData?.summary?.totalCredit || 0,
-                balance:
-                  (partyType === "customer"
-                    ? partyReportData?.totalCustomerBalance
-                    : partyReportData?.totalSupplierBalance) || 0,
-              },
-            ],
+                balance: (partyType === 'customer' ? partyReportData?.totalCustomerBalance : partyReportData?.totalSupplierBalance) || 0
+              }
+            ]
           };
         }
         return null;
-      })(),
+      })()
     };
   };
 
   return (
     <PageShell className="bg-gray-50" contentClassName="space-y-6 p-4 md:p-6">
       {/* Header & Global Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Reporting Dashboard
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Real-time business analytics & financial reports
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Reporting Dashboard</h1>
+          <p className="text-gray-500 text-sm">Real-time business analytics & financial reports</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {activeTab !== "bank-cash" &&
-            (activeTab !== "inventory" ||
-              inventoryType === "stock-summary") && (
-              <DateFilter
-                startDate={dateRange.from}
-                endDate={dateRange.to}
-                onDateChange={(start, end) => {
-                  setDateRange({ from: start || "", to: end || "" });
-                }}
-                compact={true}
-                showPresets={true}
-              />
-            )}
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-3">
+          {(activeTab !== 'bank-cash') && (activeTab !== 'inventory' || inventoryType === 'stock-summary') && (
+            <DateFilter
+              startDate={dateRange.from}
+              endDate={dateRange.to}
+              onDateChange={(start, end) => {
+                setDateRange({ from: start || '', to: end || '' });
+              }}
+              compact={true}
+              showPresets={true}
+            />
+          )}
 
           <button
             onClick={handleRefresh}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Refresh Data"
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors h-10 w-10 flex items-center justify-center border border-gray-200 bg-white"
+            title="Refresh data (bypasses server report cache for ~90s TTL)"
           >
-            <RefreshCcw
-              className={`h-5 w-5 ${summaryLoading || partyLoading || salesLoading || inventoryLoading || financialLoading || bankCashLoading ? "animate-spin" : ""}`}
-            />
+            <RefreshCcw className={`h-5 w-5 ${(summaryLoading || partyLoading || salesLoading || productReportLoading || customerReportLoading || inventoryLoading || financialLoading || bankCashLoading) ? 'animate-spin' : ''}`} />
           </button>
 
-          <ExcelExportButton
-            getData={getExportData}
-            label="Export Report"
-            className="border-indigo-200 bg-white text-indigo-700 hover:border-indigo-500 hover:bg-indigo-50 transition-all font-semibold"
-          />
-          <PdfExportButton
-            getData={getExportData}
-            label="PDF Report"
-            className="border-indigo-200 bg-white text-indigo-700 hover:border-indigo-500 hover:bg-indigo-50 transition-all font-semibold"
-          />
-          <button
-            onClick={() => setIsPrintModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-blue-200 bg-white text-blue-700 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold rounded-lg text-sm h-9"
-          >
-            <Printer className="h-4 w-4" />
-            Print Report
-          </button>
+          {/* Desktop Actions */}
+          <div className="hidden sm:flex items-center gap-2">
+            <ExcelExportButton
+              ref={excelExportRef}
+              getData={getExportData}
+              label="Excel"
+              className="h-10 border-indigo-200 bg-white text-indigo-700 hover:border-indigo-500 hover:bg-indigo-50 transition-all font-semibold"
+            />
+            <PdfExportButton
+              ref={pdfExportRef}
+              getData={getExportData}
+              label="PDF"
+              className="h-10 border-indigo-200 bg-white text-indigo-700 hover:border-indigo-500 hover:bg-indigo-50 transition-all font-semibold"
+            />
+            <button
+              onClick={() => setIsPrintModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-blue-200 bg-white text-blue-700 hover:border-blue-500 hover:bg-blue-50 transition-all font-semibold rounded-lg text-sm h-10"
+            >
+              <Printer className="h-4 w-4" />
+              Print
+            </button>
+          </div>
+
+          {/* Mobile Actions Dropdown */}
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10 border-gray-200 bg-white">
+                  <MoreHorizontal className="h-5 w-5 text-gray-600" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => excelExportRef.current?.handleExport()}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                  Excel Export
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => pdfExportRef.current?.handleExport()}>
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  PDF Export
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsPrintModalOpen(true)}>
+                  <Printer className="h-4 w-4 mr-2 text-blue-600" />
+                  Print Report
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
       {/* Summary Cards — inventory uses auto-fill so 7 cards wrap as balanced rows (e.g. 4+3), not 6+1 */}
       <div
         className={`grid gap-4 ${
-          activeTab === "inventory"
-            ? "grid-cols-1 sm:[grid-template-columns:repeat(auto-fill,minmax(min(100%,17rem),1fr))]"
-            : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+          activeTab === 'inventory'
+            ? 'grid-cols-1 sm:[grid-template-columns:repeat(auto-fill,minmax(min(100%,17rem),1fr))]'
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
         }`}
       >
         {Object.entries(getSummaryData() || {}).map(([title, value], idx) => {
           const getIcon = () => {
-            if (title === "Wholesale Valuation")
-              return <DollarSign className="h-6 w-6 text-amber-600" />;
-            if (title === "Retail Valuation")
-              return <ShoppingBag className="h-6 w-6 text-teal-600" />;
-            if (title === "Above minimum")
-              return <CheckCircle className="h-6 w-6 text-green-600" />;
-            if (title === "Low Stock")
-              return <AlertTriangle className="h-6 w-6 text-amber-600" />;
-            if (title === "Out of Stock")
-              return <XCircle className="h-6 w-6 text-red-600" />;
-            return idx === 0 ? (
-              <Users className="h-6 w-6 text-blue-600" />
-            ) : idx === 1 ? (
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            ) : (
-              <Package className="h-6 w-6 text-gray-600" />
-            );
+            if (title === 'Wholesale Valuation') return <DollarSign className="h-6 w-6 text-amber-600" />;
+            if (title === 'Retail Valuation') return <ShoppingBag className="h-6 w-6 text-teal-600" />;
+            if (title === 'Above minimum') return <CheckCircle className="h-6 w-6 text-green-600" />;
+            if (title === 'Low Stock') return <AlertTriangle className="h-6 w-6 text-amber-600" />;
+            if (title === 'Out of Stock') return <XCircle className="h-6 w-6 text-red-600" />;
+            if (title === 'Combined Balance') return <DollarSign className="h-6 w-6 text-indigo-600" />;
+            return idx === 0 ? <Users className="h-6 w-6 text-blue-600" /> :
+              idx === 1 ? <TrendingUp className="h-6 w-6 text-purple-600" /> :
+                <Package className="h-6 w-6 text-gray-600" />;
           };
           const getBgColor = () => {
-            if (title === "Wholesale Valuation") return "bg-amber-50";
-            if (title === "Retail Valuation") return "bg-teal-50";
-            if (title === "Above minimum") return "bg-green-50";
-            if (title === "Low Stock") return "bg-amber-50";
-            if (title === "Out of Stock") return "bg-red-50";
-            return idx === 0
-              ? "bg-blue-50"
-              : idx === 1
-                ? "bg-purple-50"
-                : "bg-gray-50";
+            if (title === 'Wholesale Valuation') return "bg-amber-50";
+            if (title === 'Retail Valuation') return "bg-teal-50";
+            if (title === 'Above minimum') return "bg-green-50";
+            if (title === 'Low Stock') return "bg-amber-50";
+            if (title === 'Out of Stock') return "bg-red-50";
+            if (title === 'Combined Balance') return "bg-indigo-50";
+            return idx === 0 ? "bg-blue-50" :
+              idx === 1 ? "bg-purple-50" :
+                "bg-gray-50";
           };
           return (
             <SummaryCard
@@ -1489,95 +1077,85 @@ export const Reports = () => {
         })}
       </div>
 
+
+
+
       {/* Main Report Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Tabs */}
         <div className="border-b border-gray-100">
           <nav className="flex overflow-x-auto">
             <TabButton
-              active={activeTab === "party-balance"}
-              onClick={() => setActiveTab("party-balance")}
+              active={activeTab === 'party-balance'}
+              onClick={() => setActiveTab('party-balance')}
               label="Party Balances"
             />
             <TabButton
-              active={activeTab === "sales"}
-              onClick={() => setActiveTab("sales")}
+              active={activeTab === 'sales'}
+              onClick={() => setActiveTab('sales')}
               label="Sales Analysis"
             />
             <TabButton
-              active={activeTab === "inventory"}
-              onClick={() => setActiveTab("inventory")}
+              active={activeTab === 'top-products'}
+              onClick={() => setActiveTab('top-products')}
+              label="Top Products"
+            />
+            <TabButton
+              active={activeTab === 'top-customers'}
+              onClick={() => setActiveTab('top-customers')}
+              label="Top Customers"
+            />
+            <TabButton
+              active={activeTab === 'inventory'}
+              onClick={() => setActiveTab('inventory')}
               label="Inventory"
             />
             <TabButton
-              active={activeTab === "financial"}
-              onClick={() => setActiveTab("financial")}
+              active={activeTab === 'financial'}
+              onClick={() => setActiveTab('financial')}
               label="Financials"
             />
             <TabButton
-              active={activeTab === "bank-cash"}
-              onClick={() => setActiveTab("bank-cash")}
+              active={activeTab === 'bank-cash'}
+              onClick={() => setActiveTab('bank-cash')}
               label="Bank & Cash"
             />
           </nav>
         </div>
 
         <div className="p-6">
-          {activeTab === "party-balance" && (
+          {activeTab === 'party-balance' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                   <button
-                    onClick={() => setPartyType("customer")}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                      partyType === "customer"
-                        ? "bg-white text-blue-600 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    onClick={() => setPartyType('customer')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${partyType === 'customer' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      }`}
                   >
                     Customers
                   </button>
                   <button
-                    onClick={() => setPartyType("supplier")}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                      partyType === "supplier"
-                        ? "bg-white text-purple-600 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    onClick={() => setPartyType('supplier')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${partyType === 'supplier' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      }`}
                   >
                     Suppliers
                   </button>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                  <span>
-                    {partyBalanceTotal}{" "}
-                    {partyType === "customer" ? "customers" : "suppliers"} total
-                  </span>
-                  <span className="text-gray-400">·</span>
-                  <span>
-                    Rows {partyRangeStart}–{partyRangeEnd} of{" "}
-                    {partyBalanceTotal}
-                  </span>
-                </div>
+
               </div>
-              <p className="text-xs text-gray-500">
-                Net balance = opening balance + ledger activity on AR (1100) or
-                AP (2000). Ledger Dr/Cr exclude opening-balance postings so they
-                match the general ledger.
-              </p>
+
 
               <div
                 ref={partyTableScrollRef}
-                className={`overflow-x-auto border border-gray-100 rounded-lg ${virtualizePartyRows ? "max-h-[min(70vh,560px)] overflow-y-auto" : ""}`}
+                className={`overflow-x-auto border border-gray-100 rounded-lg ${virtualizePartyRows ? 'max-h-[min(70vh,560px)] overflow-y-auto' : ''}`}
               >
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       {getColumns().map((col, idx) => (
-                        <th
-                          key={idx}
-                          className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === "right" ? "text-right" : "text-left"}`}
-                        >
+                        <th key={idx} className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
                           {col.header}
                         </th>
                       ))}
@@ -1586,44 +1164,22 @@ export const Reports = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {partyLoading ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center"
-                        >
-                          <div className="flex justify-center">
-                            <RefreshCcw className="h-6 w-6 animate-spin text-gray-400" />
-                          </div>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center">
+                          <div className="flex justify-center"><RefreshCcw className="h-6 w-6 animate-spin text-gray-400" /></div>
                         </td>
                       </tr>
                     ) : partyBalanceTotal === 0 ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center text-gray-500"
-                        >
-                          No data found for the selected filters
-                        </td>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center text-gray-500">No data found for the selected filters</td>
                       </tr>
                     ) : !virtualizePartyRows ? (
                       partyBalancePaginatedRows.map((row, idx) => {
-                        const rowIndex =
-                          (Math.min(partyBalancePage, partyBalanceTotalPages) -
-                            1) *
-                            partyPageSize +
-                          idx;
+                        const rowIndex = (Math.min(partyBalancePage, partyBalanceTotalPages) - 1) * partyPageSize + idx;
                         return (
-                          <tr
-                            key={row.id || idx}
-                            className="hover:bg-gray-50 transition-colors"
-                          >
+                          <tr key={row.id || idx} className="hover:bg-gray-50 transition-colors">
                             {getColumns().map((col, colIdx) => (
-                              <td
-                                key={colIdx}
-                                className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === "right" ? "text-right" : "text-left"} ${col.bold ? "font-bold" : ""}`}
-                              >
-                                {col.render
-                                  ? col.render(row, rowIndex)
-                                  : row[col.key]}
+                              <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
+                                {col.render ? col.render(row, rowIndex) : row[col.key]}
                               </td>
                             ))}
                           </tr>
@@ -1635,42 +1191,23 @@ export const Reports = () => {
                         const colSpan = cols.length;
                         const vItems = partyRowVirtualizer.getVirtualItems();
                         const totalH = partyRowVirtualizer.getTotalSize();
-                        const { padTop, padBottom } = getVirtualTablePadding(
-                          vItems,
-                          totalH,
-                        );
-                        const pageBase =
-                          (Math.min(partyBalancePage, partyBalanceTotalPages) -
-                            1) *
-                          partyPageSize;
+                        const { padTop, padBottom } = getVirtualTablePadding(vItems, totalH);
+                        const pageBase = (Math.min(partyBalancePage, partyBalanceTotalPages) - 1) * partyPageSize;
                         return (
                           <>
                             {padTop > 0 ? (
                               <tr aria-hidden className="pointer-events-none">
-                                <td
-                                  colSpan={colSpan}
-                                  className="p-0 border-0"
-                                  style={{ height: padTop }}
-                                />
+                                <td colSpan={colSpan} className="p-0 border-0" style={{ height: padTop }} />
                               </tr>
                             ) : null}
                             {vItems.map((vr) => {
                               const row = partyBalancePaginatedRows[vr.index];
                               const rowIndex = pageBase + vr.index;
                               return (
-                                <tr
-                                  key={vr.key}
-                                  className="hover:bg-gray-50 transition-colors"
-                                  style={{ height: vr.size }}
-                                >
+                                <tr key={vr.key} className="hover:bg-gray-50 transition-colors" style={{ height: vr.size }}>
                                   {cols.map((col, colIdx) => (
-                                    <td
-                                      key={colIdx}
-                                      className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === "right" ? "text-right" : "text-left"} ${col.bold ? "font-bold" : ""}`}
-                                    >
-                                      {col.render
-                                        ? col.render(row, rowIndex)
-                                        : row[col.key]}
+                                    <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
+                                      {col.render ? col.render(row, rowIndex) : row[col.key]}
                                     </td>
                                   ))}
                                 </tr>
@@ -1678,11 +1215,7 @@ export const Reports = () => {
                             })}
                             {padBottom > 0 ? (
                               <tr aria-hidden className="pointer-events-none">
-                                <td
-                                  colSpan={colSpan}
-                                  className="p-0 border-0"
-                                  style={{ height: padBottom }}
-                                />
+                                <td colSpan={colSpan} className="p-0 border-0" style={{ height: padBottom }} />
                               </tr>
                             ) : null}
                           </>
@@ -1696,10 +1229,7 @@ export const Reports = () => {
               {partyBalanceTotal > 0 && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-gray-100">
                   <div className="flex items-center gap-2">
-                    <label
-                      htmlFor="party-page-size"
-                      className="text-sm text-gray-600 whitespace-nowrap"
-                    >
+                    <label htmlFor="party-page-size" className="text-sm text-gray-600 whitespace-nowrap">
                       Rows per page
                     </label>
                     <select
@@ -1718,9 +1248,7 @@ export const Reports = () => {
                   <div className="flex items-center gap-2 justify-end">
                     <button
                       type="button"
-                      onClick={() =>
-                        setPartyBalancePage((p) => Math.max(1, p - 1))
-                      }
+                      onClick={() => setPartyBalancePage((p) => Math.max(1, p - 1))}
                       disabled={partyBalancePage <= 1}
                       className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -1728,16 +1256,11 @@ export const Reports = () => {
                       Previous
                     </button>
                     <span className="text-sm text-gray-600 tabular-nums px-2">
-                      Page {Math.min(partyBalancePage, partyBalanceTotalPages)}{" "}
-                      of {partyBalanceTotalPages}
+                      Page {Math.min(partyBalancePage, partyBalanceTotalPages)} of {partyBalanceTotalPages}
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setPartyBalancePage((p) =>
-                          Math.min(partyBalanceTotalPages, p + 1),
-                        )
-                      }
+                      onClick={() => setPartyBalancePage((p) => Math.min(partyBalanceTotalPages, p + 1))}
                       disabled={partyBalancePage >= partyBalanceTotalPages}
                       className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -1750,26 +1273,23 @@ export const Reports = () => {
             </div>
           )}
 
-          {activeTab === "sales" && (
+          {activeTab === 'sales' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
                   {[
-                    { id: "daily", label: "Daily" },
-                    { id: "monthly", label: "Monthly" },
-                    { id: "product", label: "Product-wise" },
-                    { id: "category", label: "Category-wise" },
-                    { id: "city", label: "City-wise" },
-                    { id: "invoice", label: "Invoices" },
+                    { id: 'daily', label: 'Daily' },
+                    { id: 'monthly', label: 'Monthly' },
+                    { id: 'product', label: 'Product-wise' },
+                    { id: 'category', label: 'Category-wise' },
+                    { id: 'city', label: 'City-wise' },
+                    { id: 'invoice', label: 'Invoices' }
                   ].map((group) => (
                     <button
                       key={group.id}
                       onClick={() => setSalesGroupBy(group.id)}
-                      className={`px-4 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all ${
-                        salesGroupBy === group.id
-                          ? "bg-white text-blue-600 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all ${salesGroupBy === group.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
                     >
                       {group.label}
                     </button>
@@ -1785,10 +1305,7 @@ export const Reports = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       {getColumns().map((col, idx) => (
-                        <th
-                          key={idx}
-                          className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === "right" ? "text-right" : "text-left"}`}
-                        >
+                        <th key={idx} className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
                           {col.header}
                         </th>
                       ))}
@@ -1797,35 +1314,19 @@ export const Reports = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {salesLoading ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center"
-                        >
-                          <div className="flex justify-center">
-                            <RefreshCcw className="h-6 w-6 animate-spin text-gray-400" />
-                          </div>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center">
+                          <div className="flex justify-center"><RefreshCcw className="h-6 w-6 animate-spin text-gray-400" /></div>
                         </td>
                       </tr>
                     ) : salesReportData?.data?.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center text-gray-500"
-                        >
-                          No sales data found for the selected period
-                        </td>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center text-gray-500">No sales data found for the selected period</td>
                       </tr>
                     ) : (
                       salesReportData?.data?.map((row, idx) => (
-                        <tr
-                          key={idx}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
+                        <tr key={idx} className="hover:bg-gray-50 transition-colors">
                           {getColumns().map((col, colIdx) => (
-                            <td
-                              key={colIdx}
-                              className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === "right" ? "text-right" : "text-left"} ${col.bold ? "font-bold" : ""}`}
-                            >
+                            <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
                               {col.render ? col.render(row) : row[col.key]}
                             </td>
                           ))}
@@ -1838,37 +1339,157 @@ export const Reports = () => {
             </div>
           )}
 
-          {activeTab === "inventory" && (
+          {activeTab === 'top-products' && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-wrap">
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-gray-400 shrink-0" aria-hidden />
+                    <select
+                      value={topProductsSupplierId}
+                      onChange={(e) => setTopProductsSupplierId(e.target.value)}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[180px] max-w-[240px]"
+                    >
+                      <option value="">All suppliers</option>
+                      {inventorySupplierOptions.map((s) => {
+                        const id = s.id || s._id;
+                        const label = s.companyName || s.businessName || s.name || id;
+                        return (
+                          <option key={id} value={id}>
+                            {label}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="top-products-sort" className="text-xs font-medium text-gray-600 whitespace-nowrap">
+                      Sort
+                    </label>
+                    <select
+                      id="top-products-sort"
+                      value={topProductsSortBy}
+                      onChange={(e) => setTopProductsSortBy(e.target.value)}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="revenue">By revenue</option>
+                      <option value="supplier">By supplier, then revenue</option>
+                    </select>
+                  </div>
+
+                </div>
+              </div>
+              <div className="overflow-x-auto border border-gray-100 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {getColumns().map((col, idx) => (
+                        <th key={idx} className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
+                          {col.header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {productReportLoading ? (
+                      <tr>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center">
+                          <div className="flex justify-center"><RefreshCcw className="h-6 w-6 animate-spin text-gray-400" /></div>
+                        </td>
+                      </tr>
+                    ) : (productReportData?.products?.length ?? 0) === 0 ? (
+                      <tr>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center text-gray-500">No product sales in this period</td>
+                      </tr>
+                    ) : (
+                      (productReportData?.products || []).map((row, idx) => (
+                        <tr key={row.product?.id || row.product?._id || idx} className="hover:bg-gray-50 transition-colors">
+                          {getColumns().map((col, colIdx) => (
+                            <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
+                              {col.render ? col.render(row, idx) : row[col.key]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'top-customers' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+
+
+              </div>
+              <div className="overflow-x-auto border border-gray-100 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {getColumns().map((col, idx) => (
+                        <th key={idx} className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
+                          {col.header}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {customerReportLoading ? (
+                      <tr>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center">
+                          <div className="flex justify-center"><RefreshCcw className="h-6 w-6 animate-spin text-gray-400" /></div>
+                        </td>
+                      </tr>
+                    ) : (customerReportData?.customers?.length ?? 0) === 0 ? (
+                      <tr>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center text-gray-500">No customer orders in this period</td>
+                      </tr>
+                    ) : (
+                      (customerReportData?.customers || []).map((row, idx) => (
+                        <tr key={row.customer?.id || row.customer?._id || idx} className="hover:bg-gray-50 transition-colors">
+                          {getColumns().map((col, colIdx) => (
+                            <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
+                              {col.render ? col.render(row, idx) : row[col.key]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'inventory' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                   {[
-                    { id: "stock-summary", label: "Stock Summary" },
-                    { id: "summary", label: "Current Stock" },
-                    { id: "low-stock", label: "Low Stock" },
-                    { id: "valuation", label: "Stock Valuation" },
+                    { id: 'stock-summary', label: 'Stock Summary' },
+                    { id: 'summary', label: 'Current Stock' },
+                    { id: 'low-stock', label: 'Low Stock' },
+                    { id: 'valuation', label: 'Stock Valuation' }
                   ].map((type) => (
                     <button
                       key={type.id}
                       onClick={() => setInventoryType(type.id)}
-                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        inventoryType === type.id
-                          ? "bg-white text-blue-600 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${inventoryType === type.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
                     >
                       {type.label}
                     </button>
                   ))}
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  {inventoryType === "stock-summary" && (
+                  {inventoryType === 'stock-summary' && (
                     <DateFilter
                       startDate={dateRange.from}
                       endDate={dateRange.to}
-                      onDateChange={(start, end) =>
-                        setDateRange({ from: start || "", to: end || "" })
-                      }
+                      onDateChange={(start, end) => setDateRange({ from: start || '', to: end || '' })}
                       compact={true}
                       showPresets={true}
                     />
@@ -1878,46 +1499,63 @@ export const Reports = () => {
                     <input
                       type="text"
                       value={inventoryProductSearch}
-                      onChange={(e) =>
-                        setInventoryProductSearch(e.target.value)
-                      }
+                      onChange={(e) => setInventoryProductSearch(e.target.value)}
                       placeholder="Search product by name or SKU..."
                       className="input w-full text-sm h-9"
                     />
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {isInventoryPaginated ? (
-                      <span>
-                        {stockSummaryTotal} items
-                        {stockSummaryTotal > 0 ? (
-                          <span className="text-gray-400">
-                            {" "}
-                            · Rows {stockRangeStart}–{stockRangeEnd} of{" "}
-                            {stockSummaryTotal}
-                          </span>
-                        ) : null}
-                      </span>
-                    ) : (
-                      <span>
-                        {inventoryReportData?.data?.length || 0} Items Found
-                      </span>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="inventory-supplier" className="sr-only">
+                      Filter by supplier
+                    </label>
+                    <Building2 className="h-4 w-4 text-gray-400 shrink-0" aria-hidden />
+                    <select
+                      id="inventory-supplier"
+                      value={inventorySupplierId}
+                      onChange={(e) => setInventorySupplierId(e.target.value)}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[180px] max-w-[240px]"
+                    >
+                      <option value="">All suppliers</option>
+                      {inventorySupplierOptions.map((s) => {
+                        const id = s.id || s._id;
+                        const label = s.companyName || s.businessName || s.name || id;
+                        return (
+                          <option key={id} value={id}>
+                            {label}
+                          </option>
+                        );
+                      })}
+                    </select>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="inventory-sort" className="text-xs font-medium text-gray-600 whitespace-nowrap">
+                      Sort
+                    </label>
+                    <select
+                      id="inventory-sort"
+                      value={inventorySortBy}
+                      onChange={(e) => setInventorySortBy(e.target.value)}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="name">Product name</option>
+                      <option value="supplier">Supplier, then product</option>
+                    </select>
+                  </div>
+
                 </div>
               </div>
 
+
+
               <div
                 ref={stockSummaryTableScrollRef}
-                className={`overflow-x-auto border border-gray-100 rounded-lg ${virtualizeStockSummaryRows ? "max-h-[min(70vh,560px)] overflow-y-auto" : ""}`}
+                className={`overflow-x-auto border border-gray-100 rounded-lg ${virtualizeStockSummaryRows ? 'max-h-[min(70vh,560px)] overflow-y-auto' : ''}`}
               >
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
                       {getColumns().map((col, idx) => (
-                        <th
-                          key={idx}
-                          className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === "right" ? "text-right" : "text-left"}`}
-                        >
+                        <th key={idx} className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
                           {col.header}
                         </th>
                       ))}
@@ -1926,266 +1564,110 @@ export const Reports = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {inventoryLoading ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center"
-                        >
-                          <div className="flex justify-center">
-                            <RefreshCcw className="h-6 w-6 animate-spin text-gray-400" />
-                          </div>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center">
+                          <div className="flex justify-center"><RefreshCcw className="h-6 w-6 animate-spin text-gray-400" /></div>
                         </td>
                       </tr>
-                    ) : (
-                        isInventoryPaginated
-                          ? stockSummaryTotal === 0
-                          : (inventoryReportData?.data?.length || 0) === 0
-                      ) ? (
+                    ) : (isInventoryPaginated
+                      ? stockSummaryTotal === 0
+                      : (inventoryReportData?.data?.length || 0) === 0) ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center text-gray-500"
-                        >
-                          No inventory data found
-                        </td>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center text-gray-500">No inventory data found</td>
                       </tr>
                     ) : (
                       <>
-                        {!isInventoryPaginated
-                          ? (inventoryReportData?.data || []).map(
-                              (row, idx) => (
-                                <tr
-                                  key={row.id || idx}
-                                  className="hover:bg-gray-50 transition-colors"
-                                >
-                                  {getColumns().map((col, colIdx) => (
-                                    <td
-                                      key={colIdx}
-                                      className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === "right" ? "text-right" : "text-left"} ${col.bold ? "font-bold" : ""}`}
-                                    >
-                                      {col.render
-                                        ? col.render(row, idx)
-                                        : row[col.key]}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ),
-                            )
-                          : !virtualizeStockSummaryRows
-                            ? stockSummaryPaginatedRows.map((row, idx) => (
-                                <tr
-                                  key={row.id || idx}
-                                  className="hover:bg-gray-50 transition-colors"
-                                >
-                                  {getColumns().map((col, colIdx) => (
-                                    <td
-                                      key={colIdx}
-                                      className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === "right" ? "text-right" : "text-left"} ${col.bold ? "font-bold" : ""}`}
-                                    >
-                                      {col.render
-                                        ? col.render(
-                                            row,
-                                            (Math.min(
-                                              stockSummaryPage,
-                                              stockSummaryTotalPages,
-                                            ) -
-                                              1) *
-                                              stockSummaryPageSize +
-                                              idx,
-                                          )
-                                        : row[col.key]}
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))
-                            : (() => {
-                                const cols = getColumns();
-                                const colSpan = cols.length;
-                                const vItems =
-                                  stockSummaryRowVirtualizer.getVirtualItems();
-                                const totalH =
-                                  stockSummaryRowVirtualizer.getTotalSize();
-                                const { padTop, padBottom } =
-                                  getVirtualTablePadding(vItems, totalH);
-                                const pageBase =
-                                  (Math.min(
-                                    stockSummaryPage,
-                                    stockSummaryTotalPages,
-                                  ) -
-                                    1) *
-                                  stockSummaryPageSize;
-                                return (
-                                  <>
-                                    {padTop > 0 ? (
-                                      <tr
-                                        aria-hidden
-                                        className="pointer-events-none"
-                                      >
-                                        <td
-                                          colSpan={colSpan}
-                                          className="p-0 border-0"
-                                          style={{ height: padTop }}
-                                        />
-                                      </tr>
-                                    ) : null}
-                                    {vItems.map((vr) => {
-                                      const row =
-                                        stockSummaryPaginatedRows[vr.index];
-                                      const rowIndex = pageBase + vr.index;
-                                      return (
-                                        <tr
-                                          key={vr.key}
-                                          className="hover:bg-gray-50 transition-colors"
-                                          style={{ height: vr.size }}
-                                        >
-                                          {cols.map((col, colIdx) => (
-                                            <td
-                                              key={colIdx}
-                                              className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === "right" ? "text-right" : "text-left"} ${col.bold ? "font-bold" : ""}`}
-                                            >
-                                              {col.render
-                                                ? col.render(row, rowIndex)
-                                                : row[col.key]}
-                                            </td>
-                                          ))}
-                                        </tr>
-                                      );
-                                    })}
-                                    {padBottom > 0 ? (
-                                      <tr
-                                        aria-hidden
-                                        className="pointer-events-none"
-                                      >
-                                        <td
-                                          colSpan={colSpan}
-                                          className="p-0 border-0"
-                                          style={{ height: padBottom }}
-                                        />
-                                      </tr>
-                                    ) : null}
-                                  </>
-                                );
-                              })()}
-                        {inventoryType === "stock-summary" &&
-                          stockSummaryTotal > 0 &&
-                          inventoryReportData?.summary && (
-                            <tr className="bg-gray-50 font-bold border-t-2 border-gray-300">
-                              <td
-                                colSpan={3}
-                                className="px-6 py-3 text-sm text-gray-900"
-                              >
-                                Grand Total
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.openingQty || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.openingAmount || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.purchaseQty || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.purchaseAmount ||
-                                  0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary
-                                    .purchaseReturnQty || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary
-                                    .purchaseReturnAmount || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.saleQty || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.saleAmount || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.saleReturnQty || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary
-                                    .saleReturnAmount || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.damageQty || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.damageAmount || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.closingQty || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary
-                                    .totalCurrentStock || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td
-                                className={`px-6 py-3 text-sm text-right ${
-                                  Number(
-                                    inventoryReportData.summary
-                                      .totalReconciliationDelta || 0,
-                                  ) === 0
-                                    ? "text-green-700"
-                                    : Number(
-                                          inventoryReportData.summary
-                                            .totalReconciliationDelta || 0,
-                                        ) > 0
-                                      ? "text-red-700"
-                                      : "text-amber-700"
-                                }`}
-                              >
-                                {(
-                                  inventoryReportData.summary
-                                    .totalReconciliationDelta || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary.closingAmount || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                {(
-                                  inventoryReportData.summary
-                                    .totalRetailValuation || 0
-                                ).toLocaleString()}
-                              </td>
-                              <td className="px-6 py-3 text-sm text-right">
-                                —
-                              </td>
+                        {!isInventoryPaginated ? (
+                          (inventoryReportData?.data || []).map((row, idx) => (
+                            <tr key={row.id || idx} className="hover:bg-gray-50 transition-colors">
+                              {getColumns().map((col, colIdx) => (
+                                <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
+                                  {col.render ? col.render(row, idx) : row[col.key]}
+                                </td>
+                              ))}
                             </tr>
-                          )}
+                          ))
+                        ) : !virtualizeStockSummaryRows ? (
+                          stockSummaryPaginatedRows.map((row, idx) => (
+                            <tr key={row.id || idx} className="hover:bg-gray-50 transition-colors">
+                              {getColumns().map((col, colIdx) => (
+                                <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
+                                  {col.render
+                                    ? col.render(
+                                      row,
+                                      (Math.min(stockSummaryPage, stockSummaryTotalPages) - 1) * stockSummaryPageSize + idx
+                                    )
+                                    : row[col.key]}
+                                </td>
+                              ))}
+                            </tr>
+                          ))
+                        ) : (
+                          (() => {
+                            const cols = getColumns();
+                            const colSpan = cols.length;
+                            const vItems = stockSummaryRowVirtualizer.getVirtualItems();
+                            const totalH = stockSummaryRowVirtualizer.getTotalSize();
+                            const { padTop, padBottom } = getVirtualTablePadding(vItems, totalH);
+                            const pageBase = (Math.min(stockSummaryPage, stockSummaryTotalPages) - 1) * stockSummaryPageSize;
+                            return (
+                              <>
+                                {padTop > 0 ? (
+                                  <tr aria-hidden className="pointer-events-none">
+                                    <td colSpan={colSpan} className="p-0 border-0" style={{ height: padTop }} />
+                                  </tr>
+                                ) : null}
+                                {vItems.map((vr) => {
+                                  const row = stockSummaryPaginatedRows[vr.index];
+                                  const rowIndex = pageBase + vr.index;
+                                  return (
+                                    <tr key={vr.key} className="hover:bg-gray-50 transition-colors" style={{ height: vr.size }}>
+                                      {cols.map((col, colIdx) => (
+                                        <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
+                                          {col.render ? col.render(row, rowIndex) : row[col.key]}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  );
+                                })}
+                                {padBottom > 0 ? (
+                                  <tr aria-hidden className="pointer-events-none">
+                                    <td colSpan={colSpan} className="p-0 border-0" style={{ height: padBottom }} />
+                                  </tr>
+                                ) : null}
+                              </>
+                            );
+                          })()
+                        )}
+                        {inventoryType === 'stock-summary' && stockSummaryTotal > 0 && inventoryReportData?.summary && (
+                          <tr className="bg-gray-50 font-bold border-t-2 border-gray-300">
+                            <td colSpan={3} className="px-6 py-3 text-sm text-gray-900">Grand Total</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.openingQty || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.openingAmount || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.purchaseQty || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.purchaseAmount || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.purchaseReturnQty || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.purchaseReturnAmount || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.saleQty || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.saleAmount || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.saleReturnQty || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.saleReturnAmount || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.damageQty || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.damageAmount || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.closingQty || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.totalCurrentStock || 0).toLocaleString()}</td>
+                            <td className={`px-6 py-3 text-sm text-right ${Number(inventoryReportData.summary.totalReconciliationDelta || 0) === 0
+                                ? 'text-green-700'
+                                : Number(inventoryReportData.summary.totalReconciliationDelta || 0) > 0
+                                  ? 'text-red-700'
+                                  : 'text-amber-700'
+                              }`}>
+                              {(inventoryReportData.summary.totalReconciliationDelta || 0).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.closingAmount || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">{(inventoryReportData.summary.totalRetailValuation || 0).toLocaleString()}</td>
+                            <td className="px-6 py-3 text-sm text-right">—</td>
+                          </tr>
+                        )}
                       </>
                     )}
                   </tbody>
@@ -2195,18 +1677,13 @@ export const Reports = () => {
               {isInventoryPaginated && stockSummaryTotal > 0 && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-gray-100">
                   <div className="flex items-center gap-2">
-                    <label
-                      htmlFor="stock-summary-page-size"
-                      className="text-sm text-gray-600 whitespace-nowrap"
-                    >
+                    <label htmlFor="stock-summary-page-size" className="text-sm text-gray-600 whitespace-nowrap">
                       Rows per page
                     </label>
                     <select
                       id="stock-summary-page-size"
                       value={stockSummaryPageSize}
-                      onChange={(e) =>
-                        setStockSummaryPageSize(Number(e.target.value))
-                      }
+                      onChange={(e) => setStockSummaryPageSize(Number(e.target.value))}
                       className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     >
                       {STOCK_SUMMARY_PAGE_SIZES.map((n) => (
@@ -2219,9 +1696,7 @@ export const Reports = () => {
                   <div className="flex items-center gap-2 justify-end">
                     <button
                       type="button"
-                      onClick={() =>
-                        setStockSummaryPage((p) => Math.max(1, p - 1))
-                      }
+                      onClick={() => setStockSummaryPage((p) => Math.max(1, p - 1))}
                       disabled={stockSummaryPage <= 1}
                       className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -2229,16 +1704,11 @@ export const Reports = () => {
                       Previous
                     </button>
                     <span className="text-sm text-gray-600 tabular-nums px-2">
-                      Page {Math.min(stockSummaryPage, stockSummaryTotalPages)}{" "}
-                      of {stockSummaryTotalPages}
+                      Page {Math.min(stockSummaryPage, stockSummaryTotalPages)} of {stockSummaryTotalPages}
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setStockSummaryPage((p) =>
-                          Math.min(stockSummaryTotalPages, p + 1),
-                        )
-                      }
+                      onClick={() => setStockSummaryPage((p) => Math.min(stockSummaryTotalPages, p + 1))}
                       disabled={stockSummaryPage >= stockSummaryTotalPages}
                       className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -2251,23 +1721,20 @@ export const Reports = () => {
             </div>
           )}
 
-          {activeTab === "financial" && (
+          {activeTab === 'financial' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                   {[
-                    { id: "trial-balance", label: "Trial Balance" },
-                    { id: "pl-statement", label: "Profit & Loss" },
-                    { id: "balance-sheet", label: "Balance Sheet" },
+                    { id: 'trial-balance', label: 'Trial Balance' },
+                    { id: 'pl-statement', label: 'Profit & Loss' },
+                    { id: 'balance-sheet', label: 'Balance Sheet' }
                   ].map((type) => (
                     <button
                       key={type.id}
                       onClick={() => setFinancialType(type.id)}
-                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        financialType === type.id
-                          ? "bg-white text-blue-600 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${financialType === type.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
                     >
                       {type.label}
                     </button>
@@ -2283,10 +1750,7 @@ export const Reports = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       {getColumns().map((col, idx) => (
-                        <th
-                          key={idx}
-                          className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === "right" ? "text-right" : "text-left"}`}
-                        >
+                        <th key={idx} className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
                           {col.header}
                         </th>
                       ))}
@@ -2295,36 +1759,20 @@ export const Reports = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {financialLoading ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center"
-                        >
-                          <div className="flex justify-center">
-                            <RefreshCcw className="h-6 w-6 animate-spin text-gray-400" />
-                          </div>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center">
+                          <div className="flex justify-center"><RefreshCcw className="h-6 w-6 animate-spin text-gray-400" /></div>
                         </td>
                       </tr>
                     ) : financialReportData?.data?.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center text-gray-500"
-                        >
-                          No financial data found for the selected period
-                        </td>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center text-gray-500">No financial data found for the selected period</td>
                       </tr>
                     ) : (
                       <>
                         {financialReportData?.data?.map((row, idx) => (
-                          <tr
-                            key={idx}
-                            className="hover:bg-gray-50 transition-colors"
-                          >
+                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
                             {getColumns().map((col, colIdx) => (
-                              <td
-                                key={colIdx}
-                                className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === "right" ? "text-right" : "text-left"} ${col.bold ? "font-bold" : ""}`}
-                              >
+                              <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
                                 {col.render ? col.render(row) : row[col.key]}
                               </td>
                             ))}
@@ -2332,63 +1780,41 @@ export const Reports = () => {
                         ))}
                         {financialReportData?.summary && (
                           <>
-                            {financialType === "trial-balance" && (
+                            {financialType === 'trial-balance' && (
                               <tr className="bg-gray-900 border-t-2 border-gray-800">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">
-                                  Grand Total
-                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">Grand Total</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white text-right"></td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
-                                  {(
-                                    financialReportData.summary.totalDebit || 0
-                                  ).toLocaleString()}
+                                  {(financialReportData.summary.totalDebit || 0).toLocaleString()}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
-                                  {(
-                                    financialReportData.summary.totalCredit || 0
-                                  ).toLocaleString()}
+                                  {(financialReportData.summary.totalCredit || 0).toLocaleString()}
                                 </td>
                               </tr>
                             )}
-                            {financialType === "pl-statement" && (
+                            {financialType === 'pl-statement' && (
                               <tr className="bg-gray-900 border-t-2 border-gray-800">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">
-                                  Net Profit / Loss
-                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">Net Profit / Loss</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white text-right"></td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
-                                  {(
-                                    financialReportData.summary.netProfit || 0
-                                  ).toLocaleString()}
+                                  {(financialReportData.summary.netProfit || 0).toLocaleString()}
                                 </td>
                               </tr>
                             )}
-                            {financialType === "balance-sheet" && (
+                            {financialType === 'balance-sheet' && (
                               <>
                                 <tr className="bg-gray-900 border-t-2 border-gray-800">
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">
-                                    Total Assets
-                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">Total Assets</td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white text-right"></td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
-                                    {(
-                                      financialReportData.summary.totalAssets ||
-                                      0
-                                    ).toLocaleString()}
+                                    {(financialReportData.summary.totalAssets || 0).toLocaleString()}
                                   </td>
                                 </tr>
                                 <tr className="bg-gray-900 border-t border-gray-800">
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">
-                                    Total Liabilities + Equity
-                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">Total Liabilities + Equity</td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white text-right"></td>
                                   <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
-                                    {(
-                                      (financialReportData.summary
-                                        .totalLiabilities || 0) +
-                                      (financialReportData.summary
-                                        .totalEquity || 0)
-                                    ).toLocaleString()}
+                                    {((financialReportData.summary.totalLiabilities || 0) + (financialReportData.summary.totalEquity || 0)).toLocaleString()}
                                   </td>
                                 </tr>
                               </>
@@ -2403,33 +1829,27 @@ export const Reports = () => {
             </div>
           )}
 
-          {activeTab === "bank-cash" && (
+          {activeTab === 'bank-cash' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center flex-wrap gap-3">
                   <div className="flex bg-gray-100 p-1 rounded-lg">
                     <button
-                      onClick={() => setBankCashFilterMode("month")}
-                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        bankCashFilterMode === "month"
-                          ? "bg-white text-blue-600 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      onClick={() => setBankCashFilterMode('month')}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${bankCashFilterMode === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
                     >
                       Month
                     </button>
                     <button
-                      onClick={() => setBankCashFilterMode("custom")}
-                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                        bankCashFilterMode === "custom"
-                          ? "bg-white text-blue-600 shadow-sm"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      onClick={() => setBankCashFilterMode('custom')}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${bankCashFilterMode === 'custom' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                        }`}
                     >
                       Custom Range
                     </button>
                   </div>
-                  {bankCashFilterMode === "month" ? (
+                  {bankCashFilterMode === 'month' ? (
                     <input
                       type="month"
                       value={bankCashMonth}
@@ -2440,31 +1860,18 @@ export const Reports = () => {
                     <DateFilter
                       startDate={bankCashDateRange.from}
                       endDate={bankCashDateRange.to}
-                      onDateChange={(start, end) =>
-                        setBankCashDateRange({
-                          from: start || "",
-                          to: end || "",
-                        })
-                      }
+                      onDateChange={(start, end) => setBankCashDateRange({ from: start || '', to: end || '' })}
                       compact={true}
                       showPresets={true}
                     />
                   )}
                   <div className="w-full sm:w-auto min-w-[220px] rounded-md border border-gray-300 bg-white p-2">
                     <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-medium text-gray-600">
-                        Banks
-                      </span>
+                      <span className="text-xs font-medium text-gray-600">Banks</span>
                       <div className="flex items-center gap-2 text-xs">
                         <button
                           type="button"
-                          onClick={() =>
-                            setSelectedBankIds(
-                              availableBanks
-                                .map((bank) => bank.id || bank._id)
-                                .filter(Boolean),
-                            )
-                          }
+                          onClick={() => setSelectedBankIds(availableBanks.map((bank) => bank.id || bank._id).filter(Boolean))}
                           className="text-blue-600 hover:text-blue-700"
                         >
                           Select all
@@ -2483,10 +1890,7 @@ export const Reports = () => {
                         const bankId = bank.id || bank._id;
                         if (!bankId) return null;
                         return (
-                          <label
-                            key={bankId}
-                            className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer"
-                          >
+                          <label key={bankId} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={selectedBankIds.includes(bankId)}
@@ -2494,12 +1898,7 @@ export const Reports = () => {
                               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <span>
-                              {bank.bankName || bank.bank_name || "Bank"} -{" "}
-                              {bank.accountNumber ||
-                                bank.account_number ||
-                                bank.accountName ||
-                                bank.account_name ||
-                                "Account"}
+                              {bank.bankName || bank.bank_name || 'Bank'} - {bank.accountNumber || bank.account_number || bank.accountName || bank.account_name || 'Account'}
                             </span>
                           </label>
                         );
@@ -2508,14 +1907,12 @@ export const Reports = () => {
                   </div>
                 </div>
                 <div className="text-sm text-gray-500">
-                  {bankCashSummaryData?.banks?.length || 0} Banks Found
-                  {selectedBankIds.length > 0
-                    ? ` · ${selectedBankIds.length} selected`
-                    : " · All banks"}
+                  {(bankCashSummaryData?.banks?.length || 0)} Banks Found
+                  {selectedBankIds.length > 0 ? ` · ${selectedBankIds.length} selected` : ' · All banks'}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Wallet className="h-4 w-4 text-green-600" />
@@ -2524,35 +1921,23 @@ export const Reports = () => {
                   <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <div className="text-gray-500">Opening</div>
-                      <div className="font-semibold">
-                        {(
-                          bankCashSummaryData?.cash?.openingBalance || 0
-                        ).toLocaleString()}
-                      </div>
+                      <div className="font-semibold">{(bankCashSummaryData?.cash?.openingBalance || 0).toLocaleString()}</div>
                     </div>
                     <div>
                       <div className="text-gray-500">Balance</div>
-                      <div className="font-semibold">
-                        {(
-                          bankCashSummaryData?.cash?.balance || 0
-                        ).toLocaleString()}
-                      </div>
+                      <div className="font-semibold">{(bankCashSummaryData?.cash?.balance || 0).toLocaleString()}</div>
                     </div>
                     <div>
                       <div className="text-gray-500">Receipts</div>
-                      <div className="font-semibold text-green-700">
-                        {(
-                          bankCashSummaryData?.cash?.totalReceipts || 0
-                        ).toLocaleString()}
-                      </div>
+                      <div className="font-semibold text-green-700">{(bankCashSummaryData?.cash?.totalReceipts || 0).toLocaleString()}</div>
                     </div>
                     <div>
                       <div className="text-gray-500">Payments</div>
-                      <div className="font-semibold text-red-700">
-                        {(
-                          bankCashSummaryData?.cash?.totalPayments || 0
-                        ).toLocaleString()}
-                      </div>
+                      <div className="font-semibold text-red-700">{(bankCashSummaryData?.cash?.totalPayments || 0).toLocaleString()}</div>
+                    </div>
+                    <div className="col-span-2 pt-1 border-t border-gray-200">
+                      <div className="text-gray-500">Total Sales</div>
+                      <div className="font-bold text-indigo-600">{(bankCashSummaryData?.totalSales || 0).toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
@@ -2564,35 +1949,39 @@ export const Reports = () => {
                   <div className="mt-2 grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <div className="text-gray-500">Opening</div>
-                      <div className="font-semibold">
-                        {(
-                          bankCashSummaryData?.totals?.totalBankOpening || 0
-                        ).toLocaleString()}
-                      </div>
+                      <div className="font-semibold">{(bankCashSummaryData?.totals?.totalBankOpening || 0).toLocaleString()}</div>
                     </div>
                     <div>
                       <div className="text-gray-500">Balance</div>
-                      <div className="font-semibold">
-                        {(
-                          bankCashSummaryData?.totals?.totalBankBalance || 0
-                        ).toLocaleString()}
-                      </div>
+                      <div className="font-semibold">{(bankCashSummaryData?.totals?.totalBankBalance || 0).toLocaleString()}</div>
                     </div>
                     <div>
                       <div className="text-gray-500">Receipts</div>
-                      <div className="font-semibold text-green-700">
-                        {(
-                          bankCashSummaryData?.totals?.totalBankReceipts || 0
-                        ).toLocaleString()}
-                      </div>
+                      <div className="font-semibold text-green-700">{(bankCashSummaryData?.totals?.totalBankReceipts || 0).toLocaleString()}</div>
                     </div>
                     <div>
                       <div className="text-gray-500">Payments</div>
-                      <div className="font-semibold text-red-700">
-                        {(
-                          bankCashSummaryData?.totals?.totalBankPayments || 0
-                        ).toLocaleString()}
-                      </div>
+                      <div className="font-semibold text-red-700">{(bankCashSummaryData?.totals?.totalBankPayments || 0).toLocaleString()}</div>
+                    </div>
+                    <div className="col-span-2 pt-1 border-t border-gray-200">
+                      <div className="text-gray-500">Total Sales</div>
+                      <div className="font-bold text-indigo-600">{(bankCashSummaryData?.totalSales || 0).toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 p-4">
+                  <div className="flex items-center gap-2 text-sm text-indigo-700">
+                    <TrendingUp className="h-4 w-4" />
+                    Combined Summary
+                  </div>
+                  <div className="mt-2 space-y-3 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Total Combined Balance</span>
+                      <span className="font-bold text-lg text-indigo-700">{(bankCashSummaryData?.totals?.combinedBalance || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="pt-2 border-t border-indigo-100 flex justify-between items-center">
+                      <span className="text-gray-600">Period Total Sales</span>
+                      <span className="font-bold text-indigo-600">{(bankCashSummaryData?.totalSales || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -2603,29 +1992,15 @@ export const Reports = () => {
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                   <div>
                     <div className="text-gray-500">Bank Receipts</div>
-                    <div className="font-semibold text-green-700">
-                      {(
-                        bankCashSummaryData?.receiptSummary
-                          ?.totalBankReceipts || 0
-                      ).toLocaleString()}
-                    </div>
+                    <div className="font-semibold text-green-700">{(bankCashSummaryData?.receiptSummary?.totalBankReceipts || 0).toLocaleString()}</div>
                   </div>
                   <div>
                     <div className="text-gray-500">Cash Receipts</div>
-                    <div className="font-semibold text-green-700">
-                      {(
-                        bankCashSummaryData?.receiptSummary
-                          ?.totalCashReceipts || 0
-                      ).toLocaleString()}
-                    </div>
+                    <div className="font-semibold text-green-700">{(bankCashSummaryData?.receiptSummary?.totalCashReceipts || 0).toLocaleString()}</div>
                   </div>
                   <div>
                     <div className="text-gray-500">Total Receipts</div>
-                    <div className="font-semibold text-green-800">
-                      {(
-                        bankCashSummaryData?.receiptSummary?.totalReceipts || 0
-                      ).toLocaleString()}
-                    </div>
+                    <div className="font-semibold text-green-800">{(bankCashSummaryData?.receiptSummary?.totalReceipts || 0).toLocaleString()}</div>
                   </div>
                 </div>
               </div>
@@ -2635,10 +2010,7 @@ export const Reports = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       {getColumns().map((col, idx) => (
-                        <th
-                          key={idx}
-                          className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === "right" ? "text-right" : "text-left"}`}
-                        >
+                        <th key={idx} className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
                           {col.header}
                         </th>
                       ))}
@@ -2647,35 +2019,19 @@ export const Reports = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {bankCashLoading ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center"
-                        >
-                          <div className="flex justify-center">
-                            <RefreshCcw className="h-6 w-6 animate-spin text-gray-400" />
-                          </div>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center">
+                          <div className="flex justify-center"><RefreshCcw className="h-6 w-6 animate-spin text-gray-400" /></div>
                         </td>
                       </tr>
                     ) : bankCashSummaryData?.banks?.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={getColumns().length}
-                          className="px-6 py-10 text-center text-gray-500"
-                        >
-                          No bank data found for the selected period
-                        </td>
+                        <td colSpan={getColumns().length} className="px-6 py-10 text-center text-gray-500">No bank data found for the selected period</td>
                       </tr>
                     ) : (
                       bankCashSummaryData?.banks?.map((row, idx) => (
-                        <tr
-                          key={row.id || idx}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
+                        <tr key={row.id || idx} className="hover:bg-gray-50 transition-colors">
                           {getColumns().map((col, colIdx) => (
-                            <td
-                              key={colIdx}
-                              className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === "right" ? "text-right" : "text-left"} ${col.bold ? "font-bold" : ""}`}
-                            >
+                            <td key={colIdx} className={`px-6 py-4 whitespace-nowrap text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.bold ? 'font-bold' : ''}`}>
                               {col.render ? col.render(row) : row[col.key]}
                             </td>
                           ))}
@@ -2699,7 +2055,7 @@ export const Reports = () => {
         columns={getColumns()}
         filters={{
           dateFrom: dateRange.from,
-          dateTo: dateRange.to,
+          dateTo: dateRange.to
         }}
         summaryData={getSummaryData()}
       />
@@ -2710,16 +2066,11 @@ export const Reports = () => {
 const SummaryCard = ({ title, value, icon, bgColor, trend }) => (
   <div className="bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-gray-100 flex items-start justify-between gap-3 min-w-0">
     <div className="min-w-0 flex-1">
-      <p
-        className="text-sm font-medium text-gray-500 mb-1 truncate"
-        title={title}
-      >
+      <p className="text-sm font-medium text-gray-500 mb-1 truncate" title={title}>
         {title}
       </p>
       <h3 className="text-xl sm:text-2xl font-bold text-gray-900 font-mono tracking-tight break-all sm:break-normal">
-        {typeof value === "number"
-          ? value.toLocaleString(undefined, { minimumFractionDigits: 2 })
-          : value || "0.00"}
+        {typeof value === 'number' ? value.toLocaleString(undefined, { minimumFractionDigits: 2 }) : (value || '0.00')}
       </h3>
       <p className="text-xs text-gray-400 mt-2 leading-snug">{trend}</p>
     </div>
@@ -2730,11 +2081,10 @@ const SummaryCard = ({ title, value, icon, bgColor, trend }) => (
 const TabButton = ({ active, onClick, label }) => (
   <button
     onClick={onClick}
-    className={`px-6 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${
-      active
-        ? "border-blue-600 text-blue-600 bg-blue-50/30"
-        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-    }`}
+    className={`px-6 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${active
+        ? 'border-blue-600 text-blue-600 bg-blue-50/30'
+        : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+      }`}
   >
     {label}
   </button>

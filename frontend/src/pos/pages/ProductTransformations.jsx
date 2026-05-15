@@ -24,9 +24,9 @@ import { ProductSearchableSelect } from '../components/ProductSearchableSelect';
 import { VariantSearchableSelect } from '../components/VariantSearchableSelect';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
-import { Textarea } from '@/pos/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import ValidatedInput, { ValidatedSelect } from '../components/ValidatedInput';
 import BarcodeLabelPrinter from '../components/BarcodeLabelPrinter';
 

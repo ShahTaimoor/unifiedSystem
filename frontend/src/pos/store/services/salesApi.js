@@ -128,7 +128,6 @@ export const salesApi = api.injectEndpoints({
         method: 'get',
       }),
       keepUnusedDataFor: 60,
-      transformResponse: (response) => response.data || response,
       providesTags: [{ type: 'Sales', id: 'TODAY_SUMMARY' }],
     }),
     getPeriodSummary: builder.query({
@@ -137,7 +136,6 @@ export const salesApi = api.injectEndpoints({
         method: 'get',
         params,
       }),
-      transformResponse: (response) => response.data || response,
       providesTags: [{ type: 'Sales', id: 'PERIOD_SUMMARY' }],
     }),
     updateOrder: builder.mutation({

@@ -1029,7 +1029,7 @@ class AccountingService {
    * @param {string} [params.referenceNumber]
    */
   static async updateSaleLedgerEntries(params) {
-    const { saleId, total, transactionDate, customerId, referenceNumber } = params || {};
+    const { saleId, total, transactionDate, customerId, referenceNumber, notes } = params || {};
     const saleIdStr = String(saleId);
     const updates = [];
     const values = [saleIdStr];
@@ -1061,6 +1061,8 @@ class AccountingService {
 
     const totalAmount = parseFloat(total) || 0;
     const refNum = referenceNumber || saleIdStr;
+    const finalDescription = notes || `Sale: ${refNum}`;
+    const revenueDescription = notes || `Sale Revenue: ${refNum}`;
     await query(
       `UPDATE account_ledger
        SET debit_amount = CASE WHEN account_code = '1100' THEN $2 ELSE debit_amount END,
@@ -1074,7 +1076,7 @@ class AccountingService {
          AND reference_id::text = $1
          AND reversed_at IS NULL
          AND account_code IN ('1100', '4000')`,
-      [saleIdStr, totalAmount, `Sale: ${refNum}`, `Sale Revenue: ${refNum}`]
+      [saleIdStr, totalAmount, finalDescription, revenueDescription]
     );
   }
 
@@ -1131,7 +1133,8 @@ class AccountingService {
       supplierId,
       referenceNumber,
       paidAmount,
-      paymentMethod
+      paymentMethod,
+      notes
     } = params || {};
     const invoiceIdStr = String(invoiceId);
     const updates = [];
@@ -1164,6 +1167,8 @@ class AccountingService {
 
     const totalAmount = parseFloat(total) || 0;
     const refNum = referenceNumber || invoiceIdStr;
+    const finalDescription = notes || `Purchase Invoice: ${refNum}`;
+    const creditDescription = notes || `Purchase Invoice on Credit: ${refNum}`;
     await query(
       `UPDATE account_ledger
        SET debit_amount = CASE WHEN account_code = '1200' THEN $2 ELSE debit_amount END,
@@ -1177,7 +1182,7 @@ class AccountingService {
          AND reference_id::text = $1
          AND reversed_at IS NULL
          AND account_code IN ('1200', '2000')`,
-      [invoiceIdStr, totalAmount, `Purchase Invoice: ${refNum}`, `Purchase Invoice on Credit: ${refNum}`]
+      [invoiceIdStr, totalAmount, finalDescription, creditDescription]
     );
 
     if (paidAmount !== undefined && paidAmount !== null) {
@@ -1625,7 +1630,6 @@ class AccountingService {
     const supplierId = bankPayment.supplier_id || bankPayment.supplierId;
     const customerId = bankPayment.customer_id || bankPayment.customerId;
     const amount = parseFloat(bankPayment.amount);
-    const particular = bankPayment.particular || bankPayment.notes;
 
     // Validation: Must have either customer or supplier, not both
     if (customerId && supplierId) {
@@ -1639,14 +1643,15 @@ class AccountingService {
     const partyType = supplierId ? 'supplier' : 'customer';
     const partyId = supplierId || customerId;
     const debitAccount = supplierId ? '2000' : '1100'; // AP for supplier, AR for customer
-    const paymentNumber = bankPayment.payment_number || bankPayment.paymentNumber;
 
     // Entry 1: Debit AP (2000) for supplier OR AR (1100) for customer
     const entry1 = {
       accountCode: debitAccount,
       debitAmount: amount,
       creditAmount: 0,
-      description: particular || paymentNumber || 'Bank Payment'
+      description: supplierId
+        ? `Payment to Supplier: ${bankPayment.payment_number || bankPayment.paymentNumber}`
+        : `Refund to Customer: ${bankPayment.payment_number || bankPayment.paymentNumber}`
     };
 
     // Entry 2: Credit Bank Account (1001)
@@ -1654,13 +1659,13 @@ class AccountingService {
       accountCode: '1001', // Bank Account
       debitAmount: 0,
       creditAmount: amount,
-      description: `Bank Payment: ${paymentNumber || bankPayment.id}`
+      description: `Bank Payment: ${bankPayment.payment_number || bankPayment.paymentNumber || bankPayment.id}`
     };
 
     return await this.createTransaction(entry1, entry2, {
       referenceType: 'bank_payment',
       referenceId: bankPayment.id,
-      referenceNumber: paymentNumber,
+      referenceNumber: bankPayment.payment_number || bankPayment.paymentNumber,
       customerId: customerId || null,
       supplierId: supplierId || null,
       partyType: partyType,
@@ -1706,13 +1711,13 @@ class AccountingService {
             accountCode: '1100', // AR
             debitAmount: total,
             creditAmount: 0,
-            description: `Sale: ${refNum}`
+            description: sale.notes || `Sale: ${refNum}`
           },
           {
             accountCode: '4000', // Sales Revenue
             debitAmount: 0,
             creditAmount: total,
-            description: `Sale Revenue: ${refNum}`
+            description: sale.notes || `Sale Revenue: ${refNum}`
           },
           {
             referenceType: 'sale',
@@ -1734,13 +1739,13 @@ class AccountingService {
             accountCode: '5000', // COGS
             debitAmount: totalCOGS,
             creditAmount: 0,
-            description: `COGS for Sale: ${refNum}`
+            description: sale.notes || `COGS for Sale: ${refNum}`
           },
           {
             accountCode: '1200', // Inventory
             debitAmount: 0,
             creditAmount: totalCOGS,
-            description: `Inventory Reduction: ${refNum}`
+            description: sale.notes || `Inventory Reduction: ${refNum}`
           },
           {
             referenceType: 'sale',
@@ -1767,26 +1772,55 @@ class AccountingService {
    * Posts the delta to account_ledger so balance reflects the change.
    * - Delta > 0: Dr Cash/Bank, Cr AR (payment received)
    * - Delta < 0: Dr AR, Cr Cash/Bank (reversal)
-   * @param {Object} params - { saleId, orderNumber, customerId, oldAmountPaid, newAmountPaid, paymentMethod, createdBy }
+   * @param {Object} params - { saleId, orderNumber, customerId, oldAmountPaid, newAmountPaid, paymentMethod, bankId, transactionDate, createdBy }
    */
   static async recordSalePaymentAdjustment(params, options = {}) {
     const { client = null } = options;
-    const { saleId, orderNumber, customerId, oldAmountPaid, newAmountPaid, paymentMethod = 'cash', createdBy } = params;
+    const {
+      saleId,
+      orderNumber,
+      customerId,
+      oldAmountPaid,
+      newAmountPaid,
+      paymentMethod = 'cash',
+      bankId = null,
+      transactionDate,
+      createdBy
+    } = params;
     const oldAmt = parseFloat(oldAmountPaid) || 0;
     const newAmt = parseFloat(newAmountPaid) || 0;
     const delta = newAmt - oldAmt;
     if (Math.abs(delta) < 0.01) return { ok: true };
 
     const refNum = orderNumber || saleId;
-    const debitAccount = (paymentMethod === 'bank' || paymentMethod === 'bank_transfer') ? '1001' : '1000';
+    const pm = String(paymentMethod || '').toLowerCase();
+    const ledgerUsesBank = pm === 'bank' || pm === 'bank_transfer';
+    const debitAccount = ledgerUsesBank ? '1001' : '1000';
     const creditAccount = '1100'; // AR
+
+    let txnDate = new Date();
+    if (transactionDate != null && transactionDate !== '') {
+      const d = new Date(transactionDate);
+      if (!Number.isNaN(d.getTime())) txnDate = d;
+    }
+
+    const bankIdForLedger = ledgerUsesBank ? bankId : null;
 
     if (delta > 0) {
       // Payment received: Dr Cash/Bank, Cr AR
       return await this.createTransaction(
         { accountCode: debitAccount, debitAmount: delta, creditAmount: 0, description: `Sale payment (edit): ${refNum}` },
         { accountCode: creditAccount, debitAmount: 0, creditAmount: delta, description: `Payment for sale: ${refNum}` },
-        { referenceType: 'sale_payment', referenceId: saleId, referenceNumber: refNum, customerId: customerId || null, currency: 'PKR', createdBy },
+        {
+          referenceType: 'sale_payment',
+          referenceId: saleId,
+          referenceNumber: refNum,
+          customerId: customerId || null,
+          bankId: bankIdForLedger,
+          transactionDate: txnDate,
+          currency: 'PKR',
+          createdBy
+        },
         client
       );
     } else {
@@ -1795,7 +1829,16 @@ class AccountingService {
       return await this.createTransaction(
         { accountCode: creditAccount, debitAmount: absDelta, creditAmount: 0, description: `Sale payment reversal (edit): ${refNum}` },
         { accountCode: debitAccount, debitAmount: 0, creditAmount: absDelta, description: `Reversal for sale: ${refNum}` },
-        { referenceType: 'sale_payment', referenceId: saleId, referenceNumber: refNum, customerId: customerId || null, currency: 'PKR', createdBy },
+        {
+          referenceType: 'sale_payment',
+          referenceId: saleId,
+          referenceNumber: refNum,
+          customerId: customerId || null,
+          bankId: bankIdForLedger,
+          transactionDate: txnDate,
+          currency: 'PKR',
+          createdBy
+        },
         client
       );
     }
@@ -1806,10 +1849,19 @@ class AccountingService {
    * Posts the delta to account_ledger so balance reflects the change.
    * - Delta > 0: Dr AP (2000), Cr Cash/Bank (payment made)
    * - Delta < 0: Dr Cash/Bank, Cr AP (reversal)
-   * @param {Object} params - { invoiceId, invoiceNumber, supplierId, oldAmountPaid, newAmountPaid, paymentMethod, createdBy }
+   * @param {Object} params - { invoiceId, invoiceNumber, supplierId, oldAmountPaid, newAmountPaid, paymentMethod, transactionDate, createdBy }
    */
   static async recordPurchasePaymentAdjustment(params) {
-    const { invoiceId, invoiceNumber, supplierId, oldAmountPaid, newAmountPaid, paymentMethod = 'cash', createdBy } = params;
+    const {
+      invoiceId,
+      invoiceNumber,
+      supplierId,
+      oldAmountPaid,
+      newAmountPaid,
+      paymentMethod = 'cash',
+      transactionDate,
+      createdBy
+    } = params;
     const oldAmt = parseFloat(oldAmountPaid) || 0;
     const newAmt = parseFloat(newAmountPaid) || 0;
     const delta = newAmt - oldAmt;
@@ -1819,12 +1871,28 @@ class AccountingService {
     const creditAccount = (paymentMethod === 'bank' || paymentMethod === 'bank_transfer') ? '1001' : '1000'; // Cash or Bank
     const debitAccount = '2000'; // AP
 
+    let txnDate = new Date();
+    if (transactionDate != null && transactionDate !== '') {
+      const d = new Date(transactionDate);
+      if (!Number.isNaN(d.getTime())) txnDate = d;
+    }
+
+    const metaBase = {
+      referenceType: 'purchase_invoice_payment',
+      referenceId: invoiceId,
+      referenceNumber: refNum,
+      supplierId: supplierId || null,
+      transactionDate: txnDate,
+      currency: 'PKR',
+      createdBy
+    };
+
     if (delta > 0) {
       // Payment made: Dr AP, Cr Cash/Bank
       return await this.createTransaction(
         { accountCode: debitAccount, debitAmount: delta, creditAmount: 0, description: `Purchase payment (edit): ${refNum}` },
         { accountCode: creditAccount, debitAmount: 0, creditAmount: delta, description: `Payment for purchase: ${refNum}` },
-        { referenceType: 'purchase_invoice_payment', referenceId: invoiceId, referenceNumber: refNum, supplierId: supplierId || null, currency: 'PKR', createdBy }
+        metaBase
       );
     } else {
       // Reversal: Dr Cash/Bank, Cr AP
@@ -1832,7 +1900,7 @@ class AccountingService {
       return await this.createTransaction(
         { accountCode: creditAccount, debitAmount: absDelta, creditAmount: 0, description: `Purchase payment reversal (edit): ${refNum}` },
         { accountCode: debitAccount, debitAmount: 0, creditAmount: absDelta, description: `Reversal for purchase: ${refNum}` },
-        { referenceType: 'purchase_invoice_payment', referenceId: invoiceId, referenceNumber: refNum, supplierId: supplierId || null, currency: 'PKR', createdBy }
+        metaBase
       );
     }
   }
@@ -1852,13 +1920,13 @@ class AccountingService {
           accountCode: '1200', // Inventory
           debitAmount: total,
           creditAmount: 0,
-          description: `Purchase: ${purchase.purchase_order_number || purchase.purchaseOrderNumber || purchase.id}`
+          description: purchase.notes || `Purchase: ${purchase.purchase_order_number || purchase.purchaseOrderNumber || purchase.id}`
         },
         {
           accountCode: '2000', // AP
           debitAmount: 0,
           creditAmount: total,
-          description: `Purchase on Credit: ${purchase.purchase_order_number || purchase.purchaseOrderNumber || purchase.id}`
+          description: purchase.notes || `Purchase on Credit: ${purchase.purchase_order_number || purchase.purchaseOrderNumber || purchase.id}`
         },
         {
           referenceType: 'purchase',
@@ -1898,13 +1966,13 @@ class AccountingService {
           accountCode: '1200', // Inventory
           debitAmount: total,
           creditAmount: 0,
-          description: `Purchase Invoice: ${invoiceNumber || purchaseInvoice.id}`
+          description: purchaseInvoice.notes || `Purchase Invoice: ${invoiceNumber || purchaseInvoice.id}`
         },
         {
           accountCode: '2000', // Accounts Payable
           debitAmount: 0,
           creditAmount: total,
-          description: `Purchase Invoice on Credit: ${invoiceNumber || purchaseInvoice.id}`
+          description: purchaseInvoice.notes || `Purchase Invoice on Credit: ${invoiceNumber || purchaseInvoice.id}`
         },
         {
           referenceType: 'purchase_invoice',
@@ -1926,13 +1994,13 @@ class AccountingService {
             accountCode: '2000', // Accounts Payable
             debitAmount: paidAmount,
             creditAmount: 0,
-            description: `Payment for Invoice: ${invoiceNumber || purchaseInvoice.id}`
+            description: purchaseInvoice.notes || `Payment for Invoice: ${invoiceNumber || purchaseInvoice.id}`
           },
           {
             accountCode: paymentAccountCode, // Cash or Bank
             debitAmount: 0,
             creditAmount: paidAmount,
-            description: `Payment for Purchase Invoice: ${invoiceNumber || purchaseInvoice.id}`
+            description: purchaseInvoice.notes || `Payment for Purchase Invoice: ${invoiceNumber || purchaseInvoice.id}`
           },
           {
             referenceType: 'purchase_invoice_payment',

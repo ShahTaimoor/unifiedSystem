@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  Filter,
-  Edit,
-  Trash2,
-  Eye,
-  RefreshCw,
-  ArrowUpDown,
   Calendar,
-  Save,
-  RotateCcw,
-  Printer,
   Phone,
   Mail,
   MapPin,
@@ -20,9 +11,9 @@ import {
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
 import { formatDate } from '../utils/formatters';
 import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
-import { Textarea } from '@/pos/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   useGetCashPaymentsQuery,
   useCreateCashPaymentMutation,
@@ -40,28 +31,54 @@ import { api } from '../store/api';
 import DateFilter from '../components/DateFilter';
 import BaseModal from '../components/BaseModal';
 import FormField from '../components/FormField';
+import { InputWithIcon } from '@/components/ui/input-with-icon';
 import { getCurrentDatePakistan, formatDateForInput } from '../utils/dateUtils';
+import { useSensitiveDataPermissions } from '../hooks/useSensitiveDataPermissions';
+import { useListControls } from '../hooks/useListControls';
+import { getPaginationInfo } from '../utils/paginationInfo';
+import { FiltersCard } from '../components/list/FiltersCard';
+import { ListResultsHeader } from '../components/list/ListResultsHeader';
+import { SortableTableHeader } from '../components/list/SortableTableHeader';
+import { DataStateMessage } from '../components/list/DataStateMessage';
+import { RowActionButtons } from '../components/list/RowActionButtons';
+import { PageHeader } from '../components/layout/PageHeader';
+import { FormActionsFooter } from '../components/layout/FormActionsFooter';
+import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
+import { useDeleteConfirmation } from '../hooks/useConfirmation';
 
 
 const CashPayments = () => {
+  const {
+    canViewCustomerBalance,
+    canViewSupplierBalance,
+    canViewCustomerPhone,
+    canViewSupplierPhone
+  } = useSensitiveDataPermissions();
   const today = getCurrentDatePakistan();
+  const {
+    confirmation: deleteConfirmation,
+    confirmDelete,
+    handleConfirm: handleDeleteConfirm,
+    handleCancel: handleDeleteCancel,
+  } = useDeleteConfirmation();
   // State for filters and pagination
-  const [filters, setFilters] = useState({
-    fromDate: today,
-    toDate: today,
-    voucherCode: '',
-    amount: '',
-    particular: ''
-  });
-
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 50
-  });
-
-  const [sortConfig, setSortConfig] = useState({
-    key: 'date',
-    direction: 'desc'
+  // State for filters / pagination / sort lives in `useListControls`.
+  const {
+    filters,
+    setFilters,
+    pagination,
+    setPagination,
+    sortConfig,
+    setFilter: handleFilterChange,
+    toggleSort: handleSort,
+  } = useListControls({
+    initialFilters: {
+      fromDate: today,
+      toDate: today,
+      voucherCode: '',
+      amount: '',
+      particular: '',
+    },
   });
 
   // State for modals
@@ -367,17 +384,6 @@ const CashPayments = () => {
     }
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
-
-  const handleSort = (key) => {
-    setSortConfig(prev => ({
-      key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
-    }));
-  };
 
   const handleCreate = () => {
     // Validation
@@ -462,23 +468,22 @@ const CashPayments = () => {
   };
 
   const handleDelete = (payment) => {
-    if (window.confirm('Are you sure you want to delete this cash payment?')) {
-      deleteCashPayment(payment.id || payment._id)
-        .unwrap()
-        .then(() => {
-          showSuccessToast('Cash payment deleted successfully');
-          refetch();
-          // Refetch customer/supplier data to update balances immediately
-          if (payment.customer) {
-            invalidateCustomersList();
-          } else if (payment.supplier) {
-            invalidateSuppliersList();
-          }
-        })
-        .catch((error) => {
-          showErrorToast(handleApiError(error));
-        });
-    }
+    const label = payment?.paymentNumber || payment?.transactionReference || `${payment?.id || payment?._id || 'this payment'}`;
+    confirmDelete(label, 'Cash Payment', async () => {
+      try {
+        await deleteCashPayment(payment.id || payment._id).unwrap();
+        showSuccessToast('Cash payment deleted successfully');
+        refetch();
+        if (payment.customer) {
+          invalidateCustomersList();
+        } else if (payment.supplier) {
+          invalidateSuppliersList();
+        }
+      } catch (error) {
+        showErrorToast(handleApiError(error));
+        throw error;
+      }
+    });
   };
 
   const handleEdit = (payment) => {
@@ -536,17 +541,12 @@ const CashPayments = () => {
     cashPaymentsData?.data?.payments ||
     cashPaymentsData?.payments ||
     [];
-  const paginationInfo =
-    cashPaymentsData?.data?.pagination ||
-    cashPaymentsData?.pagination ||
-    {};
+  const paginationInfo = getPaginationInfo(cashPaymentsData);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="min-w-0">
-        <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Cash Payments</h1>
-      </div>
+      <PageHeader title="Cash Payments" />
 
       {/* Cash Payment Form */}
       <div className="card">
@@ -639,13 +639,15 @@ const CashPayments = () => {
                               }
                             </div>
                             <div className="flex items-center space-x-3 mt-1">
-                              <div className="text-sm text-gray-600">
-                                <span className="text-gray-500">Outstanding Balance:</span>{' '}
-                                <span className={`font-medium ${(supplier.pendingBalance || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                  {Math.round(supplier.pendingBalance || 0)}
-                                </span>
-                              </div>
-                              {supplier.phone && (
+                              {canViewSupplierBalance && (
+                                <div className="text-sm text-gray-600">
+                                  <span className="text-gray-500">Outstanding Balance:</span>{' '}
+                                  <span className={`font-medium ${(supplier.pendingBalance || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    {Math.round(supplier.pendingBalance || 0)}
+                                  </span>
+                                </div>
+                              )}
+                              {canViewSupplierPhone && supplier.phone && (
                                 <div className="flex items-center space-x-1 text-sm text-gray-500">
                                   <Phone className="h-3 w-3" />
                                   <span>{supplier.phone}</span>
@@ -680,13 +682,15 @@ const CashPayments = () => {
                             }
                           </p>
                           <div className="flex items-center space-x-4 mt-2">
-                            <div className="flex items-center space-x-1">
-                              <span className="text-xs text-gray-500">Outstanding Balance:</span>
-                              <span className={`text-sm font-medium ${(selectedSupplier.pendingBalance || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                {Math.round(selectedSupplier.pendingBalance || 0)}
-                              </span>
-                            </div>
-                            {selectedSupplier.phone && (
+                            {canViewSupplierBalance && (
+                              <div className="flex items-center space-x-1">
+                                <span className="text-xs text-gray-500">Outstanding Balance:</span>
+                                <span className={`text-sm font-medium ${(selectedSupplier.pendingBalance || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                  {Math.round(selectedSupplier.pendingBalance || 0)}
+                                </span>
+                              </div>
+                            )}
+                            {canViewSupplierPhone && selectedSupplier.phone && (
                               <div className="flex items-center space-x-1">
                                 <Phone className="h-3 w-3 text-gray-400" />
                                 <span className="text-xs text-gray-500">{selectedSupplier.phone}</span>
@@ -753,7 +757,7 @@ const CashPayments = () => {
                               {customer.businessType || ''}
                             </div>
                             <div className="flex items-center space-x-3 mt-1">
-                              {hasBalance && (
+                              {canViewCustomerBalance && hasBalance && (
                                 <div className="text-sm text-gray-600">
                                   <span className="text-gray-500">{isPayable ? 'Payables:' : 'Receivables:'}</span>{' '}
                                   <span className={`font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'}`}>
@@ -761,7 +765,7 @@ const CashPayments = () => {
                                   </span>
                                 </div>
                               )}
-                              {customer.phone && (
+                              {canViewCustomerPhone && customer.phone && (
                                 <div className="flex items-center space-x-1 text-sm text-gray-500">
                                   <Phone className="h-3 w-3" />
                                   <span>{customer.phone}</span>
@@ -792,10 +796,10 @@ const CashPayments = () => {
                           )}
                           <p className="text-sm text-gray-600 capitalize">
                             {selectedCustomer.businessType ? `${selectedCustomer.businessType} • ` : ''}
-                            {selectedCustomer.phone || 'No phone'}
+                            {canViewCustomerPhone ? (selectedCustomer.phone || 'No phone') : ''}
                           </p>
                           <div className="flex items-center space-x-4 mt-2">
-                            {(() => {
+                            {canViewCustomerBalance && (() => {
                               const currentBalance = selectedCustomer.currentBalance !== undefined
                                 ? selectedCustomer.currentBalance
                                 : ((selectedCustomer.pendingBalance || 0) - (selectedCustomer.advanceBalance || 0));
@@ -871,13 +875,13 @@ const CashPayments = () => {
               )}
 
               {/* Balance Display */}
-              {(selectedSupplier || selectedCustomer) && (
+              {((selectedSupplier && canViewSupplierBalance) || (selectedCustomer && canViewCustomerBalance)) && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Balance
                   </label>
                   <div className="space-y-1">
-                    {paymentType === 'supplier' && selectedSupplier && (
+                    {paymentType === 'supplier' && selectedSupplier && canViewSupplierBalance && (
                       <>
                         {(() => {
                           const currentBalance = selectedSupplier.currentBalance !== undefined
@@ -904,7 +908,7 @@ const CashPayments = () => {
                         })()}
                       </>
                     )}
-                    {paymentType === 'customer' && selectedCustomer && (
+                    {paymentType === 'customer' && selectedCustomer && canViewCustomerBalance && (
                       <>
                         {(() => {
                           const currentBalance = selectedCustomer.currentBalance !== undefined
@@ -964,16 +968,13 @@ const CashPayments = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Payment Date
                 </label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    autoComplete="off"
-                    value={formData.date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-                    className="w-full pr-10"
-                  />
-                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                </div>
+                <InputWithIcon
+                  icon={Calendar}
+                  type="date"
+                  autoComplete="off"
+                  value={formData.date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                />
               </div>
 
               {/* Description */}
@@ -1007,40 +1008,19 @@ const CashPayments = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-            <Button
-              onClick={resetForm}
-              variant="outline"
-              size="default"
-              className="flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-              <RotateCcw className="h-4 w-4" />
-              <span>Reset</span>
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={creating}
-              variant="default"
-              size="default"
-              className="flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-              <Save className="h-4 w-4" />
-              <span>{creating ? 'Saving...' : 'Save Payment'}</span>
-            </Button>
-          </div>
+          <FormActionsFooter
+            onReset={resetForm}
+            onSubmit={handleCreate}
+            isSubmitting={creating}
+            submitLabel="Save Payment"
+            submittingLabel="Saving..."
+          />
         </div>
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="card-header">
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
-            <h3 className="text-lg font-medium text-gray-900">Filters</h3>
-          </div>
-        </div>
-        <div className="card-content">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <FiltersCard>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {/* Date Range */}
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1113,84 +1093,52 @@ const CashPayments = () => {
               </Button>
             </div>
           </div>
-        </div>
-      </div>
+      </FiltersCard>
 
       {/* Results */}
       <div className="card">
-        <div className="card-header">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900 leading-tight">
-              Cash Payments
-              <span className="block sm:inline sm:ml-2 text-xs sm:text-sm font-normal text-gray-500 mt-1 sm:mt-0">
-                From: {formatDate(filters.fromDate)} To: {formatDate(filters.toDate)}
-              </span>
-            </h3>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <span className="text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                <span className="font-semibold text-gray-700">
-                  {paginationInfo.totalItems || 0}
-                </span>{' '}
-                records
-              </span>
-              <button
-                onClick={() => refetch()}
-                className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+        <ListResultsHeader
+          title="Cash Payments"
+          fromDate={filters.fromDate}
+          toDate={filters.toDate}
+          formatDate={formatDate}
+          recordCount={paginationInfo.totalItems || 0}
+          onRefresh={() => refetch()}
+          refreshing={isLoading}
+        />
         <div className="card-content p-0">
-          {isLoading ? (
-            <div className="p-8 text-center">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-              <p className="mt-2 text-gray-500">Loading cash payments...</p>
-            </div>
-          ) : error ? (
-            <div className="p-8 text-center text-red-600">
-              <p>Error loading cash payments: {handleApiError(error).message}</p>
-            </div>
-          ) : cashPayments.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <p>No cash payments found for the selected criteria.</p>
-            </div>
-          ) : (
+          <DataStateMessage
+            isLoading={isLoading}
+            error={error}
+            isEmpty={cashPayments.length === 0}
+            loadingLabel="Loading cash payments..."
+            errorPrefix="Error loading cash payments"
+            emptyLabel="No cash payments found for the selected criteria."
+          >
             <>
               {/* Table */}
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('date')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>Date</span>
-                          <ArrowUpDown className="h-3 w-3" />
-                        </div>
-                      </th>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('voucherCode')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>Voucher Code</span>
-                          <ArrowUpDown className="h-3 w-3" />
-                        </div>
-                      </th>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleSort('amount')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>Amount</span>
-                          <ArrowUpDown className="h-3 w-3" />
-                        </div>
-                      </th>
+                      <SortableTableHeader
+                        label="Date"
+                        sortKey="date"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                      <SortableTableHeader
+                        label="Voucher Code"
+                        sortKey="voucherCode"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                      <SortableTableHeader
+                        label="Amount"
+                        sortKey="amount"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Particular
                       </th>
@@ -1249,40 +1197,12 @@ const CashPayments = () => {
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handlePrint(payment)}
-                                className="text-green-600 hover:text-green-900"
-                                title="Print"
-                              >
-                                <Printer className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleView(payment)}
-                                className="text-blue-600 hover:text-blue-900"
-                                title="View"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </button>
-                              {(
-                                <>
-                                  <button
-                                    onClick={() => handleEdit(payment)}
-                                    className="text-indigo-600 hover:text-indigo-900"
-                                    title="Edit"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(payment)}
-                                    className="text-red-600 hover:text-red-900"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
+                            <RowActionButtons
+                              onPrint={() => handlePrint(payment)}
+                              onView={() => handleView(payment)}
+                              onEdit={() => handleEdit(payment)}
+                              onDelete={() => handleDelete(payment)}
+                            />
                           </td>
                         </tr>
                       );
@@ -1291,7 +1211,7 @@ const CashPayments = () => {
                 </table>
               </div>
             </>
-          )}
+          </DataStateMessage>
         </div>
       </div>
 
@@ -1479,6 +1399,15 @@ const CashPayments = () => {
               </div>
         )}
       </BaseModal>
+
+      <DeleteConfirmationDialog
+        isOpen={deleteConfirmation.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        itemName={deleteConfirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
+        itemType="Cash Payment"
+        isLoading={deleteConfirmation.isLoading}
+      />
     </div>
   );
 };

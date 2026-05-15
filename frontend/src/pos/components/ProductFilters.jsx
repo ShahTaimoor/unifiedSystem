@@ -10,8 +10,8 @@ import {
   AlertTriangle,
   ArrowUpDown
 } from 'lucide-react';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const ProductFilters = ({ filters, onFiltersChange, categories = [], onClearFilters }) => {
   const [isExpanded, setIsExpanded] = useState(false);

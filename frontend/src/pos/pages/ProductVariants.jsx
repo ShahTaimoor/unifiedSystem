@@ -19,10 +19,11 @@ import { useGetProductsQuery } from '../store/services/productsApi';
 import { ProductSearchableSelect } from '../components/ProductSearchableSelect';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
-import { Button } from '@/pos/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 import ValidatedInput, { ValidatedSelect } from '../components/ValidatedInput';
+import { PageHeader } from '../components/layout/PageHeader';
 import { useFormValidation } from '../hooks/useFormValidation';
 
 const ProductVariants = () => {
@@ -86,7 +87,9 @@ const ProductVariants = () => {
     }
   };
 
-  const { confirmation, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
+  const { isDeleteDialogOpen, itemToDelete, openDeleteDialog, closeDeleteDialog, confirmDelete } = useDeleteConfirmation(
+    handleDelete
+  );
 
   const handleEdit = (variant) => {
     setEditingVariant(variant);
@@ -109,12 +112,11 @@ const ProductVariants = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Product Variants</h1>
-            <p className="hidden sm:block mt-1 text-sm sm:text-base text-gray-600">Manage product variants and transformations</p>
-          </div>
+      <PageHeader
+        className="mb-6"
+        title="Product Variants"
+        subtitle="Manage product variants and transformations"
+        actions={
           <Button
             onClick={() => setIsModalOpen(true)}
             variant="default"
@@ -124,8 +126,8 @@ const ProductVariants = () => {
             <Plus className="h-4 w-4" />
             Add Variant
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
@@ -237,7 +239,7 @@ const ProductVariants = () => {
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => confirmDelete(getVariantDisplayName(variant), 'Variant', () => handleDelete(variant._id || variant.id))}
+                          onClick={() => openDeleteDialog(variant._id || variant.id, getVariantDisplayName(variant))}
                           className="text-red-600 hover:text-red-900 p-1"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -268,12 +270,11 @@ const ProductVariants = () => {
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
-        isOpen={confirmation.isOpen}
-        onClose={handleCancel}
-        onConfirm={handleConfirm}
-        itemName={confirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
-        itemType="Variant"
-        isLoading={confirmation.isLoading}
+        isOpen={isDeleteDialogOpen}
+        onClose={closeDeleteDialog}
+        onConfirm={confirmDelete}
+        itemName={itemToDelete?.name || ''}
+        itemType="variant"
       />
     </div>
   );
@@ -432,9 +433,9 @@ const VariantModal = ({ variant, products, productsLoading, isOpen, onClose, onS
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white/80 border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
             {variant ? 'Edit Variant' : 'Create Variant'}
           </h2>

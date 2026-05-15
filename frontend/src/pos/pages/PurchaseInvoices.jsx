@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import {
   FileText,
   Search,
+  Eye,
   Edit,
   Trash2,
   CheckCircle,
@@ -11,8 +12,8 @@ import {
   TrendingUp,
   Printer,
   Calendar,
-
-
+  MoreHorizontal,
+  FileSpreadsheet
 } from 'lucide-react';
 import {
   useGetPurchaseInvoicesQuery,
@@ -29,7 +30,14 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../components/ComponentRegistry';
 import PrintModal from '../components/PrintModal';
-import { Button } from '@/pos/components/ui/button';
+import { EntityStatusBadge } from '../components/order/EntityStatusBadge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan, formatDateForInput } from '../utils/dateUtils';
 import ExcelExportButton from '../components/ExcelExportButton';
@@ -37,6 +45,9 @@ import PdfExportButton from '../components/PdfExportButton';
 import { getInvoicePdfPayload } from '../utils/invoicePdfUtils';
 import PaginationControls from '../components/PaginationControls';
 import { useCursorPagination } from '../hooks/useCursorPagination';
+import { useSensitiveDataPermissions } from '../hooks/useSensitiveDataPermissions';
+import ConfirmationDialog from '../components/ConfirmationDialog';
+import { useConfirmation } from '../hooks/useConfirmation';
 
 const PI_PAGE_SIZE = 50;
 
@@ -65,26 +76,9 @@ const canEditByDate = (invoice) => {
   return d >= cutoff;
 };
 
-const StatusBadge = ({ status }) => {
-  const statusConfig = {
-    draft: { color: 'bg-gray-100 text-gray-800', icon: Clock, label: 'Draft' },
-    confirmed: { color: 'bg-blue-100 text-blue-800', icon: CheckCircle, label: 'Confirmed' },
-    received: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Received' },
-    paid: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: 'Paid' },
-    cancelled: { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'Cancelled' },
-    closed: { color: 'bg-gray-100 text-gray-800', icon: XCircle, label: 'Closed' }
-  };
-
-  const config = statusConfig[status] || statusConfig.draft;
-  const Icon = config.icon;
-
-  return (
-    <span className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
-      <Icon className="h-3 w-3 mr-0.5 sm:mr-1" />
-      {config.label}
-    </span>
-  );
-};
+const StatusBadge = ({ status }) => (
+  <EntityStatusBadge type="purchase_invoice" status={status} />
+);
 
 const PurchaseInvoiceCard = ({ invoice, onEdit, onDelete, onConfirm, onView, onPrint }) => (
   <div className="card hover:shadow-lg transition-shadow">
@@ -116,6 +110,14 @@ const PurchaseInvoiceCard = ({ invoice, onEdit, onDelete, onConfirm, onView, onP
         </div>
 
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => onView(invoice)}
+            className="text-gray-600 hover:text-gray-800"
+            title="View Invoice"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+
           <button
             onClick={() => onPrint && onPrint(invoice)}
             className="text-green-600 hover:text-green-800"
@@ -152,6 +154,18 @@ const PurchaseInvoiceCard = ({ invoice, onEdit, onDelete, onConfirm, onView, onP
 
 export const PurchaseInvoices = () => {
   const { companyInfo: companySettings } = useCompanyInfo();
+  const { getPartyPermissions } = useSensitiveDataPermissions();
+  const {
+    confirmation,
+    showConfirmation,
+    handleConfirm: handleConfirmationConfirm,
+    handleCancel: handleConfirmationCancel,
+  } = useConfirmation();
+
+  // Refs for responsive actions
+  const excelExportRef = useRef(null);
+  const pdfExportRef = useRef(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebouncedValue(searchTerm, 350);
   const [statusFilter, setStatusFilter] = useState('');
@@ -322,6 +336,14 @@ export const PurchaseInvoices = () => {
       render: (value, item) => (
         <div className="flex space-x-2">
           <button
+            onClick={() => handleView(item)}
+            className="text-gray-600 hover:text-gray-800"
+            title="View Invoice"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+
+          <button
             onClick={() => handlePrint(item)}
             className="text-green-600 hover:text-green-800"
             title="Print Invoice"
@@ -356,37 +378,49 @@ export const PurchaseInvoices = () => {
 
   // Event handlers
   const handleConfirm = (invoice) => {
-    if (window.confirm(`Are you sure you want to confirm invoice ${invoice.invoiceNumber}?`)) {
-      confirmPurchaseInvoiceMutation(invoice._id || invoice.id)
-        .unwrap()
-        .then(() => {
+    showConfirmation({
+      title: 'Confirm Purchase Invoice',
+      message: `Are you sure you want to confirm invoice ${invoice.invoiceNumber}?`,
+      confirmText: 'Confirm Invoice',
+      type: 'info',
+      onConfirm: async () => {
+        try {
+          await confirmPurchaseInvoiceMutation(invoice._id || invoice.id).unwrap();
           showSuccessToast('Purchase invoice confirmed successfully');
           refetch();
-        })
-        .catch((error) => {
+        } catch (error) {
           handleApiError(error, 'Purchase Invoice Confirmation');
-        });
-    }
+          throw error;
+        }
+      },
+    });
   };
 
   const handleDelete = (invoice) => {
-    const message = invoice.status === 'confirmed'
-      ? `Are you sure you want to delete invoice ${invoice.invoiceNumber}?\n\nThis will:\n• Remove ${invoice.lineItemCount ?? invoice.items?.length ?? 0} products from inventory\n• Reduce supplier balance by ${Math.round((invoice.pricing?.total || 0) - (invoice.payment?.amount || 0))}`
+    const isConfirmed = invoice.status === 'confirmed';
+    const itemCount = invoice.lineItemCount ?? invoice.items?.length ?? 0;
+    const supplierImpact = Math.round((invoice.pricing?.total || 0) - (invoice.payment?.amount || 0));
+    const message = isConfirmed
+      ? `Are you sure you want to delete invoice ${invoice.invoiceNumber}? This will remove ${itemCount} product(s) from inventory and reduce supplier balance by ${supplierImpact}.`
       : `Are you sure you want to delete invoice ${invoice.invoiceNumber}?`;
 
-    if (window.confirm(message)) {
-      deletePurchaseInvoiceMutation(invoice._id || invoice.id)
-        .unwrap()
-        .then(() => {
+    showConfirmation({
+      title: 'Delete Purchase Invoice',
+      message,
+      confirmText: 'Delete',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await deletePurchaseInvoiceMutation(invoice._id || invoice.id).unwrap();
           showSuccessToast('Purchase invoice deleted successfully');
           refetch();
-        })
-        .catch((error) => {
+        } catch (error) {
           handleApiError(error, 'Purchase Invoice Deletion');
-        });
-    }
+          throw error;
+        }
+      },
+    });
   };
-
   const handleEdit = async (invoice) => {
     const componentInfo = getComponentInfo('/purchase');
     if (!componentInfo) {
@@ -434,9 +468,9 @@ export const PurchaseInvoices = () => {
     showSuccessToast(`Opening ${row.invoiceNumber} for editing...`);
   };
 
+  // List rows are minimal (no items); reuse print helper so view shows full lines like PDF export.
   const handleView = (invoice) => {
-    setSelectedInvoice(invoice);
-    setShowViewModal(true);
+    handlePrint(invoice);
   };
 
 
@@ -540,26 +574,55 @@ export const PurchaseInvoices = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto items-stretch sm:items-center">
-          <ExcelExportButton
-            getData={getExportData}
-            label="Export"
-          />
-          <PdfExportButton
-            getData={getExportData}
-            label="PDF"
-          />
-          <div className="w-full sm:w-auto">
-            <DateFilter
-              startDate={dateFrom}
-              endDate={dateTo}
-              onDateChange={(start, end) => {
-                setDateFrom(start || '');
-                setDateTo(end || '');
-              }}
-              compact={true}
-              showPresets={true}
-              className="w-full"
+          {/* Desktop Actions */}
+          <div className="hidden sm:flex items-center gap-2">
+            <ExcelExportButton
+              ref={excelExportRef}
+              getData={getExportData}
+              label="Export"
             />
+            <PdfExportButton
+              ref={pdfExportRef}
+              getData={getExportData}
+              label="PDF"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex-1 sm:flex-none">
+              <DateFilter
+                startDate={dateFrom}
+                endDate={dateTo}
+                onDateChange={(start, end) => {
+                  setDateFrom(start || '');
+                  setDateTo(end || '');
+                }}
+                compact={true}
+                showPresets={true}
+                className="w-full"
+              />
+            </div>
+
+            {/* Mobile Actions Dropdown */}
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-10 border-gray-200 bg-white">
+                    <MoreHorizontal className="h-5 w-5 text-gray-600" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => excelExportRef.current?.handleExport()}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                    Excel Export
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => pdfExportRef.current?.handleExport()}>
+                    <FileText className="h-4 w-4 mr-2 text-red-600" />
+                    PDF Export
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>
@@ -648,6 +711,13 @@ export const PurchaseInvoices = () => {
                       </div>
                     </div>
                     <div className="flex items-center flex-nowrap gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => handleView(invoice)}
+                        className="shrink-0 text-gray-600 hover:text-gray-800 p-1"
+                        title="View Invoice"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
                       <button
                         onClick={() => handlePrint(invoice)}
                         className="shrink-0 text-green-600 hover:text-green-800 p-1"
@@ -768,8 +838,16 @@ export const PurchaseInvoices = () => {
                     </span>
                   </div>
 
+                  {/* Actions */}
                   <div className="col-span-2 flex justify-end">
                     <div className="flex items-center flex-nowrap gap-1">
+                      <button
+                        onClick={() => handleView(invoice)}
+                        className="shrink-0 text-gray-600 hover:text-gray-800 p-1"
+                        title="View Invoice"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
                       <button
                         onClick={() => handlePrint(invoice)}
                         className="shrink-0 text-green-600 hover:text-green-800 p-1"
@@ -779,17 +857,18 @@ export const PurchaseInvoices = () => {
                       </button>
                       <ExcelExportButton
                         getData={async () => {
+                          const printPerms = getPartyPermissions('supplier');
                           try {
                             const result = await getPurchaseInvoiceById(invoice.id || invoice._id).unwrap();
                             const fullInvoice = result?.invoice || result?.data?.invoice || result?.data || result || invoice;
-                            const payload = getInvoicePdfPayload(fullInvoice, companySettings, 'Purchase Invoice', 'Supplier');
+                            const payload = getInvoicePdfPayload(fullInvoice, companySettings, 'Purchase Invoice', 'Supplier', null, printPerms);
                             return {
                               ...payload,
                               filename: `Purchase_Invoice_${invoice.invoiceNumber}.xlsx`
                             };
                           } catch (err) {
                             return {
-                              ...getInvoicePdfPayload(invoice, companySettings, 'Purchase Invoice', 'Supplier'),
+                              ...getInvoicePdfPayload(invoice, companySettings, 'Purchase Invoice', 'Supplier', null, printPerms),
                               filename: `Purchase_Invoice_${invoice.invoiceNumber}.xlsx`
                             };
                           }
@@ -799,12 +878,13 @@ export const PurchaseInvoices = () => {
                       />
                       <PdfExportButton
                         getData={async () => {
+                          const printPerms = getPartyPermissions('supplier');
                           try {
                             const result = await getPurchaseInvoiceById(invoice.id || invoice._id).unwrap();
                             const fullInvoice = result?.invoice || result?.data?.invoice || result?.data || result || invoice;
-                            return getInvoicePdfPayload(fullInvoice, companySettings, 'Purchase Invoice', 'Supplier');
+                            return getInvoicePdfPayload(fullInvoice, companySettings, 'Purchase Invoice', 'Supplier', null, printPerms);
                           } catch (err) {
-                            return getInvoicePdfPayload(invoice, companySettings, 'Purchase Invoice', 'Supplier');
+                            return getInvoicePdfPayload(invoice, companySettings, 'Purchase Invoice', 'Supplier', null, printPerms);
                           }
                         }}
                         label=""
@@ -861,6 +941,18 @@ export const PurchaseInvoices = () => {
         } : null}
         documentTitle="Purchase Invoice"
         partyLabel="Supplier"
+      />
+
+      <ConfirmationDialog
+        isOpen={confirmation.isOpen}
+        onClose={handleConfirmationCancel}
+        onConfirm={handleConfirmationConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+        confirmText={confirmation.confirmText}
+        cancelText={confirmation.cancelText}
+        type={confirmation.type}
+        isLoading={confirmation.isLoading}
       />
 
       {/* Edit modal removed: editing handled via opening /purchase tab */}

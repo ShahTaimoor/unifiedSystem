@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import * as Icons from 'lucide-react';
+import { LUCIDE_ICON_MAP } from '../utils/lucideIconMap';
 import { useAuth } from '../contexts/AuthContext';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../utils/componentUtils';
@@ -14,36 +14,11 @@ const MobileBottomNav = () => {
   
   const [config, setConfig] = useState([]);
 
-  const normalizeHref = (href) => {
-    if (!href) return href;
-    if (href.startsWith('/pos/')) return href;
-
-    const legacyRouteMatch = href.match(/^\/(cash|bank)-(receipts|payments|receiving)\/?$/);
-    if (legacyRouteMatch) {
-      return `/pos${href.replace(/\/+$/, '')}`;
-    }
-
-    return href;
-  };
-
-  const normalizeConfig = (items) => {
-    if (!Array.isArray(items)) return [];
-    return items.map((item) => ({
-      ...item,
-      href: normalizeHref(item.href)
-    }));
-  };
-
   const loadConfig = () => {
     const saved = localStorage.getItem('bottomNavConfig');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        const normalized = normalizeConfig(parsed);
-        setConfig(normalized);
-        if (JSON.stringify(normalized) !== JSON.stringify(parsed)) {
-          localStorage.setItem('bottomNavConfig', JSON.stringify(normalized));
-        }
+        setConfig(JSON.parse(saved));
       } catch (e) {
         console.error('Failed to parse bottomNavConfig', e);
         setDefaultConfig();
@@ -77,12 +52,6 @@ const MobileBottomNav = () => {
       const existingTab = tabs.find(tab => tab.path === item.href);
       
       const reuseNavigationPaths = new Set([
-        '/sales-invoices',
-        '/sales-invoices/',
-        '/orders',
-        '/purchase-invoices',
-        '/settings',
-        '/settings2',
         '/pos/sales-invoices',
         '/pos/sales-invoices/',
         '/pos/orders',
@@ -112,8 +81,7 @@ const MobileBottomNav = () => {
         props: { tabId: tabId }
       });
     } else {
-      const normalizedHref = normalizeHref(item.href);
-      navigate(normalizedHref);
+      navigate(item.href);
     }
   };
 
@@ -144,7 +112,7 @@ const MobileBottomNav = () => {
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 border-t border-gray-200 backdrop-blur-md pb-safe">
       <div className="flex items-center justify-around px-2 py-2 max-w-screen-sm mx-auto h-16">
         {visibleItems.map((item) => {
-          const IconComponent = Icons[item.icon] || Icons.Circle;
+          const IconComponent = LUCIDE_ICON_MAP[item.icon] || LUCIDE_ICON_MAP.Circle;
           const isActive = isActivePath(item.href);
           
           // Determine color based on path (matching the dashboard's emerald/blue theme if possible)

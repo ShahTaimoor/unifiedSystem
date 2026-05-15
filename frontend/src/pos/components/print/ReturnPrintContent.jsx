@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSensitiveDataPermissions } from '../../hooks/useSensitiveDataPermissions';
 
 /**
  * ReturnPrintContent - Printable return document.
@@ -9,7 +10,11 @@ const ReturnPrintContent = ({
   companyInfo = {},
   partyLabel = 'Customer'
 }) => {
+  const { getPartyPermissions } = useSensitiveDataPermissions();
   if (!returnData) return null;
+  const { canViewPhone: canViewPartyPhone } = getPartyPermissions(
+    returnData.origin === 'purchase' ? 'supplier' : 'customer'
+  );
 
   const companyName = companyInfo?.companyName || companyInfo?.data?.companyName || 'Your Company Name';
   const address = companyInfo?.address || companyInfo?.data?.address || '';
@@ -67,7 +72,9 @@ const ReturnPrintContent = ({
           <div className="space-y-1">
             <p><span className="font-medium">Name:</span> {partyName}</p>
             <p><span className="font-medium">Email:</span> {partyEmail}</p>
-            <p><span className="font-medium">Phone:</span> {partyPhone}</p>
+            {canViewPartyPhone && (
+              <p><span className="font-medium">Phone:</span> {partyPhone}</p>
+            )}
           </div>
         </div>
         <div>

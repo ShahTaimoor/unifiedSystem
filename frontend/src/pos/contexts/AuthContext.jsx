@@ -108,7 +108,7 @@ export const useAuth = () => {
     // where user state can appear "stuck" during async logout calls.
     dispatch(logoutAction());
     dispatch(authApi.util.resetApiState());
-    navigate('/login', { replace: true });
+    navigate('/pos/login', { replace: true });
     toast.success('Logged out successfully');
 
     try {

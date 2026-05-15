@@ -1,7 +1,7 @@
 "use client";;
 import { useState } from "react";
 import { motion } from "motion/react";
-import { cn } from "@/pos/lib/utils";
+import { cn } from "@/lib/utils";
 
 const tabs = [
   {

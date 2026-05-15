@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import BaseModal from '../components/BaseModal';
 import {
   Building,
@@ -16,22 +16,32 @@ import {
   MessageSquare,
   FileSpreadsheet,
   Download,
+  MoreHorizontal,
+  FileText,
+  Upload
 } from 'lucide-react';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
-import { Textarea } from '@/pos/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ExcelExportButton from '../components/ExcelExportButton';
 import PdfExportButton from '../components/PdfExportButton';
 import ExcelImportButton from '../components/ExcelImportButton';
 import { exportTemplate } from '../utils/excelExport';
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
 import { toast } from 'sonner';
-import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
-import { useDeleteConfirmation } from '../hooks/useConfirmation';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage, LoadingInline } from '../components/LoadingSpinner';
 
 import SupplierFilters from '../components/SupplierFilters';
 import NotesPanel from '../components/NotesPanel';
+import { PageHeader } from '../components/layout/PageHeader';
+import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
+import { useDeleteConfirmation } from '../hooks/useConfirmation';
 import {
   useGetSuppliersQuery,
   useCreateSupplierMutation,
@@ -45,6 +55,8 @@ import {
 } from '../store/services/suppliersApi';
 import { useGetAccountsQuery } from '../store/services/chartOfAccountsApi';
 import { useGetCitiesQuery, useGetActiveCitiesQuery } from '../store/services/citiesApi';
+import { getContactPersonVisible } from '../utils/fieldVisibility';
+import { useSensitiveDataPermissions } from '../hooks/useSensitiveDataPermissions';
 
 
 const supplierDefaultValues = {
@@ -81,7 +93,7 @@ const supplierDefaultValues = {
 
 const SupplierForm = ({ supplier, onSave, onCancel, isOpen, isSubmitting }) => {
   const [visibilitySettings, setVisibilitySettings] = useState({
-    contactPerson: localStorage.getItem('showSupplierSetting_contactPerson') === 'true',
+    contactPerson: getContactPersonVisible(true),
     email: localStorage.getItem('showSupplierSetting_email') === 'true',
     paymentTerms: localStorage.getItem('showSupplierSetting_paymentTerms') === 'true',
     website: localStorage.getItem('showSupplierSetting_website') === 'true',
@@ -97,7 +109,7 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen, isSubmitting }) => {
   useEffect(() => {
     const handleConfigChange = () => {
       setVisibilitySettings({
-        contactPerson: localStorage.getItem('showSupplierSetting_contactPerson') === 'true',
+        contactPerson: getContactPersonVisible(true),
         email: localStorage.getItem('showSupplierSetting_email') === 'true',
         paymentTerms: localStorage.getItem('showSupplierSetting_paymentTerms') === 'true',
         website: localStorage.getItem('showSupplierSetting_website') === 'true',
@@ -365,13 +377,10 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen, isSubmitting }) => {
       toast.error('Company name is required');
       return;
     }
-    // Contact name is now optional as backend provides a fallback
-    /* 
     if (!formData.contactPerson?.name?.trim()) {
       toast.error('Contact name is required');
       return;
     }
-    */
 
     // Prevent submission if duplicates exist
     if (emailExists) {
@@ -442,11 +451,12 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen, isSubmitting }) => {
           {visibilitySettings.contactPerson && (
             <div className="min-w-0">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                Contact Person (Optional)
+                Contact Person *
               </label>
               <div className="relative">
                 <Input
                   type="text"
+                  required
                   autoComplete="off"
                   value={formData.contactPerson?.name || ''}
                   onChange={(e) => setFormData({
@@ -791,8 +801,20 @@ const LIMIT_OPTIONS = [50, 500, 1000, 5000];
 const DEFAULT_LIMIT = 50;
 
 export const Suppliers = () => {
+  const { canViewSupplierPhone } = useSensitiveDataPermissions();
+  const {
+    confirmation: deleteConfirmation,
+    confirmDelete,
+    handleConfirm: handleDeleteConfirm,
+    handleCancel: handleDeleteCancel,
+  } = useDeleteConfirmation();
+
+  // Refs for responsive actions
+  const excelExportRef = useRef(null);
+  const pdfExportRef = useRef(null);
+  const excelImportRef = useRef(null);
   const [visibilitySettings, setVisibilitySettings] = useState({
-    contactPerson: localStorage.getItem('showSupplierSetting_contactPerson') === 'true',
+    contactPerson: getContactPersonVisible(true),
     email: localStorage.getItem('showSupplierSetting_email') === 'true',
     rating: localStorage.getItem('showSupplierSetting_rating') === 'true',
     notes: localStorage.getItem('showSupplierSetting_notes') === 'true',
@@ -801,7 +823,7 @@ export const Suppliers = () => {
   useEffect(() => {
     const handleConfigChange = () => {
       setVisibilitySettings({
-        contactPerson: localStorage.getItem('showSupplierSetting_contactPerson') === 'true',
+        contactPerson: getContactPersonVisible(true),
         email: localStorage.getItem('showSupplierSetting_email') === 'true',
         rating: localStorage.getItem('showSupplierSetting_rating') === 'true',
         notes: localStorage.getItem('showSupplierSetting_notes') === 'true',
@@ -829,8 +851,6 @@ export const Suppliers = () => {
     _refresh: refreshToken || undefined,
     ...filters
   };
-
-  const { confirmation, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
 
   const { data: suppliers, isLoading, error, refetch } = useGetSuppliersQuery(queryParams, {
     refetchOnMountOrArgChange: true,
@@ -860,8 +880,8 @@ export const Suppliers = () => {
     setCurrentPage(1);
   };
 
-  const allSuppliers = suppliers?.suppliers || [];
-  const pagination = suppliers?.pagination || {};
+  const allSuppliers = suppliers?.data?.suppliers || suppliers?.suppliers || [];
+  const pagination = suppliers?.data?.pagination || suppliers?.pagination || {};
   const filteredSuppliers = useFuzzySearch(
     allSuppliers,
     searchTerm,
@@ -945,13 +965,14 @@ export const Suppliers = () => {
   };
 
   const handleDelete = (supplier) => {
-    confirmDelete(supplier.companyName, 'Supplier', async () => {
+    confirmDelete(supplier.companyName || supplier.businessName || 'this supplier', 'Supplier', async () => {
       try {
         await deleteSupplier(supplier.id || supplier._id).unwrap();
         toast.success('Supplier deleted successfully!');
         refetch();
       } catch (error) {
         toast.error(error?.data?.message || 'Failed to delete supplier');
+        throw error;
       }
     });
   };
@@ -1049,12 +1070,10 @@ export const Suppliers = () => {
 
   return (
     <div className="space-y-4 xl:space-y-6 min-w-0">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Suppliers</h1>
-          <p className="hidden sm:block text-sm sm:text-base text-gray-600 mt-1">Manage your supplier relationships and information</p>
-        </div>
-        <div className="flex-shrink-0 flex items-center gap-2 overflow-x-auto">
+      <PageHeader
+        title="Suppliers"
+        subtitle="Manage your supplier relationships and information"
+        actions={<>
           <Button
             onClick={() => handleAddNew()}
             variant="default"
@@ -1064,29 +1083,73 @@ export const Suppliers = () => {
             <Plus className="h-4 w-4" />
             <span className="uppercase">ADD SUPPLIER</span>
           </Button>
-          <ExcelExportButton getData={getExportData} label="Export" />
-          <PdfExportButton getData={getExportData} label="PDF" />
-          <ExcelImportButton onDataImported={handleImportData} label="Import" />
-          <label className="inline-flex items-center gap-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
-            <input
-              type="checkbox"
-              checked={autoCreateImportCities}
-              onChange={(e) => setAutoCreateImportCities(e.target.checked)}
-              className="h-4 w-4"
-            />
-            Auto-create city
-          </label>
-          <Button
-            onClick={handleDownloadTemplate}
-            variant="outline"
-            size="sm"
-            className="group flex items-center justify-center gap-2 border-orange-200 bg-white text-orange-600 hover:bg-orange-50 hover:border-orange-500 h-9 px-3 rounded-lg shadow-sm transition-all duration-200"
-          >
-            <Download className="h-3.5 w-3.5 group-hover:-translate-y-0.5 transition-transform" />
-            <span className="text-xs font-semibold tracking-tight uppercase">Template</span>
-          </Button>
-        </div>
-      </div>
+
+          {/* Desktop Actions */}
+          <div className="hidden sm:flex items-center gap-2">
+            <ExcelExportButton ref={excelExportRef} getData={getExportData} label="Export" />
+            <PdfExportButton ref={pdfExportRef} getData={getExportData} label="PDF" />
+            <ExcelImportButton ref={excelImportRef} onDataImported={handleImportData} label="Import" />
+            <label className="inline-flex items-center gap-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+              <input
+                type="checkbox"
+                checked={autoCreateImportCities}
+                onChange={(e) => setAutoCreateImportCities(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Auto-create city
+            </label>
+            <Button
+              onClick={handleDownloadTemplate}
+              variant="outline"
+              size="sm"
+              className="group flex items-center justify-center gap-2 border-orange-200 bg-white text-orange-600 hover:bg-orange-50 hover:border-orange-500 h-9 px-3 rounded-lg shadow-sm transition-all duration-200"
+            >
+              <Download className="h-3.5 w-3.5 group-hover:-translate-y-0.5 transition-transform" />
+              <span className="text-xs font-semibold tracking-tight uppercase">Template</span>
+            </Button>
+          </div>
+
+          {/* Mobile Actions Dropdown */}
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10 border-gray-200">
+                  <MoreHorizontal className="h-5 w-5 text-gray-600" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => excelExportRef.current?.handleExport()}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                  Excel Export
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => pdfExportRef.current?.handleExport()}>
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  PDF Export
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => excelImportRef.current?.handleButtonClick()}>
+                  <Upload className="h-4 w-4 mr-2 text-blue-600" />
+                  Import Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownloadTemplate}>
+                  <Download className="h-4 w-4 mr-2 text-orange-600" />
+                  Template
+                </DropdownMenuItem>
+                <div className="px-2 py-1.5 border-t mt-1">
+                  <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoCreateImportCities}
+                      onChange={(e) => setAutoCreateImportCities(e.target.checked)}
+                      className="h-3.5 w-3.5"
+                    />
+                    Auto-create city
+                  </label>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </>}
+      />
 
       {/* Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -1228,10 +1291,12 @@ export const Suppliers = () => {
                           <p className="text-gray-700 truncate">{supplier.email || '-'}</p>
                         </div>
                       )}
-                      <div>
-                        <p className="text-gray-500 mb-1">Phone</p>
-                        <p className="text-gray-700">{supplier.phone || '-'}</p>
-                      </div>
+                      {canViewSupplierPhone && (
+                        <div>
+                          <p className="text-gray-500 mb-1">Phone</p>
+                          <p className="text-gray-700">{supplier.phone || '-'}</p>
+                        </div>
+                      )}
                       <div>
                         <p className="text-gray-500 mb-1">Status</p>
                         <span className={`badge ${supplier.status === 'active' ? 'badge-success' :
@@ -1298,7 +1363,7 @@ export const Suppliers = () => {
 
                     {/* Phone */}
                     <div className="col-span-1">
-                      <p className="text-xs lg:text-sm text-gray-600">{supplier.phone || '-'}</p>
+                      <p className="text-xs lg:text-sm text-gray-600">{canViewSupplierPhone ? (supplier.phone || '-') : '—'}</p>
                     </div>
 
                     {/* Status */}
@@ -1467,12 +1532,12 @@ export const Suppliers = () => {
       )}
 
       <DeleteConfirmationDialog
-        isOpen={confirmation.isOpen}
-        onClose={handleCancel}
-        onConfirm={handleConfirm}
-        itemName={confirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
+        isOpen={deleteConfirmation.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        itemName={deleteConfirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
         itemType="Supplier"
-        isLoading={confirmation.isLoading}
+        isLoading={deleteConfirmation.isLoading}
       />
     </div>
   );

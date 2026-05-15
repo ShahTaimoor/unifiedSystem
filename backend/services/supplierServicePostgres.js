@@ -120,14 +120,6 @@ class SupplierService {
    * Create supplier
    */
   async createSupplier(supplierData, userId) {
-    // Ensure contactPerson.name has a fallback to companyName if missing
-    if (!supplierData.contactPerson?.name?.trim()) {
-      supplierData.contactPerson = {
-        ...(supplierData.contactPerson || {}),
-        name: supplierData.companyName || 'Unknown Supplier'
-      };
-    }
-
     const supplier = await supplierRepository.create({
       ...supplierData,
       createdBy: userId
@@ -183,14 +175,6 @@ class SupplierService {
    * Update supplier
    */
   async updateSupplier(id, supplierData, userId) {
-    // If contact person name is explicitly cleared but company name exists, fallback
-    if (supplierData.contactPerson && !supplierData.contactPerson.name?.trim()) {
-      const existing = await supplierRepository.findById(id);
-      if (existing) {
-        supplierData.contactPerson.name = supplierData.companyName || existing.company_name || 'Unknown Supplier';
-      }
-    }
-
     const supplier = await supplierRepository.update(id, {
       ...supplierData,
       updatedBy: userId

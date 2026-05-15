@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { Plus, Camera, X } from 'lucide-react';
-import { productsApi, useLazyGetLastPurchasePriceQuery, useLazyGetProductsQuery } from '@/pos/store/services/productsApi';
-import { productVariantsApi, useLazyGetVariantsQuery } from '@/pos/store/services/productVariantsApi';
-import { useDebouncedPosProductSearch } from '@/pos/hooks/useDebouncedPosProductSearch';
-import { SearchableDropdown } from '@/pos/components/SearchableDropdown';
-import { DualUnitQuantityInput } from '@/pos/components/DualUnitQuantityInput';
-import { hasDualUnit, getPiecesPerBox, piecesToBoxesAndPieces, formatStockDualLabel } from '@/pos/utils/dualUnitUtils';
-import { handleApiError } from '@/pos/utils/errorHandler';
+import { productsApi, useLazyGetLastPurchasePriceQuery, useLazyGetProductsQuery } from '@/store/services/productsApi';
+import { productVariantsApi, useLazyGetVariantsQuery } from '@/store/services/productVariantsApi';
+import { useDebouncedPosProductSearch } from '@/hooks/useDebouncedPosProductSearch';
+import { SearchableDropdown } from '@/components/SearchableDropdown';
+import { DualUnitQuantityInput } from '@/components/DualUnitQuantityInput';
+import { hasDualUnit, getPiecesPerBox, piecesToBoxesAndPieces, formatStockDualLabel } from '@/utils/dualUnitUtils';
+import { handleApiError } from '@/utils/errorHandler';
 import { toast } from 'sonner';
-import { Input } from '@/pos/components/ui/input';
-import { LoadingButton } from '@/pos/components/LoadingSpinner';
-import BarcodeScanner from '@/pos/components/BarcodeScanner';
-import BaseModal from '@/pos/components/BaseModal';
-import { compressImageFileToDataUrl } from '@/pos/utils/imageCompress';
+import { Input } from '@/components/ui/input';
+import { LoadingButton } from '@/components/LoadingSpinner';
+import BarcodeScanner from '@/components/BarcodeScanner';
+import BaseModal from '@/components/BaseModal';
+import { useSensitiveDataPermissions } from '@/hooks/useSensitiveDataPermissions';
+import { compressImageFileToDataUrl } from '@/utils/imageCompress';
 
 /** Max rows shown in dropdown (server search caps higher; we slice in hook). */
 const PRODUCT_DROPDOWN_LIMIT = 50;
@@ -28,7 +29,7 @@ function ProductSearchComponent({
   hasCostPricePermission,
   priceType,
   onRefetchReady,
-  dualUnitShowBoxInput = true,
+  dualUnitShowBoxInput = false,
   dualUnitShowPiecesInput = true,
   allowOutOfStock = false,
   allowSaleWithoutProduct = false,
@@ -36,7 +37,16 @@ function ProductSearchComponent({
   itemsOverride = null,
   loadingOverride = null,
   emptyMessageOverride = null,
+  onFocusReady,
 }) {
+  const { canViewStock } = useSensitiveDataPermissions();
+
+  const formatDisplayNumber = (value) => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0';
+    return Number.isInteger(num) ? String(num) : String(num.toFixed(2).replace(/\.?0+$/, ''));
+  };
+
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(0);
@@ -97,6 +107,16 @@ function ProductSearchComponent({
     }
   }, [onRefetchReady, refreshProductSearchCache]);
 
+  const focusSearchInput = useCallback(() => {
+    productSearchRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  useEffect(() => {
+    if (typeof onFocusReady === 'function') {
+      onFocusReady(focusSearchInput);
+    }
+  }, [onFocusReady, focusSearchInput]);
+
   const getCostPrice = (product) => {
     if (!product) return 0;
 
@@ -152,13 +172,15 @@ function ProductSearchComponent({
     // For variants, use the base product ID to get purchase price
     const productIdForPrice = product.isVariant ? product.baseProductId : product._id;
 
+    let fetchedLastPurchasePrice = null;
     if (productIdForPrice) {
       try {
         const response = await getLastPurchasePrice(productIdForPrice).unwrap();
         if (response && response.lastPurchasePrice !== null) {
-          setLastPurchasePrice(response.lastPurchasePrice);
+          fetchedLastPurchasePrice = Number(response.lastPurchasePrice);
+          setLastPurchasePrice(fetchedLastPurchasePrice);
           if (onLastPurchasePriceFetched) {
-            onLastPurchasePriceFetched(productIdForPrice, response.lastPurchasePrice);
+            onLastPurchasePriceFetched(productIdForPrice, fetchedLastPurchasePrice);
           }
         } else {
           setLastPurchasePrice(null);
@@ -172,7 +194,10 @@ function ProductSearchComponent({
     }
 
     // Calculate the rate based on selected price type
-    const calculatedPrice = calculatePrice(product, priceType);
+    const calculatedPrice =
+      priceType === 'cost' && fetchedLastPurchasePrice !== null && Number.isFinite(fetchedLastPurchasePrice)
+        ? fetchedLastPurchasePrice
+        : calculatePrice(product, priceType);
 
     setCalculatedRate(calculatedPrice);
     setCustomRate(calculatedPrice.toString());
@@ -230,7 +255,21 @@ function ProductSearchComponent({
       }
 
       // Calculate price based on type
-      const unitPrice = calculatePrice(product, priceType);
+      let unitPrice = calculatePrice(product, priceType);
+      if (priceType === 'cost') {
+        try {
+          const productIdForPrice = product.isVariant ? product.baseProductId : product._id;
+          if (productIdForPrice) {
+            const response = await getLastPurchasePrice(productIdForPrice).unwrap();
+            const fetched = Number(response?.lastPurchasePrice);
+            if (response && response.lastPurchasePrice !== null && Number.isFinite(fetched)) {
+              unitPrice = fetched;
+            }
+          }
+        } catch (_) {
+          // Keep fallback calculated unitPrice when lookup fails.
+        }
+      }
       
       // Check for loss warning (sale < cost)
       const costPrice = getCostPrice(product); // Simplified for auto-add to avoid blocking confirm dialogs
@@ -275,17 +314,23 @@ function ProductSearchComponent({
     let lastKeyTime = Date.now();
 
     const handleGlobalKeyDown = (e) => {
+      const key = e.key;
+      // Some synthetic events / browsers may omit `key`
+      if (key == null) return;
+
       // Ignore modifier keys
-      if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
+      if (['Control', 'Alt', 'Shift', 'Meta'].includes(key)) return;
 
       const currentTime = Date.now();
       const timeDiff = currentTime - lastKeyTime;
       lastKeyTime = currentTime;
 
+      const isPrintableChar = typeof key === 'string' && key.length === 1;
+
       // Scanners usually send keys very fast (<30ms between keys)
       // If time between keys is short, it's likely a scanner
       if (timeDiff < 50) {
-        if (e.key === 'Enter') {
+        if (key === 'Enter') {
           if (buffer.length >= 4) {
             e.preventDefault();
             e.stopPropagation();
@@ -295,14 +340,14 @@ function ProductSearchComponent({
           } else {
             buffer = '';
           }
-        } else if (e.key.length === 1) {
-          buffer += e.key;
+        } else if (isPrintableChar) {
+          buffer += key;
         }
       } else {
         // Too slow, probably manual typing. Clear buffer.
         // But if it was a single character after a long pause, it might be the START of a scan
-        if (e.key.length === 1) {
-          buffer = e.key;
+        if (isPrintableChar) {
+          buffer = key;
         } else {
           buffer = '';
         }
@@ -366,15 +411,15 @@ function ProductSearchComponent({
         toast.error('Please enter a valid quantity');
         return;
       }
-      if (!customRate || parseInt(customRate) < 0) {
+      if (!customRate || parseFloat(customRate) < 0) {
         toast.error('Please enter a valid rate');
         return;
       }
 
       setIsAddingToCart(true);
       try {
-        const unitPrice = parseInt(customRate) || 0;
-        const unitCost = (allowManualCostPrice && manualCost) ? parseInt(manualCost) : 0;
+        const unitPrice = parseFloat(customRate) || 0;
+        const unitCost = (allowManualCostPrice && manualCost) ? (parseFloat(manualCost) || 0) : 0;
 
         const manualProduct = {
           _id: `manual_${Date.now()}`,
@@ -416,7 +461,7 @@ function ProductSearchComponent({
     if (!selectedProduct) return;
 
     // Validate that rate is filled
-    if (!customRate || parseInt(customRate) < 0) {
+    if (!customRate || parseFloat(customRate) < 0) {
       toast.error('Please enter a valid rate');
       return;
     }
@@ -445,7 +490,7 @@ function ProductSearchComponent({
     setIsAddingToCart(true);
     try {
       // Use the rate from the input field
-      const unitPrice = parseInt(customRate) || Math.round(calculatedRate);
+      const unitPrice = parseFloat(customRate) || Number(calculatedRate) || 0;
 
       // Check if sale price is less than cost price (always check, regardless of showCostPrice)
       const costPrice = lastPurchasePrice !== null ? lastPurchasePrice : getCostPrice(selectedProduct);
@@ -586,9 +631,11 @@ function ProductSearchComponent({
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          <div className={`text-sm ${isOutOfStock ? 'text-red-600' : isLowStock ? 'text-orange-600' : 'text-gray-600'}`}>
-            Stock: {inventory.currentStock || 0}
-          </div>
+          {canViewStock && (
+            <div className={`text-sm ${isOutOfStock ? 'text-red-600' : isLowStock ? 'text-orange-600' : 'text-gray-600'}`}>
+              Stock: {inventory.currentStock || 0}
+            </div>
+          )}
           {showCostPrice && hasCostPricePermission && (purchasePrice !== undefined && purchasePrice !== null) && (
             <div className="text-sm text-red-600 font-medium">Cost: {Math.round(purchasePrice)}</div>
           )}
@@ -745,7 +792,7 @@ function ProductSearchComponent({
           {/* Fields Grid - 2 columns on mobile */}
           <div className="grid grid-cols-2 gap-3">
             {/* Stock */}
-            {!isManualMode && (
+            {!isManualMode && canViewStock && (
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Stock
@@ -778,7 +825,7 @@ function ProductSearchComponent({
               <Input
                 type="text"
                 readOnly
-                value={isAddingProduct ? Math.round(quantity * parseInt(customRate || 0)) : 0}
+                value={isAddingProduct ? formatDisplayNumber(quantity * (parseFloat(customRate || 0) || 0)) : 0}
                 onFocus={(e) => e.target.select()}
                 className="text-center h-10 bg-gray-100 font-semibold text-gray-700"
               />
@@ -1145,7 +1192,7 @@ function ProductSearchComponent({
             <Input
               type="text"
               readOnly
-              value={isAddingProduct ? Math.round(quantity * parseInt(customRate || 0)) : 0}
+              value={isAddingProduct ? formatDisplayNumber(quantity * (parseFloat(customRate || 0) || 0)) : 0}
               className="text-center h-10 bg-slate-50 font-semibold text-gray-700 border-gray-200"
             />
           </div>

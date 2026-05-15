@@ -153,8 +153,8 @@ class InvestorService {
     const paymentMethod = options.paymentMethod === 'bank' ? 'bank' : 'cash';
     const debitAccountCode = String(
       options.debitAccountCode ||
-      process.env.INVESTOR_PAYOUT_DEBIT_ACCOUNT ||
-      '3100'
+        process.env.INVESTOR_PAYOUT_DEBIT_ACCOUNT ||
+        '3100'
     ).toUpperCase();
 
     return await transaction(async (client) => {

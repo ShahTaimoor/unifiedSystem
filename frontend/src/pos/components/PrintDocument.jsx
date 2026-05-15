@@ -1,6 +1,33 @@
 import React, { useMemo } from 'react';
 import { formatQuantityDisplay } from '../utils/dualUnitUtils';
 import ThermalReceipt from './print/ThermalReceipt';
+import { useSensitiveDataPermissions } from '../hooks/useSensitiveDataPermissions';
+import { useAuth } from '../contexts/AuthContext';
+
+/** Line items for print when payloads use alternate keys or list APIs omit items (minimal listMode). */
+function resolvePrintOrderLineItems(orderData) {
+    if (!orderData || typeof orderData !== 'object') return [];
+    const raw =
+        orderData.data && typeof orderData.data === 'object' && !Array.isArray(orderData.data)
+            ? orderData.data
+            : orderData;
+    let candidate =
+        raw.items ??
+        raw.orderItems ??
+        raw.products ??
+        raw.invoiceItems ??
+        raw.line_items ??
+        raw.lineItems;
+    if (candidate == null) return [];
+    if (typeof candidate === 'string') {
+        try {
+            candidate = JSON.parse(candidate);
+        } catch {
+            return [];
+        }
+    }
+    return Array.isArray(candidate) ? candidate : [];
+}
 
 const PrintDocument = ({
     companySettings,
@@ -11,6 +38,13 @@ const PrintDocument = ({
     ledgerBalance: ledgerBalanceProp,
     children
 }) => {
+    const { getPartyPermissions } = useSensitiveDataPermissions();
+    const { canViewBalance: canViewPartyBalance, canViewPhone: canViewPartyPhone } =
+        getPartyPermissions(partyLabel);
+    const { user: currentUser } = useAuth();
+    const currentUserName = currentUser?.firstName
+        ? `${currentUser.firstName}${currentUser.lastName ? ' ' + currentUser.lastName : ''}`
+        : currentUser?.name || currentUser?.username || 'Admin';
     const {
         showLogo = true,
         showCompanyDetails = true,
@@ -269,21 +303,7 @@ const PrintDocument = ({
         };
     }, [orderData, partyLabel]);
 
-    const items = useMemo(() => {
-        const rawItems = orderData?.items;
-        if (!rawItems) return [];
-        if (Array.isArray(rawItems)) return rawItems;
-        if (typeof rawItems === 'string') {
-            try {
-                return JSON.parse(rawItems);
-            } catch (e) {
-                console.error('Failed to parse items string in PrintDocument:', e);
-                return [];
-            }
-        }
-        return [];
-    }, [orderData?.items]);
-
+    const items = useMemo(() => resolvePrintOrderLineItems(orderData), [orderData]);
 
     const computedSubtotalFromItems = items.reduce((sum, item) => {
         const qty = toNumber(item.quantity ?? item.qty, 0);
@@ -370,7 +390,7 @@ const PrintDocument = ({
         showPrintContactName ? { label: 'Name:', value: partyInfo.name } : null,
         showPrintBusinessName && partyInfo.extra ? { label: 'Business:', value: partyInfo.extra } : null,
         showEmail && partyInfo.email !== 'N/A' ? { label: 'Email:', value: partyInfo.email } : null,
-        partyInfo.phone !== 'N/A' ? { label: 'Phone:', value: partyInfo.phone } : null,
+        canViewPartyPhone && partyInfo.phone !== 'N/A' ? { label: 'Phone:', value: partyInfo.phone } : null,
         showPrintAddress && (partyInfo.street || partyInfo.address) ? { label: 'Address:', value: (partyInfo.street || partyInfo.address) } : null,
         showPrintCity && partyInfo.city ? { label: 'City:', value: partyInfo.city } : null,
         showPrintState && partyInfo.state ? { label: 'State:', value: partyInfo.state } : null,
@@ -466,7 +486,7 @@ const PrintDocument = ({
                             <div className="receipt-voucher__label w-1/3 font-semibold p-2">Amount</div>
                             <div className="receipt-voucher__value flex-1 p-2 border-l border-black font-bold text-lg">{formatCurrency(amount)}</div>
                         </div>
-                        {showPrintLedgerBalance && ledgerBalanceProp != null && (
+                        {canViewPartyBalance && showPrintLedgerBalance && ledgerBalanceProp != null && (
                             <div className="receipt-voucher__row flex border-b border-black">
                                 <div className="receipt-voucher__label w-1/3 font-semibold p-2">Ledger Balance</div>
                                 <div className="receipt-voucher__value flex-1 p-2 border-l border-black">{formatCurrency(Number(ledgerBalanceProp))}</div>
@@ -480,6 +500,12 @@ const PrintDocument = ({
                             <div className="receipt-voucher__label w-1/3 font-semibold p-2">Payment Mode</div>
                             <div className="receipt-voucher__value flex-1 p-2 border-l border-black">{resolvedDocumentTitle.toLowerCase().includes('bank') ? 'Bank' : 'Cash'}</div>
                         </div>
+                        {orderData.notes && (
+                            <div className="receipt-voucher__row flex border-t border-black">
+                                <div className="receipt-voucher__label w-1/3 font-semibold p-2">Notes</div>
+                                <div className="receipt-voucher__value flex-1 p-2 border-l border-black text-sm">{orderData.notes}</div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Footer */}
@@ -502,60 +528,84 @@ const PrintDocument = ({
             <div className={printClassName}>
                 {children}
 
-                {/* Header Section */}
-                <div className="layout2-header">
-                    <div className="grid grid-cols-12 gap-4 items-center mb-2">
-                        <div className="col-span-3">
-                            {showLogo && safeCompanySettings.logo && (
-                                <img
-                                    src={safeCompanySettings.logo}
-                                    alt="Logo"
-                                    className="w-auto object-contain"
-                                    style={{ height: `${logoSize}px`, width: 'auto', objectFit: 'contain' }}
-                                />
-                            )}
-                        </div>
-                        <div className="col-span-7 text-center">
-                            <h1 className="layout2-company-name italic font-bold text-4xl mb-1">
-                                {resolvedCompanyName}
-                            </h1>
-                            <div className="layout2-company-address italic text-sm">
-                                {resolvedCompanyAddress}
+                {/* Header Section — respects showCompanyDetails & showLogo */}
+                {showCompanyDetails && (
+                    <div className="layout2-header">
+                        <div className="grid grid-cols-12 gap-4 items-center mb-2">
+                            <div className="col-span-3">
+                                {showLogo && safeCompanySettings.logo && (
+                                    <img
+                                        src={safeCompanySettings.logo}
+                                        alt="Logo"
+                                        className="w-auto object-contain"
+                                        style={{ height: `${logoSize}px`, width: 'auto', objectFit: 'contain' }}
+                                    />
+                                )}
                             </div>
-                            <div className="layout2-company-phone italic text-sm">
-                                Phone # {resolvedCompanyPhone}
+                            <div className="col-span-7 text-center">
+                                <h1 className="layout2-company-name italic font-bold text-4xl mb-1">
+                                    {resolvedCompanyName}
+                                </h1>
+                                <div className="layout2-company-address italic text-sm">
+                                    {resolvedCompanyAddress}
+                                </div>
+                                <div className="layout2-company-phone italic text-sm">
+                                    Phone # {resolvedCompanyPhone}
+                                </div>
+                                {showEmail && safeCompanySettings.email && (
+                                    <div className="layout2-company-email italic text-sm">
+                                        {safeCompanySettings.email}
+                                    </div>
+                                )}
                             </div>
+                            <div className="col-span-2"></div>
                         </div>
-                        <div className="col-span-2"></div>
                     </div>
-                    <div className="border-b-2 border-black w-full mb-6"></div>
-                </div>
+                )}
 
-                {/* Info Boxes */}
-                <div className="grid grid-cols-12 gap-0 mb-6 border-t border-l border-black">
-                    <div className="col-span-8 p-2 border-r border-b border-black font-medium">
-                        Customer: <span className="uppercase">{partyInfo.name}</span> {partyInfo.phone !== 'N/A' && partyInfo.phone}
-                    </div>
-                    <div className="col-span-4 p-2 border-r border-b border-black font-medium text-right">
-                        Invoice Date: {formatDate(invoiceDate)}
-                    </div>
-                    <div className="col-span-8 p-2 border-r border-b border-black font-medium min-h-[40px]">
-                        Address: {partyInfo.address}
-                    </div>
-                    <div className="col-span-4 p-2 border-r border-b border-black font-medium text-right italic">
-                        Invoice No: {documentNumber}
-                    </div>
-                </div>
+                {/* Info Boxes — respects party detail toggles */}
+                <table className="w-full border-collapse mb-6" style={{ border: '1px solid black' }}>
+                    <tbody>
+                        <tr>
+                            <td className="border border-black p-2 font-medium" style={{ width: '65%' }}>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        {showPrintBusinessName && (<>{partyLabel}: <span className="uppercase">{partyInfo.name}</span>{' '}</>)}
+                                        {canViewPartyPhone && partyInfo.phone !== 'N/A' && partyInfo.phone}
+                                    </div>
+                                    {orderData.notes && (
+                                        <div className="text-left max-w-[50%] ">
+                                            <span className="text-[16px] font-normal whitespace-pre-line">({orderData.notes})</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </td>
+                            <td className="border border-black p-2 font-medium text-right" style={{ width: '35%' }}>
+                                {showPrintInvoiceDate && <>Invoice Date: {formatDate(invoiceDate)}</>}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td className="border border-black p-2 font-medium min-h-[40px]">
+                                {showPrintAddress && partyInfo.address && (<>Address: {partyInfo.address}</>)}
+                                {showPrintCity && partyInfo.city && partyInfo.city !== 'N/A' && (<>{showPrintAddress && partyInfo.address ? ', ' : ''}{partyInfo.city}</>)}
+                            </td>
+                            <td className="border border-black p-2 font-medium text-right italic">
+                                {showPrintInvoiceNumber && <>Invoice No: {documentNumber}</>}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 {/* Items Table */}
                 <table className="layout2-table w-full border-collapse mb-0">
                     <thead>
                         <tr>
-                            <th className="border border-black p-1 text-center w-[60px]">S.No</th>
+                            <th className="border border-black p-1 text-center w-[50px]">S.No</th>
                             <th className="border border-black p-1 text-center">Product Name</th>
-                            <th className="border border-black p-1 text-center w-[100px]">Quantity</th>
-                            <th className="border border-black p-1 text-center w-[120px]">Price</th>
-                            <th className="border border-black p-1 text-center w-[150px]">Total</th>
+                            <th className="border border-black p-1 text-center w-[80px]">Quantity</th>
+                            <th className="border border-black p-1 text-center w-[80px]">Price</th>
+                            {showDiscount && <th className="border border-black p-1 text-center w-[80px]">Disc</th>}
+                            <th className="border border-black p-1 text-center w-[100px]">Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -566,6 +616,7 @@ const PrintDocument = ({
                                 0
                             );
                             const lineTotal = toNumber(item.total ?? item.lineTotal ?? item.totalPrice ?? item.totalCost, qty * price);
+                            const lineDiscount = toNumber(item.discount ?? item.discountAmount ?? 0, 0);
                             const qtyDisplay = formatQuantityDisplay(qty, item.product ?? item.productData, null, { boxes: item.boxes, pieces: item.pieces });
                             const barcodeLine = getLineBarcodeDisplay(item);
                             return (
@@ -583,6 +634,9 @@ const PrintDocument = ({
                                                 )}
                                                 <span>{item.product?.name || item.name || `Item ${index + 1}`}</span>
                                             </div>
+                                            {showDescription && item.description && (
+                                                <div className="text-[10px] text-gray-600 normal-case">{item.description}</div>
+                                            )}
                                             {barcodeLine && (
                                                 <div className="text-[10px] text-gray-700 normal-case font-mono pl-0">
                                                     {barcodeLine.label}: {barcodeLine.value}
@@ -592,13 +646,13 @@ const PrintDocument = ({
                                     </td>
                                     <td className="border border-black p-1 text-center">{qtyDisplay}</td>
                                     <td className="border border-black p-1 text-right">{formatCurrency(price)}</td>
+                                    {showDiscount && <td className="border border-black p-1 text-right">{lineDiscount > 0 ? formatCurrency(lineDiscount) : '-'}</td>}
                                     <td className="border border-black p-1 text-right">{formatCurrency(lineTotal)}</td>
                                 </tr>
                             );
                         })}
-                        {/* Summary Footer of Table - Subtotal (sum of line items); Net Amount is in right panel */}
                         <tr className="font-bold">
-                            <td colSpan="4" className="border border-black p-1 text-right">Subtotal</td>
+                            <td colSpan={showDiscount ? 5 : 4} className="border border-black p-1 text-right">Subtotal</td>
                             <td className="border border-black p-1 text-right">{formatCurrency(computedSubtotal)}</td>
                         </tr>
                     </tbody>
@@ -607,43 +661,51 @@ const PrintDocument = ({
                 {/* Bottom Section */}
                 <div className="grid grid-cols-12 gap-0 mt-0">
                     <div className="col-span-8 p-4 italic">
-                        <div className="mb-2">
-                            Printed By: <span className="underline font-bold uppercase">{orderData?.createdBy?.firstName || (orderData?.createdBy?.name ? orderData.createdBy.name.split(' ')[0] : 'ADMIN')}</span>
-                        </div>
-                        <div>
-                            Entry Date Time: {formatDateTime(invoiceDate)}
-                        </div>
-                        <div className="mb-6">
-                            Print Date Time: {formatDateTime(generatedAt)}
-                        </div>
-                        <div className="urdu-note text-right font-bold text-lg mt-8" dir="rtl">
-                            نوٹ: پلٹی شدہ مال کی ٹوٹ پھوٹ کی ذمہ داری نہیں ہو گی۔ مال دوکان میں چیک
-                        </div>
+                        {showDate && (
+                            <>
+                                <div className="mb-2">
+                                    Printed By: <span className="underline font-bold uppercase">{currentUserName}</span>
+                                </div>
+                                <div>
+                                    Entry Date Time: {formatDateTime(invoiceDate)}
+                                </div>
+                                <div className="mb-6">
+                                    Print Date Time: {formatDateTime(generatedAt)}
+                                </div>
+                            </>
+                        )}
+                        {showFooter && (
+                            <div className="urdu-note text-right font-bold text-lg mt-8" dir="rtl">
+                                نوٹ: پلٹی شدہ مال کی ٹوٹ پھوٹ کی ذمہ داری نہیں ہو گی۔ مال دوکان میں چیک
+                            </div>
+                        )}
                     </div>
                     <div className="col-span-4">
-                        <table className="w-full border-collapse border-l border-black">
+                        <table className="w-full border-collapse" style={{ border: '1px solid black' }}>
                             <tbody>
+                                {showDiscount && (
+                                    <tr>
+                                        <td className="border border-black p-1 text-right font-bold">Invoice Discount</td>
+                                        <td className="border border-black p-1 text-right">{formatCurrency(discountValue)}</td>
+                                    </tr>
+                                )}
                                 <tr>
-                                    <td className="border-b border-r border-black p-1 text-right font-bold">Invoice Discount</td>
-                                    <td className="border-b border-r border-black p-1 text-right">{formatCurrency(discountValue)}</td>
+                                    <td className="border border-black p-1 text-right font-bold">Net Amount</td>
+                                    <td className="border border-black p-1 text-right font-bold">{formatCurrency(totalValue)}</td>
                                 </tr>
                                 <tr>
-                                    <td className="border-b border-r border-black p-1 text-right font-bold">Net Amount</td>
-                                    <td className="border-b border-r border-black p-1 text-right font-bold">{formatCurrency(totalValue)}</td>
+                                    <td className="border border-black p-1 text-right font-bold">Received Amount</td>
+                                    <td className="border border-black p-1 text-right">{formatCurrency(receivedAmount)}</td>
                                 </tr>
-                                <tr>
-                                    <td className="border-b border-r border-black p-1 text-right font-bold">Received Amount</td>
-                                    <td className="border-b border-r border-black p-1 text-right">{formatCurrency(receivedAmount)}</td>
-                                </tr>
-                                {showPrintLedgerBalance && (
+                                {canViewPartyBalance && showPrintLedgerBalance && (
                                     <>
                                         <tr>
-                                            <td className="border-b border-r border-black p-1 text-right font-bold">Previous Balance</td>
-                                            <td className="border-b border-r border-black p-1 text-right">{formatCurrency(previousBalance)}</td>
+                                            <td className="border border-black p-1 text-right font-bold">Previous Balance</td>
+                                            <td className="border border-black p-1 text-right">{formatCurrency(previousBalance)}</td>
                                         </tr>
                                         <tr>
-                                            <td className="border-b border-r border-black p-1 text-right font-bold">Total Receivables</td>
-                                            <td className="border-b border-r border-black p-1 text-right font-bold">{formatCurrency(totalReceivables)}</td>
+                                            <td className="border border-black p-1 text-right font-bold">Total Receivables</td>
+                                            <td className="border border-black p-1 text-right font-bold">{formatCurrency(totalReceivables)}</td>
                                         </tr>
                                     </>
                                 )}
@@ -745,6 +807,14 @@ const PrintDocument = ({
                         ))}
                     </div>
                 )}
+                {orderData.notes && (
+                    <div className="print-document__info-block">
+                        <div className="print-document__section-label">Notes:</div>
+                        <div className="print-document__info-value" style={{ whiteSpace: 'pre-line', fontSize: '11px', lineHeight: '1.4' }}>
+                            {orderData.notes}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* CCTV Camera Time Section */}
@@ -794,17 +864,18 @@ const PrintDocument = ({
             <table className="print-document__table mt-3">
                 <thead>
                     <tr>
-                        <th>Item</th>
+                        <th style={{ width: '32px', textAlign: 'center' }}>S.No</th>
+                        <th style={{ width: '55%' }}>Item</th>
                         {showDescription && <th>Description</th>}
-                        <th>Qty</th>
-                        <th>Price</th>
-                        <th>Total</th>
+                        <th style={{ width: '50px' }}>Qty</th>
+                        <th style={{ width: '60px' }}>Price</th>
+                        <th style={{ width: '70px' }}>Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     {items.length === 0 && (
                         <tr>
-                            <td colSpan={showDescription ? "5" : "4"} style={{ textAlign: 'center' }}>
+                            <td colSpan={showDescription ? "6" : "5"} style={{ textAlign: 'center' }}>
                                 No items available
                             </td>
                         </tr>
@@ -820,6 +891,7 @@ const PrintDocument = ({
                         const barcodeLine = getLineBarcodeDisplay(item);
                         return (
                             <tr key={index}>
+                                <td style={{ textAlign: 'center' }}>{index + 1}</td>
                                 <td>
                                     <div className="flex flex-col gap-0.5">
                                         <div className="flex items-center gap-2">
@@ -856,65 +928,65 @@ const PrintDocument = ({
                 </tbody>
             </table>
 
-            <div className="print-document__summary">
-                <div className="print-document__summary-table">
-                    <div className="print-document__summary-row">
-                        <span>Subtotal</span>
-                        <span>{formatCurrency(computedSubtotal)}</span>
+            {/* Footer (left) + Summary/Total (right) in one row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '16px', gap: '24px' }}>
+                {/* Footer — left side */}
+                <div className="print-document__footer" style={{ margin: 0, textAlign: 'left', flex: 1 }}>
+                    {showFooter && (
+                        <>
+                            <div>{formatDateTime(generatedAt)} &nbsp;•&nbsp; Generated By: <strong>{currentUserName}</strong></div>
+                            {showCompanyDetails && resolvedCompanyAddress && <div>{resolvedCompanyAddress}</div>}
+                            {showCompanyDetails && resolvedCompanyPhone && <div>Phone: {resolvedCompanyPhone}</div>}
+                            {footerText && (
+                                <div className="mt-2 text-gray-500">{footerText}</div>
+                            )}
+                            {receiptFooterText && (
+                                <div className="mt-3 pt-2" style={{ borderTop: '1px dashed #9ca3af', whiteSpace: 'pre-line', lineHeight: 1.35 }}>
+                                    {receiptFooterText}
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                {/* Summary — right side */}
+                <div className="print-document__summary" style={{ margin: 0, minWidth: '200px' }}>
+                    <div className="print-document__summary-table">
+                        <div className="print-document__summary-row">
+                            <span>Subtotal</span>
+                            <span>{formatCurrency(computedSubtotal)}</span>
+                        </div>
+                        {effectiveShowTax && (
+                            <div className="print-document__summary-row">
+                                <span>Tax</span>
+                                <span>{formatCurrency(taxValue)}</span>
+                            </div>
+                        )}
+                        {showDiscount && (
+                            <div className="print-document__summary-row">
+                                <span>Discount</span>
+                                <span>{formatCurrency(discountValue)}</span>
+                            </div>
+                        )}
+                        <div className="print-document__summary-row print-document__summary-row--total">
+                            <span>Total</span>
+                            <span>{formatCurrency(totalValue)}</span>
+                        </div>
+                        {canViewPartyBalance && showPrintLedgerBalance && (
+                            <>
+                                <div className="print-document__summary-row">
+                                    <span>Previous Balance</span>
+                                    <span>{formatCurrency(previousBalance)}</span>
+                                </div>
+                                <div className="print-document__summary-row">
+                                    <span>Ledger Balance</span>
+                                    <span>{formatCurrency(ledgerBalance)}</span>
+                                </div>
+                            </>
+                        )}
                     </div>
-                    {effectiveShowTax && (
-                        <div className="print-document__summary-row">
-                            <span>Tax</span>
-                            <span>{formatCurrency(taxValue)}</span>
-                        </div>
-                    )}
-                    {showDiscount && (
-                        <div className="print-document__summary-row">
-                            <span>Discount</span>
-                            <span>{formatCurrency(discountValue)}</span>
-                        </div>
-                    )}
-                    <div className="print-document__summary-row print-document__summary-row--total">
-                        <span>Total</span>
-                        <span>{formatCurrency(totalValue)}</span>
-                    </div>
-                    {showPrintLedgerBalance && (
-                        <div className="print-document__summary-row">
-                            <span>Ledger Balance</span>
-                            <span>{formatCurrency(ledgerBalance)}</span>
-                        </div>
-                    )}
                 </div>
             </div>
-
-            {showFooter && (
-                <div className="print-document__footer">
-                    <div className="print-document__generated">
-                        Generated on {formatDateTime(generatedAt)} &nbsp;•&nbsp; Printed by{' '}
-                        {orderData?.createdBy?.name || 'Current User'}
-                    </div>
-                    {showCompanyDetails && resolvedCompanyAddress && <span>{resolvedCompanyAddress}</span>}
-                    {showCompanyDetails && resolvedCompanyPhone && <span>Phone: {resolvedCompanyPhone}</span>}
-                    {footerText && (
-                        <div className="mt-2 text-gray-500">
-                            {footerText}
-                        </div>
-                    )}
-                    {receiptFooterText && (
-                        <div
-                            className="mt-3 pt-2"
-                            style={{
-                                borderTop: '1px dashed #9ca3af',
-                                textAlign: 'center',
-                                whiteSpace: 'pre-line',
-                                lineHeight: 1.35
-                            }}
-                        >
-                            {receiptFooterText}
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
     );
 };

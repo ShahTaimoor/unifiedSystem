@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import BaseModal from '../BaseModal';
-import { Button } from '@/pos/components/ui/button';
+import { Button } from '@/components/ui/button';
 import PrintWrapper from './PrintWrapper';
 import PrintTrigger from './PrintTrigger';
 import { PRINT_PAGE_STYLE } from './printPageStyle';

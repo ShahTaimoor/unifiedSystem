@@ -2,6 +2,9 @@
 
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./storefront/index.css";
+@import "./pos/index.css";
+
 
 /* Common Base Styles */
 @layer base {
@@ -110,6 +113,3 @@
   --ring: oklch(0.705 0.015 286.067);
 }
 
-/* Include specific CSS from both apps */
-@import "./storefront/index.css";
-@import "./pos/index.css";

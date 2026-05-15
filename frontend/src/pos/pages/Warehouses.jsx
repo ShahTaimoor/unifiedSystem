@@ -24,9 +24,9 @@ import {
   useUpdateWarehouseMutation,
   useDeleteWarehouseMutation,
 } from '../store/services/warehousesApi';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
-import { Textarea } from '@/pos/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   LoadingPage,
   LoadingCard,
@@ -350,7 +350,7 @@ const Warehouses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState(null);
 
-  const { confirmation, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
+  const { confirmDelete, deleteDialog } = useDeleteConfirmation();
 
   const { data: warehousesResponse, isLoading, error, isFetching, refetch: refetchWarehouses } = useGetWarehousesQuery(
     {
@@ -412,7 +412,9 @@ const Warehouses = () => {
   };
 
   const handleDelete = async (warehouse) => {
-    const confirmed = await confirmDelete(warehouse.name, 'Warehouse');
+    const confirmed = await confirmDelete(
+      `Are you sure you want to delete "${warehouse.name}" warehouse? This action cannot be undone.`
+    );
     if (confirmed) {
       try {
         await deleteWarehouse(warehouse._id).unwrap();
@@ -687,14 +689,7 @@ const Warehouses = () => {
         />
       )}
 
-      <DeleteConfirmationDialog
-        isOpen={confirmation.isOpen}
-        onClose={handleCancel}
-        onConfirm={handleConfirm}
-        itemName={confirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
-        itemType="Warehouse"
-        isLoading={confirmation.isLoading}
-      />
+      {deleteDialog}
     </div>
   );
 };

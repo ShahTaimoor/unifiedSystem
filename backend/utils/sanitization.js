@@ -6,16 +6,11 @@ const sanitizeInput = (input) => {
   
   return input
     .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .replace(/javascript:/gi, '') // Remove javascript: protocols
-    .replace(/on\w+=/gi, '') // Remove event handlers
-    .replace(/script/gi, '') // Remove script tags
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-    // .replace(/\//g, '&#x2F;'); // Removed as it breaks URLs
+    // Keep normal product characters like / * & intact for search and names.
+    // We only strip obvious XSS vectors, not encode user text.
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+=/gi, '')
+    .replace(/[\u0000-\u001F\u007F]/g, '');
 };
 
 // Sanitize object recursively
@@ -30,15 +25,7 @@ const sanitizeObject = (obj) => {
     const sanitized = {};
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
-        // Use specialized sanitizers for specific fields
-        const lowerKey = key.toLowerCase();
-        const value = obj[key];
-        
-        if (typeof value === 'string' && (lowerKey.includes('url') || lowerKey.includes('image') || lowerKey.includes('website') || lowerKey.includes('link'))) {
-          sanitized[key] = sanitizeURL(value);
-        } else {
-          sanitized[key] = sanitizeObject(value);
-        }
+        sanitized[key] = sanitizeObject(obj[key]);
       }
     }
     return sanitized;
@@ -227,20 +214,11 @@ const sanitizeFileName = (fileName) => {
 const sanitizeURL = (url) => {
   if (!url || typeof url !== 'string') return '';
   
-  // Basic cleaning without aggressive encoding that breaks URLs
-  const cleaned = url.trim()
-    .replace(/[<>]/g, '')
-    .replace(/javascript:/gi, '')
-    .replace(/on\w+=/gi, '');
-
+  const sanitized = sanitizeInput(url);
   try {
-    new URL(cleaned);
-    return cleaned;
+    new URL(sanitized);
+    return sanitized;
   } catch {
-    // If it's a relative path, we might still want to keep it if it's simple
-    if (cleaned.startsWith('/') || cleaned.startsWith('./') || cleaned.startsWith('../')) {
-        return cleaned.replace(/[^\w\/\.\-\_\?\&\=\%\#]/g, '_');
-    }
     return '';
   }
 };

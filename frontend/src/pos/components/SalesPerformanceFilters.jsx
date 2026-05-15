@@ -8,8 +8,8 @@ import {
   Search,
   RefreshCw
 } from 'lucide-react';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const SalesPerformanceFilters = ({ filters, onFilterChange, onClose }) => {
   const [localFilters, setLocalFilters] = useState(filters);

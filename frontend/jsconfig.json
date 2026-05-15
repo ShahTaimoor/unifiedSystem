@@ -4,6 +4,17 @@
     "paths": {
       "@storefront/*": ["./src/storefront/*"],
       "@pos/*": ["./src/pos/*"],
+      "@/components/*": ["./src/pos/components/*"],
+      "@/hooks/*": ["./src/pos/hooks/*"],
+      "@/utils/*": ["./src/pos/utils/*"],
+      "@/store/*": ["./src/pos/store/*"],
+      "@/services/*": ["./src/pos/services/*"],
+      "@/contexts/*": ["./src/pos/contexts/*"],
+      "@/features/*": ["./src/pos/features/*"],
+      "@/pages/*": ["./src/pos/pages/*"],
+      "@/config/*": ["./src/pos/config/*"],
+      "@/lib/*": ["./src/pos/lib/*"],
+      "@/i18n/*": ["./src/pos/i18n/*"],
       "@/*": ["./src/*"]
     }
   }

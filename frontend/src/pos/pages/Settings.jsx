@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import * as Icons from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Smartphone,
   Building,
@@ -30,7 +29,18 @@ import {
   UserPlus,
   ChevronUp,
   ChevronDown,
-  Package
+  Package,
+  ShoppingCart,
+  Truck,
+  Warehouse,
+  Wallet,
+  ClipboardList,
+  Settings as SettingsIcon,
+  Camera,
+  RotateCcw,
+  Tag,
+  Database,
+  Receipt
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -58,17 +68,42 @@ import { CompanySettingsForm } from '../components/CompanySettingsForm';
 import { OrderItemWiseConfirmationSettings } from '../components/OrderItemWiseConfirmationSettings';
 import { handleApiError } from '../utils/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
-import { Textarea } from '@/pos/components/ui/textarea';
-import { Checkbox } from '@/pos/components/ui/checkbox';
-import { Label } from '@/pos/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { LUCIDE_ICON_MAP } from '../utils/lucideIconMap';
+import { getVisibilityFlag } from '../utils/fieldVisibility';
+import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
+import { useDeleteConfirmation } from '../hooks/useConfirmation';
 
 export const Settings2 = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const {
+    confirmation: deleteUserConfirmation,
+    confirmDelete: confirmDeleteUser,
+    handleConfirm: handleDeleteUserConfirm,
+    handleCancel: handleDeleteUserCancel,
+  } = useDeleteConfirmation();
+  const sidebarDefaultHiddenItems = useMemo(() => new Set([
+    'Import Purchase',
+    'Current Purchase Market Prices',
+  ]), []);
+
+  const isSidebarItemEnabled = (itemName) => {
+    const current = sidebarConfig?.[itemName];
+    if (current === undefined && sidebarDefaultHiddenItems.has(itemName)) {
+      return false;
+    }
+    return current !== false;
+  };
 
   // Active tab state
   const [activeTab, setActiveTab] = useState('company');
+
+  // Active permission group (sub-tab inside the User tab's permissions matrix)
+  const [activePermissionGroup, setActivePermissionGroup] = useState('dashboard');
 
   // Company Information State
   const [companyData, setCompanyData] = useState({
@@ -112,25 +147,25 @@ export const Settings2 = () => {
     showLogo: true,
     showCompanyDetails: true,
     showDiscount: true,
-    showTax: true,
+    showTax: false,
     showDate: true,
     showFooter: true,
     showCameraTime: false,
-    showDescription: true,
-    showEmail: true,
+    showDescription: false,
+    showEmail: false,
     showPrintBusinessName: true,
-    showPrintContactName: true,
+    showPrintContactName: false,
     showPrintAddress: true,
     showPrintCity: true,
-    showPrintState: true,
-    showPrintPostalCode: true,
+    showPrintState: false,
+    showPrintPostalCode: false,
     showPrintInvoiceNumber: true,
     showPrintInvoiceDate: true,
-    showPrintInvoiceStatus: true,
-    showPrintInvoiceType: true,
+    showPrintInvoiceStatus: false,
+    showPrintInvoiceType: false,
     showPrintPaymentStatus: true,
     showPrintPaymentMethod: true,
-    showPrintPaymentAmount: true,
+    showPrintPaymentAmount: false,
     showPrintLedgerBalance: true,
     autoPrintAfterSale: true,
     autoCompleteSaleAfterPrint: true,
@@ -143,7 +178,9 @@ export const Settings2 = () => {
     logoSize: 100
   });
 
-  const [showSupplierSetting_contactPerson, setShowSupplierSetting_contactPerson] = useState(localStorage.getItem('showSupplierSetting_contactPerson') === 'true');
+  const [showSupplierSetting_contactPerson, setShowSupplierSetting_contactPerson] = useState(() =>
+    getVisibilityFlag('showSupplierSetting_contactPerson', true)
+  );
   const [showSupplierSetting_email, setShowSupplierSetting_email] = useState(localStorage.getItem('showSupplierSetting_email') === 'true');
   const [showSupplierSetting_paymentTerms, setShowSupplierSetting_paymentTerms] = useState(localStorage.getItem('showSupplierSetting_paymentTerms') === 'true');
   const [showSupplierSetting_website, setShowSupplierSetting_website] = useState(localStorage.getItem('showSupplierSetting_website') === 'true');
@@ -183,8 +220,8 @@ export const Settings2 = () => {
       address: '123 Main Street, New York, NY, US, 10001'
     },
     items: [
-      { name: 'Sample Item 1', quantity: 2, unitPrice: 50.00, total: 100.00 },
-      { name: 'Sample Item 2', quantity: 1, unitPrice: 25.00, total: 25.00 }
+      { name: 'Sample Item 1', quantity: 2, unitPrice: 50.00, total: 100.00, discount: 5.00, description: 'Premium quality item' },
+      { name: 'Sample Item 2', quantity: 1, unitPrice: 25.00, total: 25.00, discount: 0, description: 'Standard item' }
     ],
     subtotal: 125.00,
     tax: 12.50,
@@ -527,9 +564,179 @@ export const Settings2 = () => {
     }
   };
 
+  // Page-based permission groups (used to render the multi-tab Permissions Matrix below)
+  // Each group corresponds to a top-level sidebar section. Each page maps optional
+  // CRUD actions to backend permission keys. Pages with only `view` (e.g., Dashboard,
+  // analytics screens) render a single View checkbox; others render the full grid.
+  const pagePermissionGroups = {
+    dashboard: {
+      name: 'Dashboard',
+      icon: LayoutDashboard,
+      pages: [
+        { key: 'dashboard', name: 'Dashboard', view: 'view_dashboard' }
+      ]
+    },
+    sales: {
+      name: 'Sales',
+      icon: ShoppingCart,
+      pages: [
+        { key: 'sales-orders', name: 'Sales Orders', view: 'view_sales_orders', create: 'create_sales_orders', edit: 'edit_sales_orders', delete: 'delete_sales_orders', confirm: 'confirm_sales_orders', cancel: 'cancel_sales_orders' },
+        { key: 'sales', name: 'Sales', view: 'view_sales', create: 'create_sales_invoices', edit: 'edit_sales_invoices', delete: 'void_sales_invoices' },
+        { key: 'sale-returns', name: 'Sale Returns', view: 'view_sale_returns', create: 'create_sale_returns', edit: 'edit_sale_returns', delete: 'delete_sale_returns' }
+      ]
+    },
+    advanced: {
+      name: 'Advanced',
+      icon: Shield,
+      pages: [],
+      extraPermissions: [
+        { key: 'view_product_costs', name: 'Show Cost Price' },
+        { key: 'view_bp', name: 'Show BP' },
+        { key: 'apply_last_prices', name: 'Apply Last Price' },
+        { key: 'view_customer_balance', name: 'Show Customer Balance' },
+        { key: 'view_supplier_balance', name: 'Show Supplier Balance' },
+        { key: 'view_stock_levels', name: 'Show Stock' },
+        { key: 'view_customer_phone', name: 'Show Customer Phone' },
+        { key: 'view_supplier_phone', name: 'Show Supplier Phone' }
+      ]
+    },
+    purchase: {
+      name: 'Purchase',
+      icon: Truck,
+      pages: [
+        { key: 'purchase-orders', name: 'Purchase Orders', view: 'view_purchase_orders', create: 'create_purchase_orders', edit: 'edit_purchase_orders', delete: 'delete_purchase_orders' },
+        { key: 'purchase', name: 'Purchase', view: 'view_purchase_invoices', create: 'create_purchase_invoices', edit: 'edit_purchase_invoices', delete: 'delete_purchase_invoices' },
+        { key: 'import-purchase', name: 'Import Purchase', view: 'view_import_purchase', create: 'create_import_purchase', edit: 'edit_import_purchase', delete: 'delete_import_purchase' },
+        { key: 'purchase-returns', name: 'Purchase Returns', view: 'view_purchase_returns', create: 'create_purchase_returns', edit: 'edit_purchase_returns', delete: 'delete_purchase_returns' },
+        { key: 'market-prices', name: 'Market Prices', view: 'view_market_prices', create: 'create_market_prices', edit: 'edit_market_prices', delete: 'delete_market_prices' }
+      ]
+    },
+    masterData: {
+      name: 'Master Data',
+      icon: Database,
+      pages: [
+        { key: 'products', name: 'Products', view: 'view_products', create: 'create_products', edit: 'edit_products', delete: 'delete_products' },
+        { key: 'product-variants', name: 'Product Variants', view: 'view_product_variants', create: 'create_product_variants', edit: 'edit_product_variants', delete: 'delete_product_variants' },
+        { key: 'product-transformations', name: 'Product Transformations', view: 'view_product_transformations', create: 'create_product_transformations', edit: 'edit_product_transformations', delete: 'delete_product_transformations' },
+        { key: 'categories', name: 'Categories', view: 'view_product_categories', create: 'create_categories', edit: 'edit_categories', delete: 'delete_categories' },
+        { key: 'customers', name: 'Customers', view: 'view_customers', create: 'create_customers', edit: 'edit_customers', delete: 'delete_customers' },
+        { key: 'suppliers', name: 'Suppliers', view: 'view_suppliers', create: 'create_suppliers', edit: 'edit_suppliers', delete: 'delete_suppliers' },
+        { key: 'discounts', name: 'Discounts', view: 'view_discounts', create: 'create_discounts', edit: 'edit_discounts', delete: 'delete_discounts' },
+        { key: 'investors', name: 'Investors', view: 'view_investors', create: 'create_investors', edit: 'edit_investors', delete: 'delete_investors' },
+        { key: 'drop-shipping', name: 'Drop Shipping', view: 'view_drop_shipping', create: 'create_drop_shipping', edit: 'edit_drop_shipping', delete: 'delete_drop_shipping' },
+        { key: 'cities', name: 'Cities', view: 'view_cities', create: 'create_cities', edit: 'edit_cities', delete: 'delete_cities' },
+        { key: 'banks', name: 'Bank & Cash Opening', view: 'view_banks', create: 'create_banks', edit: 'edit_banks', delete: 'delete_banks' },
+        { key: 'cctv-access', name: 'CCTV Access', view: 'view_cctv_access' }
+      ]
+    },
+    inventory: {
+      name: 'Inventory',
+      icon: Warehouse,
+      pages: [
+        { key: 'inventory', name: 'Inventory', view: 'view_inventory', create: 'create_inventory', edit: 'edit_inventory', delete: 'delete_inventory' },
+        { key: 'warehouses', name: 'Warehouses', view: 'view_warehouses', create: 'create_warehouses', edit: 'edit_warehouses', delete: 'delete_warehouses' },
+        { key: 'stock-movements', name: 'Stock Movements', view: 'view_stock_movements' },
+        { key: 'stock-ledger', name: 'Stock Ledger', view: 'view_inventory_levels' },
+        { key: 'inventory-alerts', name: 'Inventory Alerts', view: 'view_low_stock_alerts' }
+      ]
+    },
+    financials: {
+      name: 'Financials',
+      icon: Wallet,
+      pages: [
+        { key: 'cash-receiving', name: 'Multi Cash Receipt', view: 'view_cash_receiving', create: 'create_cash_receiving', edit: 'edit_cash_receiving', delete: 'delete_cash_receiving' },
+        { key: 'cash-receipts', name: 'Cash Receipts', view: 'view_cash_receipts', create: 'create_cash_receipts', edit: 'edit_cash_receipts', delete: 'delete_cash_receipts' },
+        { key: 'cash-payments', name: 'Cash Payments', view: 'view_cash_payments', create: 'create_cash_payments', edit: 'edit_cash_payments', delete: 'delete_cash_payments' },
+        { key: 'bank-receipts', name: 'Bank Receipts', view: 'view_bank_receipts', create: 'create_bank_receipts', edit: 'edit_bank_receipts', delete: 'delete_bank_receipts' },
+        { key: 'bank-payments', name: 'Bank Payments', view: 'view_bank_payments', create: 'create_bank_payments', edit: 'edit_bank_payments', delete: 'delete_bank_payments' },
+        { key: 'expenses', name: 'Expenses', view: 'view_expenses', create: 'create_expenses', edit: 'edit_expenses', delete: 'delete_expenses' }
+      ]
+    },
+    accounting: {
+      name: 'Accounting',
+      icon: ClipboardList,
+      pages: [
+        { key: 'chart-of-accounts', name: 'Chart of Accounts', view: 'view_chart_of_accounts', create: 'create_chart_of_accounts', edit: 'edit_chart_of_accounts', delete: 'delete_chart_of_accounts' },
+        { key: 'journal-vouchers', name: 'Journal Vouchers', view: 'view_journal_vouchers', create: 'create_journal_vouchers', edit: 'edit_journal_vouchers', delete: 'delete_journal_vouchers' },
+        { key: 'account-ledger', name: 'Account Ledger Summary', view: 'view_accounting_summary' }
+      ]
+    },
+    analytics: {
+      name: 'Analytics',
+      icon: BarChart3,
+      pages: [
+        { key: 'pl-statements', name: 'P&L Statements', view: 'view_pl_statements' },
+        { key: 'balance-sheet', name: 'Balance Sheet', view: 'view_balance_sheets' },
+        { key: 'sales-performance', name: 'Sales Performance', view: 'view_sales_performance' },
+        { key: 'inventory-reports', name: 'Inventory Reports', view: 'view_inventory_reports' },
+        { key: 'reports', name: 'Reports', view: 'view_general_reports' },
+        { key: 'backdate-report', name: 'Backdate Report', view: 'view_backdate_report' },
+        { key: 'customer-analytics', name: 'Customer Analytics', view: 'view_customer_analytics' },
+        { key: 'anomaly-detection', name: 'Anomaly Detection', view: 'view_anomaly_detection' }
+      ]
+    },
+    hr: {
+      name: 'HR / Admin',
+      icon: Users,
+      pages: [
+        { key: 'employees', name: 'Employees', view: 'manage_users', create: 'create_users', edit: 'edit_users', delete: 'delete_users' },
+        { key: 'attendance', name: 'Attendance', view: 'view_own_attendance', create: 'clock_in', edit: 'manage_attendance_breaks', delete: 'delete_attendance' }
+      ]
+    },
+    settingsConfig: {
+      name: 'Settings Config',
+      icon: SettingsIcon,
+      pages: [
+        { key: 'print-settings', name: 'Print Preview', view: 'manage_print_settings', edit: 'manage_print_settings' },
+        { key: 'product-settings', name: 'Product Settings', view: 'manage_product_settings', edit: 'manage_product_settings' },
+        { key: 'customer-settings', name: 'Customer Settings', view: 'manage_customer_settings', edit: 'manage_customer_settings' },
+        { key: 'supplier-settings', name: 'Supplier Settings', view: 'manage_supplier_settings', edit: 'manage_supplier_settings' },
+        { key: 'advanced-settings', name: 'Advanced Features', view: 'manage_advanced_settings', edit: 'manage_advanced_settings' }
+      ],
+      extraPermissions: [
+        { key: 'settings_print_layout', name: 'Print — Layout & Size' },
+        { key: 'settings_print_logo_header', name: 'Print — Logo & Header' },
+        { key: 'settings_print_party_details', name: 'Print — Party / Billing Details' },
+        { key: 'settings_print_invoice_meta', name: 'Print — Invoice Meta & Payment' },
+        { key: 'settings_print_financials', name: 'Print — Financials & Table' },
+        { key: 'settings_print_behavior', name: 'Print — Post-Print Behavior' },
+        { key: 'settings_product_images', name: 'Products — Image Visibility' },
+        { key: 'settings_product_fields', name: 'Products — Field Visibility' },
+        { key: 'settings_customer_fields', name: 'Customers — Field Visibility' },
+        { key: 'settings_supplier_fields', name: 'Suppliers — Field Visibility' },
+        { key: 'settings_advanced_display', name: 'Advanced — Display Options' },
+        { key: 'settings_advanced_features', name: 'Advanced — Feature Toggles' },
+        { key: 'settings_advanced_security', name: 'Advanced — Security (2FA)' }
+      ]
+    },
+    system: {
+      name: 'System',
+      icon: SettingsIcon,
+      pages: [
+        { key: 'settings', name: 'Settings', view: 'view_settings', edit: 'edit_settings' },
+        { key: 'print-preview', name: 'Print Preview', view: 'manage_print_settings' },
+        { key: 'migration', name: 'Migration', view: 'view_migration', create: 'run_migration' },
+        { key: 'help', name: 'Help', view: 'view_help' }
+      ]
+    }
+  };
+
+  const allPagePermissionDefaults = Object.values(pagePermissionGroups).reduce((acc, group) => {
+    group.pages.forEach((page) => {
+      ['view', 'create', 'edit', 'delete', 'confirm', 'cancel'].forEach((action) => {
+        if (page[action]) acc[page[action]] = true;
+      });
+    });
+    (group.extraPermissions || []).forEach((permission) => {
+      acc[permission.key] = true;
+    });
+    return acc;
+  }, {});
+
   // Default role permissions (using correct backend permission names)
   const defaultRolePermissions = {
     admin: {
+      ...allPagePermissionDefaults,
       // Products
       view_products: true, create_products: true, edit_products: true, delete_products: true,
       view_product_list: true, view_product_details: true, view_product_categories: true, view_product_inventory: true,
@@ -542,7 +749,10 @@ export const Settings2 = () => {
       // Orders
       view_orders: true, create_orders: true, edit_orders: true, cancel_orders: true,
       view_sales_orders: true, view_purchase_orders: true, view_sales_invoices: true, view_purchase_invoices: true,
-      view_product_costs: true, manage_sales: true,
+      view_product_costs: true, view_bp: true, apply_last_prices: true, manage_sales: true,
+      // Advanced (sensitive globals)
+      view_stock_levels: true,
+      view_customer_phone: true, view_supplier_phone: true,
       // Inventory
       view_inventory: true, update_inventory: true, manage_inventory: true,
       view_inventory_levels: true, view_stock_movements: true, view_low_stock_alerts: true,
@@ -573,6 +783,7 @@ export const Settings2 = () => {
       // Sales Operations - Granular
       create_sales_orders: true, edit_sales_orders: true, delete_sales_orders: true,
       approve_sales_orders: true, reject_sales_orders: true,
+      confirm_sales_orders: true, cancel_sales_orders: true,
       create_sales_invoices: true, edit_sales_invoices: true, void_sales_invoices: true,
       apply_discounts: true, override_prices: true,
       // Inventory Operations - Granular
@@ -591,6 +802,13 @@ export const Settings2 = () => {
       view_investors: true, manage_investors: true, create_investors: true, edit_investors: true, payout_investors: true,
       // Administration
       manage_users: true, manage_settings: true,
+      manage_print_settings: true, manage_product_settings: true, manage_customer_settings: true,
+      manage_supplier_settings: true, manage_advanced_settings: true,
+      settings_print_layout: true, settings_print_logo_header: true, settings_print_party_details: true,
+      settings_print_invoice_meta: true, settings_print_financials: true, settings_print_behavior: true,
+      settings_product_images: true, settings_product_fields: true,
+      settings_customer_fields: true, settings_supplier_fields: true,
+      settings_advanced_display: true, settings_advanced_features: true, settings_advanced_security: true,
       create_users: true, edit_users: true, delete_users: true, assign_roles: true,
       company_settings: true, system_settings: true, print_settings: true, security_settings: true,
       view_audit_logs: true, import_data: true,
@@ -600,6 +818,9 @@ export const Settings2 = () => {
       // Products - Full access except delete
       view_products: true, create_products: true, edit_products: true,
       view_product_list: true, view_product_details: true, view_product_categories: true, view_product_inventory: true,
+      view_product_variants: true, create_product_variants: true, edit_product_variants: true,
+      view_product_transformations: true, create_product_transformations: true, edit_product_transformations: true,
+      create_categories: true, edit_categories: true,
       // Customers - Full access
       view_customers: true, create_customers: true, edit_customers: true, delete_customers: true,
       view_customer_list: true, view_customer_details: true, view_customer_history: true, view_customer_balance: true,
@@ -608,15 +829,21 @@ export const Settings2 = () => {
       view_supplier_list: true, view_supplier_details: true, view_supplier_orders: true, view_supplier_balance: true,
       // Orders - Full access
       view_orders: true, create_orders: true, edit_orders: true, cancel_orders: true,
-      view_sales_orders: true, view_purchase_orders: true, view_sales_invoices: true, view_purchase_invoices: true,
-      view_product_costs: true, manage_sales: true,
+      view_sales: true, view_sales_orders: true, view_purchase_orders: true, view_sales_invoices: true, view_purchase_invoices: true,
+      view_product_costs: true, view_bp: true, apply_last_prices: true, manage_sales: true,
+      // Advanced (sensitive globals)
+      view_stock_levels: true,
+      view_customer_phone: true, view_supplier_phone: true,
       // Inventory - Full access
       view_inventory: true, update_inventory: true, manage_inventory: true,
-      view_inventory_levels: true, view_stock_movements: true, view_low_stock_alerts: true,
+      view_inventory_levels: true, view_stock_movements: true, view_low_stock_alerts: true, view_warehouses: true,
+      create_inventory: true, edit_inventory: true, create_warehouses: true, edit_warehouses: true,
       update_stock_quantities: true, create_stock_adjustments: true, process_receipts: true,
       // Returns - Full access
       view_returns: true, create_returns: true, edit_returns: true, approve_returns: true, process_returns: true,
       view_return_requests: true, view_return_history: true, view_return_reasons: true,
+      view_sale_returns: true, create_sale_returns: true, edit_sale_returns: true, delete_sale_returns: true,
+      view_purchase_returns: true, create_purchase_returns: true, edit_purchase_returns: true, delete_purchase_returns: true,
       // Discounts - Full access
       view_discounts: true, manage_discounts: true,
       view_discount_list: true, view_discount_rules: true, view_discount_history: true,
@@ -628,6 +855,7 @@ export const Settings2 = () => {
       view_customer_analytics: true, view_anomaly_detection: true, view_financial_data: true,
       share_reports: true, schedule_reports: true, view_advanced_analytics: true,
       // Financial Operations
+      view_cash_receiving: true, create_cash_receiving: true, edit_cash_receiving: true, delete_cash_receiving: true,
       view_cash_receipts: true, create_cash_receipts: true, edit_cash_receipts: true, delete_cash_receipts: true,
       view_cash_payments: true, create_cash_payments: true, edit_cash_payments: true, delete_cash_payments: true,
       view_bank_receipts: true, create_bank_receipts: true, edit_bank_receipts: true, delete_bank_receipts: true,
@@ -637,9 +865,12 @@ export const Settings2 = () => {
       create_purchase_orders: true, edit_purchase_orders: true, delete_purchase_orders: true,
       approve_purchase_orders: true, reject_purchase_orders: true, receive_purchase_orders: true,
       create_purchase_invoices: true, edit_purchase_invoices: true, delete_purchase_invoices: true,
+      view_import_purchase: true, create_import_purchase: true, edit_import_purchase: true, delete_import_purchase: true,
+      view_market_prices: true, create_market_prices: true, edit_market_prices: true,
       // Sales Operations - Granular
       create_sales_orders: true, edit_sales_orders: true, delete_sales_orders: true,
       approve_sales_orders: true, reject_sales_orders: true,
+      confirm_sales_orders: true, cancel_sales_orders: true,
       create_sales_invoices: true, edit_sales_invoices: true, void_sales_invoices: true,
       apply_discounts: true, override_prices: true,
       // Inventory Operations - Granular
@@ -648,85 +879,150 @@ export const Settings2 = () => {
       // Accounting
       view_accounting_transactions: true, view_accounting_accounts: true, view_trial_balance: true,
       update_balance_sheet: true, view_chart_of_accounts: true, view_accounting_summary: true,
+      view_journal_vouchers: true, create_journal_vouchers: true, edit_journal_vouchers: true,
       // Attendance
       clock_attendance: true, clock_in: true, clock_out: true, manage_attendance_breaks: true,
       view_own_attendance: true, view_team_attendance: true,
       // Till Management
       open_till: true, close_till: true, view_till: true,
       // Investor Management
-      view_investors: true, manage_investors: true, create_investors: true, edit_investors: true, payout_investors: true
+      view_investors: true, manage_investors: true, create_investors: true, edit_investors: true, payout_investors: true,
+      view_drop_shipping: true, create_drop_shipping: true, edit_drop_shipping: true,
+      view_banks: true, create_banks: true, edit_banks: true,
+      view_cctv_access: true, view_cities: true, create_cities: true, edit_cities: true,
+      manage_print_settings: true, manage_product_settings: true, manage_customer_settings: true,
+      manage_supplier_settings: true, manage_advanced_settings: true,
+      settings_print_layout: true, settings_print_logo_header: true, settings_print_party_details: true,
+      settings_print_invoice_meta: true, settings_print_financials: true, settings_print_behavior: true,
+      settings_product_images: true, settings_product_fields: true,
+      settings_customer_fields: true, settings_supplier_fields: true,
+      settings_advanced_display: true, settings_advanced_features: true, settings_advanced_security: true,
+      view_help: true
     },
     cashier: {
-      // Products - View only with basic details
+      // Dashboard
+      view_dashboard: true,
+      // Products - View only
       view_products: true,
       view_product_list: true, view_product_details: true,
-      // Customers - View and create, limited edit
+      view_product_categories: true,
+      // Customers - View, create, edit
       view_customers: true, create_customers: true, edit_customers: true,
       view_customer_list: true, view_customer_details: true,
-      // Orders - View and create sales orders only
+      // Sales pages - View + create
       view_orders: true, create_orders: true,
-      view_sales_orders: true, view_sales_invoices: true,
-      // Inventory - View levels and basic movements
+      view_sales: true, view_sales_orders: true, view_sales_invoices: true,
+      create_sales_orders: true, edit_sales_orders: true,
+      confirm_sales_orders: true,
+      create_sales_invoices: true, edit_sales_invoices: true,
+      apply_last_prices: true,
+      manage_sales: true,
+      // Sale Returns
+      view_returns: true, process_returns: true, create_returns: true,
+      view_sale_returns: true, create_sale_returns: true, edit_sale_returns: true,
+      view_return_requests: true, view_return_history: true,
+      // Inventory - View levels & stock movements
       view_inventory: true,
       view_inventory_levels: true, view_stock_movements: true,
-      // Returns - View and process returns
-      view_returns: true, process_returns: true,
-      view_return_requests: true, view_return_history: true,
       // Discounts - View only
       view_discounts: true,
-      view_discount_list: true,
-      // Reports - Limited access
+      view_discount_list: true, apply_discounts: true,
+      // Financials - Multi Cash Receipt
+      view_cash_receiving: true, create_cash_receiving: true,
+      view_cash_receipts: true, create_cash_receipts: true,
+      // Reports - Limited
       view_reports: true,
-      view_general_reports: true
+      view_general_reports: true,
+      // System
+      view_help: true
     },
     viewer: {
-      // Products - View only, basic details
+      // Dashboard
+      view_dashboard: true,
+      // Products - View only
       view_products: true,
-      view_product_list: true, view_product_details: true,
-      // Customers - View only, basic details
+      view_product_list: true, view_product_details: true, view_product_categories: true, view_product_inventory: true,
+      // Customers - View only
       view_customers: true,
       view_customer_list: true, view_customer_details: true,
-      // Suppliers - View only, basic details
+      // Suppliers - View only
       view_suppliers: true,
       view_supplier_list: true, view_supplier_details: true,
       // Orders - View only
       view_orders: true,
-      view_sales_orders: true, view_purchase_orders: true, view_sales_invoices: true, view_purchase_invoices: true,
-      // Inventory - View only, basic levels
-      view_inventory: true,
-      view_inventory_levels: true,
+      view_sales: true, view_sales_orders: true, view_purchase_orders: true,
+      view_sales_invoices: true, view_purchase_invoices: true,
+      view_import_purchase: true,
+      // Inventory - View only
+      view_inventory: true, view_warehouses: true,
+      view_inventory_levels: true, view_low_stock_alerts: true,
       // Returns - View only
-      view_returns: true,
+      view_returns: true, view_sale_returns: true, view_purchase_returns: true,
       view_return_requests: true, view_return_history: true,
       // Discounts - View only
       view_discounts: true,
       view_discount_list: true,
-      // Reports - Limited financial reports
+      // Reports - Read-only
       view_reports: true,
-      view_pl_statements: true, view_balance_sheets: true, view_general_reports: true
+      view_pl_statements: true, view_balance_sheets: true,
+      view_sales_performance: true, view_inventory_reports: true,
+      view_general_reports: true, view_backdate_report: true,
+      view_customer_analytics: true, view_anomaly_detection: true,
+      // Accounting - View only
+      view_chart_of_accounts: true, view_journal_vouchers: true, view_accounting_summary: true,
+      // System
+      view_help: true
     },
     sales_person: {
-      // Sales Person - sales and purchase transaction workflow only
-      create_sales_orders: true,
-      edit_sales_orders: true,
-      create_orders: true,
-      edit_orders: true,
-      create_sales_invoices: true,
-      edit_sales_invoices: true,
-      create_purchase_orders: true,
-      edit_purchase_orders: true,
-      create_purchase_invoices: true,
-      edit_purchase_invoices: true,
-      // View permissions so allowed pages/modules are visible
-      view_orders: true,
-      view_sales_orders: true,
-      view_sales_invoices: true,
-      view_purchase_orders: true,
-      view_purchase_invoices: true
+      // Dashboard
+      view_dashboard: true,
+      // Master data - View
+      view_products: true, view_product_list: true, view_product_details: true, view_product_categories: true,
+      view_customers: true, create_customers: true, edit_customers: true,
+      view_customer_list: true, view_customer_details: true,
+      view_suppliers: true, view_supplier_list: true, view_supplier_details: true,
+      // Sales workflow
+      view_orders: true, create_orders: true, edit_orders: true,
+      view_sales: true, view_sales_orders: true, view_sales_invoices: true,
+      create_sales_orders: true, edit_sales_orders: true,
+      confirm_sales_orders: true,
+      create_sales_invoices: true, edit_sales_invoices: true,
+      apply_last_prices: true,
+      manage_sales: true,
+      // Sale Returns
+      view_returns: true, view_sale_returns: true, create_sale_returns: true, edit_sale_returns: true,
+      // Purchase workflow
+      view_purchase_orders: true, view_purchase_invoices: true,
+      create_purchase_orders: true, edit_purchase_orders: true,
+      create_purchase_invoices: true, edit_purchase_invoices: true,
+      view_import_purchase: true, create_import_purchase: true, edit_import_purchase: true,
+      // Purchase Returns
+      view_purchase_returns: true, create_purchase_returns: true, edit_purchase_returns: true,
+      // Inventory - read
+      view_inventory: true, view_inventory_levels: true,
+      // Discounts
+      view_discounts: true, apply_discounts: true,
+      // Reports
+      view_reports: true, view_general_reports: true, view_sales_performance: true,
+      // System
+      view_help: true
     },
     employee: {
+      // Dashboard
+      view_dashboard: true,
+      // Sales pages only
       view_sales: true,
-      manage_sales: true
+      manage_sales: true,
+      view_sales_orders: true,
+      view_sales_invoices: true,
+      create_sales_orders: true,
+      create_sales_invoices: true,
+      // Customers
+      view_customers: true, view_customer_list: true, view_customer_details: true,
+      // Products
+      view_products: true, view_product_list: true, view_product_details: true,
+      // System
+      view_help: true
     },
     inventory: {
       view_products: true,
@@ -734,7 +1030,14 @@ export const Settings2 = () => {
       view_product_details: true,
       view_product_categories: true,
       view_product_inventory: true,
+      view_product_variants: true, create_product_variants: true, edit_product_variants: true,
+      view_product_transformations: true, create_product_transformations: true, edit_product_transformations: true,
       view_inventory: true,
+      create_inventory: true,
+      edit_inventory: true,
+      view_warehouses: true,
+      create_warehouses: true,
+      edit_warehouses: true,
       update_inventory: true,
       manage_inventory: true,
       view_inventory_levels: true,
@@ -742,7 +1045,11 @@ export const Settings2 = () => {
       view_low_stock_alerts: true,
       update_stock_quantities: true,
       create_stock_adjustments: true,
-      process_receipts: true
+      process_receipts: true,
+      view_suppliers: true, view_supplier_list: true, view_supplier_details: true,
+      view_market_prices: true,
+      view_dashboard: true,
+      view_help: true
     }
   };
 
@@ -774,27 +1081,27 @@ export const Settings2 = () => {
           ...prev,
           showLogo: settings.printSettings.showLogo ?? true,
           showCompanyDetails: settings.printSettings.showCompanyDetails ?? true,
-          showTax: settings.printSettings.showTax ?? true,
+          showTax: settings.printSettings.showTax ?? false,
           showDiscount: settings.printSettings.showDiscount ?? true,
           showDate: settings.printSettings.showDate ?? true,
           showFooter: settings.printSettings.showFooter ?? true,
-          showEmail: settings.printSettings.showEmail ?? true,
+          showEmail: settings.printSettings.showEmail ?? false,
           showCameraTime: settings.printSettings.showCameraTime ?? false,
-          showDescription: settings.printSettings.showDescription ?? true,
+          showDescription: settings.printSettings.showDescription ?? false,
           showProductImages: settings.printSettings.showProductImages ?? true,
           showPrintBusinessName: settings.printSettings.showPrintBusinessName ?? true,
-          showPrintContactName: settings.printSettings.showPrintContactName ?? true,
+          showPrintContactName: settings.printSettings.showPrintContactName ?? false,
           showPrintAddress: settings.printSettings.showPrintAddress ?? true,
           showPrintCity: settings.printSettings.showPrintCity ?? true,
-          showPrintState: settings.printSettings.showPrintState ?? true,
-          showPrintPostalCode: settings.printSettings.showPrintPostalCode ?? true,
+          showPrintState: settings.printSettings.showPrintState ?? false,
+          showPrintPostalCode: settings.printSettings.showPrintPostalCode ?? false,
           showPrintInvoiceNumber: settings.printSettings.showPrintInvoiceNumber ?? true,
           showPrintInvoiceDate: settings.printSettings.showPrintInvoiceDate ?? true,
-          showPrintInvoiceStatus: settings.printSettings.showPrintInvoiceStatus ?? true,
-          showPrintInvoiceType: settings.printSettings.showPrintInvoiceType ?? true,
+          showPrintInvoiceStatus: settings.printSettings.showPrintInvoiceStatus ?? false,
+          showPrintInvoiceType: settings.printSettings.showPrintInvoiceType ?? false,
           showPrintPaymentStatus: settings.printSettings.showPrintPaymentStatus ?? true,
           showPrintPaymentMethod: settings.printSettings.showPrintPaymentMethod ?? true,
-          showPrintPaymentAmount: settings.printSettings.showPrintPaymentAmount ?? true,
+          showPrintPaymentAmount: settings.printSettings.showPrintPaymentAmount ?? false,
           showPrintLedgerBalance: settings.printSettings.showPrintLedgerBalance ?? true,
           autoPrintAfterSale: settings.printSettings.autoPrintAfterSale ?? true,
           autoCompleteSaleAfterPrint: settings.printSettings.autoCompleteSaleAfterPrint ?? true,
@@ -899,26 +1206,26 @@ export const Settings2 = () => {
         const newPs = {
           showLogo: ps.showLogo ?? true,
           showCompanyDetails: ps.showCompanyDetails ?? true,
-          showTax: ps.showTax ?? true,
+          showTax: ps.showTax ?? false,
           showDiscount: ps.showDiscount ?? true,
           showDate: ps.showDate ?? true,
           showFooter: ps.showFooter ?? true,
-          showEmail: ps.showEmail ?? true,
+          showEmail: ps.showEmail ?? false,
           showCameraTime: ps.showCameraTime ?? false,
-          showDescription: ps.showDescription ?? true,
+          showDescription: ps.showDescription ?? false,
           showPrintBusinessName: ps.showPrintBusinessName ?? true,
-          showPrintContactName: ps.showPrintContactName ?? true,
+          showPrintContactName: ps.showPrintContactName ?? false,
           showPrintAddress: ps.showPrintAddress ?? true,
           showPrintCity: ps.showPrintCity ?? true,
-          showPrintState: ps.showPrintState ?? true,
-          showPrintPostalCode: ps.showPrintPostalCode ?? true,
+          showPrintState: ps.showPrintState ?? false,
+          showPrintPostalCode: ps.showPrintPostalCode ?? false,
           showPrintInvoiceNumber: ps.showPrintInvoiceNumber ?? true,
           showPrintInvoiceDate: ps.showPrintInvoiceDate ?? true,
-          showPrintInvoiceStatus: ps.showPrintInvoiceStatus ?? true,
-          showPrintInvoiceType: ps.showPrintInvoiceType ?? true,
+          showPrintInvoiceStatus: ps.showPrintInvoiceStatus ?? false,
+          showPrintInvoiceType: ps.showPrintInvoiceType ?? false,
           showPrintPaymentStatus: ps.showPrintPaymentStatus ?? true,
           showPrintPaymentMethod: ps.showPrintPaymentMethod ?? true,
-          showPrintPaymentAmount: ps.showPrintPaymentAmount ?? true,
+          showPrintPaymentAmount: ps.showPrintPaymentAmount ?? false,
           showPrintLedgerBalance: ps.showPrintLedgerBalance ?? true,
           autoPrintAfterSale: ps.autoPrintAfterSale ?? true,
           autoCompleteSaleAfterPrint: ps.autoCompleteSaleAfterPrint ?? true,
@@ -1232,10 +1539,8 @@ export const Settings2 = () => {
     }
   };
 
-  const handleDeleteUserClick = (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      handleDeleteUser(userId);
-    }
+  const handleDeleteUserClick = (userId, userName = 'this user') => {
+    confirmDeleteUser(userName, 'User', () => handleDeleteUser(userId));
   };
 
   const handlePermissionChange = (permissionKey, isChecked, subcategoryKeys = []) => {
@@ -1264,6 +1569,31 @@ export const Settings2 = () => {
         [newUserData.role]: {
           ...prev[newUserData.role],
           ...permissionUpdates
+        }
+      }));
+    }
+  };
+
+  // Toggle every permission key declared on a page in a single update
+  const togglePageAllPermissions = (page, isChecked) => {
+    const updates = {};
+    ['view', 'create', 'edit', 'delete', 'confirm', 'cancel'].forEach((action) => {
+      const permissionKey = page[action];
+      if (permissionKey) updates[permissionKey] = isChecked;
+    });
+    if (Object.keys(updates).length === 0) return;
+
+    setNewUserData(prev => ({
+      ...prev,
+      permissions: { ...prev.permissions, ...updates }
+    }));
+
+    if (newUserData.role) {
+      setRolePermissionsChanged(prev => ({
+        ...prev,
+        [newUserData.role]: {
+          ...prev[newUserData.role],
+          ...updates
         }
       }));
     }
@@ -1376,7 +1706,7 @@ export const Settings2 = () => {
     setConfirmPassword('');
   };
 
-  const handleUpdateRolePermissions = (role) => {
+  const handleUpdateRolePermissions = async (role) => {
     if (!rolePermissionsChanged[role]) {
       toast.error('No permission changes detected for this role');
       return;
@@ -1386,12 +1716,19 @@ export const Settings2 = () => {
       `Are you sure you want to update permissions for ALL users with "${role}" role? This will override their current permissions.`
     );
 
-    if (confirmed) {
-      // Get the current permissions for this role
-      const currentPermissions = newUserData.permissions;
-      const permissionKeys = Object.keys(currentPermissions);
+    if (!confirmed) return;
 
-      handleUpdateRolePermissions(role, permissionKeys.filter(key => currentPermissions[key]));
+    const currentPermissions = newUserData.permissions;
+    const permissionKeys = Object.keys(currentPermissions);
+    const permissions = permissionKeys.filter(key => currentPermissions[key]);
+
+    try {
+      const result = await updateRolePermissions({ role, permissions }).unwrap();
+      toast.success(result?.message || `Permissions updated for all users with the "${role}" role.`);
+      setRolePermissionsChanged(prev => ({ ...prev, [role]: false }));
+      refetchUsers();
+    } catch (error) {
+      handleApiError(error, 'Push Role Permissions');
     }
   };
 
@@ -1435,6 +1772,8 @@ export const Settings2 = () => {
     const saved = localStorage.getItem('showTopBarUI');
     return saved === null ? true : saved === 'true';
   });
+  const [useMarketPurchasePrices, setUseMarketPurchasePrices] = useState(false);
+  const [enableImportPurchaseLandedCost, setEnableImportPurchaseLandedCost] = useState(false);
 
   // Product Visibility Settings
   const [showProductSetting_reorderPoint, setShowProductSetting_reorderPoint] = useState(() => localStorage.getItem('showProductSetting_reorderPoint') === 'true');
@@ -1453,24 +1792,111 @@ export const Settings2 = () => {
   const [showProductSetting_invoiceRef, setShowProductSetting_invoiceRef] = useState(() => localStorage.getItem('showProductSetting_invoiceRef') === 'true');
 
   // Customer Visibility Settings
-  const [showCustomerSetting_contactPerson, setShowCustomerSetting_contactPerson] = useState(() => localStorage.getItem('showCustomerSetting_contactPerson') === 'true');
+  const [showCustomerSetting_contactPerson, setShowCustomerSetting_contactPerson] = useState(() =>
+    getVisibilityFlag('showCustomerSetting_contactPerson', true)
+  );
   const [showCustomerSetting_email, setShowCustomerSetting_email] = useState(() => localStorage.getItem('showCustomerSetting_email') === 'true');
   const [showCustomerSetting_customerTier, setShowCustomerSetting_customerTier] = useState(() => localStorage.getItem('showCustomerSetting_customerTier') === 'true');
   const [showCustomerSetting_state, setShowCustomerSetting_state] = useState(() => localStorage.getItem('showCustomerSetting_state') === 'true');
   const [showCustomerSetting_zipCode, setShowCustomerSetting_zipCode] = useState(() => localStorage.getItem('showCustomerSetting_zipCode') === 'true');
   const [showCustomerSetting_notes, setShowCustomerSetting_notes] = useState(() => localStorage.getItem('showCustomerSetting_notes') === 'true');
 
-  const tabs = [
+  const allTabs = [
     { id: 'company', name: 'Company Information', shortName: 'Company', icon: Building },
-    { id: 'users', name: 'Users', shortName: 'Users', icon: Users },
-    { id: 'print', name: 'Print Preview Settings', shortName: 'Print', icon: Printer },
+    { id: 'users', name: 'Users', shortName: 'Users', icon: Users, permission: 'manage_users' },
+    { id: 'print', name: 'Print Preview Settings', shortName: 'Print', icon: Printer, permission: 'manage_print_settings' },
     { id: 'sidebar', name: 'Sidebar Configuration', shortName: 'Sidebar', icon: LayoutDashboard },
     { id: 'mobile-nav', name: 'Mobile Nav', shortName: 'Mobile Nav', icon: Smartphone },
-    { id: 'products', name: 'Product Settings', shortName: 'Products', icon: Package },
-    { id: 'customers', name: 'Customer Settings', shortName: 'Customers', icon: UserPlus },
-    { id: 'suppliers', name: 'Supplier Settings', shortName: 'Suppliers', icon: Building },
-    { id: 'other', name: 'Advanced', shortName: 'Advanced', icon: BarChart3 },
+    { id: 'products', name: 'Product Settings', shortName: 'Products', icon: Package, permission: 'manage_product_settings' },
+    { id: 'customers', name: 'Customer Settings', shortName: 'Customers', icon: UserPlus, permission: 'manage_customer_settings' },
+    { id: 'suppliers', name: 'Supplier Settings', shortName: 'Suppliers', icon: Building, permission: 'manage_supplier_settings' },
+    { id: 'other', name: 'Advanced', shortName: 'Advanced', icon: BarChart3, permission: 'manage_advanced_settings' },
   ];
+  const tabs = allTabs.filter(tab => !tab.permission || hasPermission(tab.permission));
+  const VISIBLE_TAB_COUNT = 5;
+  const visibleTabs = tabs.slice(0, VISIBLE_TAB_COUNT);
+  const overflowTabs = tabs.slice(VISIBLE_TAB_COUNT);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handleClickOutside = (e) => {
+      if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [moreOpen]);
+
+  useEffect(() => {
+    const enabled = settings?.orderSettings?.useMarketPurchasePrices === true;
+    setUseMarketPurchasePrices(enabled);
+  }, [settings?.orderSettings?.useMarketPurchasePrices]);
+
+  useEffect(() => {
+    const enabled = settings?.orderSettings?.enableImportPurchaseLandedCost === true;
+    setEnableImportPurchaseLandedCost(enabled);
+  }, [settings?.orderSettings?.enableImportPurchaseLandedCost]);
+
+  const syncMarketPricesSidebarVisibility = (enabled) => {
+    const savedSidebarRaw = localStorage.getItem('sidebarConfig');
+    let savedSidebar = {};
+    if (savedSidebarRaw) {
+      try {
+        savedSidebar = JSON.parse(savedSidebarRaw) || {};
+      } catch (_) {
+        savedSidebar = {};
+      }
+    }
+    const nextSidebar = {
+      ...savedSidebar,
+      'Current Purchase Market Prices': !!enabled,
+    };
+    delete nextSidebar['Current Market Prices'];
+    localStorage.setItem('sidebarConfig', JSON.stringify(nextSidebar));
+    setSidebarConfig(nextSidebar);
+    window.dispatchEvent(new Event('sidebarConfigChanged'));
+  };
+
+  const handleMarketPriceFeatureToggle = async (checked) => {
+    const nextChecked = !!checked;
+    const previousChecked = useMarketPurchasePrices;
+    setUseMarketPurchasePrices(nextChecked);
+    syncMarketPricesSidebarVisibility(nextChecked);
+    try {
+      await updateCompanySettings({
+        orderSettings: {
+          ...(settings?.orderSettings || {}),
+          useMarketPurchasePrices: nextChecked,
+        },
+      }).unwrap();
+      toast.success(`Market purchase prices ${nextChecked ? 'enabled' : 'disabled'}.`);
+      refetchSettings();
+    } catch (error) {
+      setUseMarketPurchasePrices(previousChecked);
+      syncMarketPricesSidebarVisibility(previousChecked);
+      handleApiError(error, 'Update Market Purchase Price Setting');
+    }
+  };
+
+  const handleImportPurchaseFeatureToggle = async (checked) => {
+    const nextChecked = !!checked;
+    const previousChecked = enableImportPurchaseLandedCost;
+    setEnableImportPurchaseLandedCost(nextChecked);
+    try {
+      await updateCompanySettings({
+        orderSettings: {
+          ...(settings?.orderSettings || {}),
+          enableImportPurchaseLandedCost: nextChecked,
+        },
+      }).unwrap();
+      toast.success(`Import purchase landed-cost ${nextChecked ? 'enabled' : 'disabled'}.`);
+      refetchSettings();
+    } catch (error) {
+      setEnableImportPurchaseLandedCost(previousChecked);
+      handleApiError(error, 'Update Import Purchase Landed Cost Setting');
+    }
+  };
 
   return (
     <div className="space-y-6 overflow-x-hidden">
@@ -1498,8 +1924,8 @@ export const Settings2 = () => {
             ))}
           </select>
         </div>
-        <nav className="-mb-px hidden md:flex space-x-4 md:space-x-8 w-full overflow-x-auto scrollbar-hide">
-          {tabs.map((tab) => {
+        <nav className="-mb-px hidden md:flex space-x-4 md:space-x-8 w-full items-center">
+          {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
@@ -1516,6 +1942,42 @@ export const Settings2 = () => {
               </button>
             );
           })}
+          {overflowTabs.length > 0 && (
+            <div className="relative flex-shrink-0" ref={moreRef}>
+              <button
+                onClick={() => setMoreOpen((v) => !v)}
+                className={`py-2 px-2 md:px-1 border-b-2 font-medium text-sm flex items-center space-x-1 whitespace-nowrap ${
+                  overflowTabs.some((t) => t.id === activeTab)
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span>More</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {moreOpen && (
+                <div className="absolute left-0 top-full mt-1 z-50 min-w-[200px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                  {overflowTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                        className={`w-full flex items-center space-x-2 px-4 py-2 text-sm ${
+                          activeTab === tab.id
+                            ? 'bg-blue-50 text-blue-600 font-medium'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span>{tab.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </nav>
       </div>
 
@@ -1542,7 +2004,7 @@ export const Settings2 = () => {
 
 
         {/* Users Control Tab */}
-        {activeTab === 'users' && (
+        {activeTab === 'users' && hasPermission('manage_users') && (
           <div className="space-y-8 max-w-full mx-auto">
             {/* Users List Card */}
             <div className="bg-white border text-gray-900 shadow-sm border-gray-200 rounded-2xl overflow-hidden relative">
@@ -1677,7 +2139,7 @@ export const Settings2 = () => {
                           <Button variant="outline" size="sm" onClick={() => handleEditUser(systemUser)} title="Edit Configuration" className="h-10 w-10 p-0 rounded-xl hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 shadow-sm border-gray-200">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDeleteUserClick(systemUser._id)} disabled={systemUser._id === user?._id} title="Delete User" className="h-10 w-10 p-0 rounded-xl hover:bg-red-50 hover:text-red-700 hover:border-red-200 disabled:opacity-40 shadow-sm border-gray-200">
+                          <Button variant="outline" size="sm" onClick={() => handleDeleteUserClick(systemUser._id, `${systemUser.firstName || ''} ${systemUser.lastName || ''}`.trim() || systemUser.email || 'this user')} disabled={systemUser._id === user?._id} title="Delete User" className="h-10 w-10 p-0 rounded-xl hover:bg-red-50 hover:text-red-700 hover:border-red-200 disabled:opacity-40 shadow-sm border-gray-200">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -1893,13 +2355,13 @@ export const Settings2 = () => {
                             paddingRight: '2.5rem'
                           }}
                         >
-                          <option value="cashier">Cashier — Daily point of sale ops</option>
-                          <option value="employee">Employee — Restricted access to Sales only</option>
-                          <option value="manager">Manager — Full back-office operations</option>
-                          <option value="inventory">Inventory — Manage stock & ledgers</option>
-                          <option value="sales_person">Sales Person — Sales & purchase transaction workflow</option>
                           <option value="admin">Administrator — Full uninhibited access</option>
-                          <option value="viewer">Viewer — Readonly reporting access</option>
+                          <option value="manager">Manager — Full back-office operations</option>
+                          <option value="sales_person">Sales Person — Sales &amp; purchase transaction workflow</option>
+                          <option value="cashier">Cashier — Daily point of sale ops</option>
+                          <option value="inventory">Inventory — Manage stock &amp; ledgers</option>
+                          <option value="employee">Employee — Restricted access to Sales only</option>
+                          <option value="viewer">Viewer — Read-only reporting access</option>
                         </select>
                         <span className="text-xs font-semibold text-gray-500 mt-1 pl-1">
                           {editingUser && editingUser._id === user?._id
@@ -1996,7 +2458,23 @@ export const Settings2 = () => {
                         </p>
                       </div>
                       <div className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 shadow-sm whitespace-nowrap">
-                        {Object.keys(newUserData.permissions || {}).filter(k => newUserData.permissions[k]).length} Allowed Rules
+                        {(() => {
+                          const matrixKeys = new Set();
+                          Object.values(pagePermissionGroups).forEach((group) => {
+                            group.pages.forEach((page) => {
+                              ['view', 'create', 'edit', 'delete', 'confirm', 'cancel'].forEach((action) => {
+                                if (page[action]) matrixKeys.add(page[action]);
+                              });
+                            });
+                            (group.extraPermissions || []).forEach((permission) => {
+                              matrixKeys.add(permission.key);
+                            });
+                          });
+                          const allowedCount = Array.from(matrixKeys).filter(
+                            (key) => !!newUserData.permissions?.[key]
+                          ).length;
+                          return `${allowedCount} Allowed`;
+                        })()}
                       </div>
                     </div>
 
@@ -2011,69 +2489,171 @@ export const Settings2 = () => {
                         </p>
                       </div>
                     ) : (
-                      <div className="p-6 md:p-8 bg-gray-50/50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                          {Object.entries(permissionCategories).map(([categoryKey, category]) => {
-                            // Check if all permissions in category are active to show a nice global indicator
-                            const totalPerms = category.permissions.length + category.permissions.reduce((acc, p) => acc + (p.subcategories?.length || 0), 0);
-                            const activePermsCount = category.permissions.filter(p => newUserData.permissions[p.key]).length +
-                              category.permissions.reduce((acc, p) => acc + (p.subcategories?.filter(s => newUserData.permissions[s.key]).length || 0), 0);
-                            const percentActive = totalPerms > 0 ? (activePermsCount / totalPerms) : 0;
+                      <div className="bg-gray-50/50">
+                        {/* Multi-tab top bar for permission groups */}
+                        <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+                          <div className="flex items-center gap-1 overflow-x-auto px-3 py-2 scrollbar-thin scrollbar-thumb-gray-200">
+                            {Object.entries(pagePermissionGroups).map(([groupKey, group]) => {
+                              const Icon = group.icon;
+                              const allKeys = group.pages.flatMap((page) =>
+                                ['view', 'create', 'edit', 'delete', 'confirm', 'cancel']
+                                  .map((action) => page[action])
+                                  .filter(Boolean)
+                              ).concat((group.extraPermissions || []).map((permission) => permission.key));
+                              const activeCount = allKeys.filter((k) => newUserData.permissions[k]).length;
+                              const isActive = activePermissionGroup === groupKey;
+                              return (
+                                <button
+                                  type="button"
+                                  key={groupKey}
+                                  onClick={() => setActivePermissionGroup(groupKey)}
+                                  className={`flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm font-semibold transition-all ${isActive
+                                    ? 'bg-gray-900 text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                    }`}
+                                >
+                                  {Icon && <Icon className="h-4 w-4" />}
+                                  <span>{group.name}</span>
+                                  {activeCount > 0 && (
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white text-gray-900' : 'bg-blue-100 text-blue-700'
+                                      }`}>
+                                      {activeCount}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
 
+                        {/* Active group's pages with CRUD checkboxes */}
+                        <div className="p-4 md:p-6">
+                          {(() => {
+                            const group = pagePermissionGroups[activePermissionGroup];
+                            if (!group) return null;
+                            const ACTIONS = [
+                              { key: 'view', label: 'View', color: 'text-blue-600 focus:ring-blue-500' },
+                              { key: 'create', label: 'Create', color: 'text-green-600 focus:ring-green-500' },
+                              { key: 'edit', label: 'Edit', color: 'text-amber-600 focus:ring-amber-500' },
+                              { key: 'delete', label: 'Delete', color: 'text-red-600 focus:ring-red-500' },
+                              { key: 'confirm', label: 'Confirm', color: 'text-emerald-600 focus:ring-emerald-500' },
+                              { key: 'cancel', label: 'Cancel', color: 'text-rose-600 focus:ring-rose-500' }
+                            ];
                             return (
-                              <div key={categoryKey} className="bg-white border border-gray-200 hover:border-blue-300 rounded-xl overflow-hidden shadow-sm hover:shadow transition-all duration-300 pb-2">
-                                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80 flex items-center justify-between">
-                                  <h4 className="font-bold text-gray-900 text-sm tracking-tight">{category.name}</h4>
-                                  <div className="flex bg-gray-200 rounded-full h-1.5 w-12 overflow-hidden shadow-inner">
-                                    <div className={`h-full ${percentActive > 0.8 ? 'bg-green-500' : percentActive > 0 ? 'bg-blue-500' : 'bg-transparent'}`} style={{ width: `${percentActive * 100}%` }}></div>
+                              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                                {/* Group header */}
+                                <div className="flex items-center justify-between px-4 py-3 bg-gray-900 text-white">
+                                  <div className="flex items-center gap-2">
+                                    {group.icon && <group.icon className="h-5 w-5" />}
+                                    <h4 className="font-bold tracking-tight text-sm md:text-base">{group.name}</h4>
                                   </div>
+                                  <span className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
+                                    {group.pages.length > 0
+                                      ? `${group.pages.length} ${group.pages.length === 1 ? 'page' : 'pages'}`
+                                      : `${group.extraPermissions?.length || 0} options`}
+                                  </span>
                                 </div>
-                                <div className="p-3 space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
-                                  {category.permissions.map((permission) => (
-                                    <div key={permission.key} className="relative">
-                                      <label className="flex items-start space-x-3 py-2 px-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors group">
-                                        <div className="flex items-center h-5 mt-0.5">
+
+                                {/* Column headers */}
+                                {group.pages.length > 0 && (
+                                  <div className="hidden md:grid grid-cols-[1fr_repeat(6,80px)_100px] items-center px-4 py-2 bg-gray-50 border-b border-gray-200 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                                    <div>Page</div>
+                                    {ACTIONS.map((a) => (
+                                      <div key={a.key} className="text-center">{a.label}</div>
+                                    ))}
+                                    <div className="text-center">All</div>
+                                  </div>
+                                )}
+
+                                {/* Page rows */}
+                                <div className="divide-y divide-gray-100">
+                                  {group.pages.map((page) => {
+                                    const definedActions = ACTIONS.filter((a) => page[a.key]);
+                                    const allChecked = definedActions.length > 0 && definedActions.every((a) => newUserData.permissions[page[a.key]]);
+                                    const someChecked = definedActions.some((a) => newUserData.permissions[page[a.key]]);
+
+                                    return (
+                                      <div
+                                        key={page.key}
+                                        className="grid grid-cols-1 md:grid-cols-[1fr_repeat(6,80px)_100px] gap-3 md:gap-0 items-center px-4 py-3 hover:bg-gray-50/80 transition-colors"
+                                      >
+                                        {/* Page name */}
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${allChecked ? 'bg-green-500' : someChecked ? 'bg-blue-500' : 'bg-gray-300'}`}></span>
+                                          <span className="text-sm font-semibold text-gray-900 truncate">{page.name}</span>
+                                        </div>
+
+                                        {/* CRUD checkboxes */}
+                                        {ACTIONS.map((action) => {
+                                          const permKey = page[action.key];
+                                          if (!permKey) {
+                                            return (
+                                              <div key={action.key} className="md:flex md:items-center md:justify-center">
+                                                <span className="text-gray-300 text-xs md:text-base">—</span>
+                                              </div>
+                                            );
+                                          }
+                                          const checked = !!newUserData.permissions[permKey];
+                                          return (
+                                            <label
+                                              key={action.key}
+                                              className="flex items-center justify-start md:justify-center gap-2 cursor-pointer select-none"
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={(e) => handlePermissionChange(permKey, e.target.checked)}
+                                                className={`w-4 h-4 rounded border-2 border-gray-300 ${action.color} focus:ring-offset-0 transition-all cursor-pointer`}
+                                              />
+                                              <span className="md:hidden text-xs font-semibold text-gray-700">{action.label}</span>
+                                            </label>
+                                          );
+                                        })}
+
+                                        {/* "All" toggle */}
+                                        <div className="flex items-center justify-start md:justify-center">
+                                          <button
+                                            type="button"
+                                            onClick={() => togglePageAllPermissions(page, !allChecked)}
+                                            className={`text-[11px] font-bold px-3 py-1.5 rounded-md border transition-all ${allChecked
+                                              ? 'bg-gray-900 text-white border-gray-900 hover:bg-gray-800'
+                                              : 'bg-white text-gray-700 border-gray-200 hover:border-gray-900 hover:text-gray-900'
+                                              }`}
+                                          >
+                                            {allChecked ? 'Revoke' : 'Grant All'}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {group.extraPermissions?.length > 0 && (
+                                  <div className="border-t border-gray-200 bg-blue-50/40 px-4 py-4">
+                                    <h5 className="text-xs font-black uppercase tracking-wider text-blue-900 mb-3">
+                                      Additional Permissions
+                                    </h5>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                      {group.extraPermissions.map((permission) => (
+                                        <label
+                                          key={permission.key}
+                                          className="flex items-center gap-3 rounded-lg border border-blue-100 bg-white px-3 py-2.5 shadow-sm cursor-pointer hover:border-blue-300 transition-colors"
+                                        >
                                           <input
                                             type="checkbox"
-                                            checked={newUserData.permissions[permission.key] || false}
-                                            onChange={(e) => handlePermissionChange(
-                                              permission.key,
-                                              e.target.checked,
-                                              permission.subcategories?.map((subcategory) => subcategory.key) || []
-                                            )}
-                                            className="w-4 h-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 transition-all checked:border-blue-600 cursor-pointer"
+                                            checked={!!newUserData.permissions[permission.key]}
+                                            onChange={(e) => handlePermissionChange(permission.key, e.target.checked)}
+                                            className="w-4 h-4 rounded border-2 border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 transition-all cursor-pointer"
                                           />
-                                        </div>
-                                        <span className={`text-sm font-bold truncate transition-colors ${newUserData.permissions[permission.key] ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                                          {permission.name}
-                                        </span>
-                                      </label>
-
-                                      {permission.subcategories && permission.subcategories.length > 0 && (
-                                        <div className="ml-7 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3 pt-1 pb-2">
-                                          {permission.subcategories.map((subcategory, index) => (
-                                            <label key={subcategory.key || index} className="flex items-start space-x-2 py-1.5 px-2 hover:bg-blue-50 rounded-md cursor-pointer transition-colors group">
-                                              <div className="flex items-center h-4 mt-0.5">
-                                                <input
-                                                  type="checkbox"
-                                                  checked={newUserData.permissions[subcategory.key] || false}
-                                                  onChange={(e) => handlePermissionChange(subcategory.key, e.target.checked)}
-                                                  className="w-3.5 h-3.5 rounded border border-gray-300 text-blue-500 focus:ring-blue-500 opacity-80 checked:opacity-100 transition-all cursor-pointer"
-                                                />
-                                              </div>
-                                              <span className={`text-xs font-semibold truncate transition-colors ${newUserData.permissions[subcategory.key] ? 'text-gray-800' : 'text-gray-500 group-hover:text-gray-700'}`}>
-                                                {subcategory.name}
-                                              </span>
-                                            </label>
-                                          ))}
-                                        </div>
-                                      )}
+                                          <span className="text-sm font-bold text-gray-900">{permission.name}</span>
+                                        </label>
+                                      ))}
                                     </div>
-                                  ))}
-                                </div>
+                                  </div>
+                                )}
                               </div>
                             );
-                          })}
+                          })()}
                         </div>
                       </div>
                     )}
@@ -2112,7 +2692,7 @@ export const Settings2 = () => {
         )}
 
         {/* Print Preview Settings Tab */}
-        {activeTab === 'print' && (
+        {activeTab === 'print' && hasPermission('manage_print_settings') && (
           <div className="card">
             <div className="card-header">
               <div className="flex items-center space-x-2">
@@ -2126,77 +2706,10 @@ export const Settings2 = () => {
 
             <div className="card-content">
               <div className="space-y-6">
-                {/* Print Size Design */}
-                <div className="space-y-4">
-                  <label className="block text-sm font-semibold text-gray-800">
-                    Print Size
-                  </label>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="border border-gray-200 rounded-2xl bg-white p-4 sm:p-5 shadow-sm space-y-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900">Thermal Receipt Style</h3>
-                          <p className="text-xs text-gray-500 mt-1">Optimized for restaurant and retail POS printing.</p>
-                        </div>
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700">
-                          Monochrome
-                        </span>
-                      </div>
-
-                      <div className="flex items-start space-x-3 p-3.5 border border-gray-200 rounded-xl bg-gray-50/50">
-                        <Checkbox
-                          id="compactMode"
-                          className="mt-0.5 w-5 h-5 rounded-md border-2 border-gray-300 data-[state=checked]:bg-gray-900 data-[state=checked]:border-gray-900"
-                          checked={printSettings.invoiceLayout === 'compact'}
-                          onCheckedChange={(checked) => handlePrintSettingsChange({
-                            target: {
-                              name: 'invoiceLayout',
-                              value: checked ? 'compact' : 'standard',
-                              type: 'text'
-                            }
-                          })}
-                        />
-                        <Label htmlFor="compactMode" className="flex flex-col cursor-pointer">
-                          <span className="text-sm font-semibold text-gray-800">Compact Thermal Print Preview</span>
-                          <span className="text-xs text-gray-500 mt-1">
-                            Optimized for 80mm printers. Minimal, fast, and scanner-friendly.
-                          </span>
-                        </Label>
-                      </div>
-
-                      <div className={`flex items-start space-x-3 p-3.5 rounded-xl transition-colors ${printSettings.invoiceLayout === 'compact' ? 'border border-gray-900 bg-gray-900/5' : 'border border-gray-200 bg-white'}`}>
-                        <input
-                          type="radio"
-                          name="printSize"
-                          value="80mm"
-                          id="receipt80mm"
-                          checked={printSettings.invoiceLayout === 'compact'}
-                          onChange={handlePrintSettingsChange}
-                          className="mt-0.5 h-4 w-4 accent-gray-900"
-                        />
-                        <label htmlFor="receipt80mm" className="flex flex-col cursor-pointer">
-                          <span className="text-sm font-semibold text-gray-900">80mm Thermal Receipt</span>
-                          <span className="text-xs text-gray-600 mt-1">Professional POS paper width (only supported size).</span>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="border border-dashed border-gray-300 rounded-2xl p-4 sm:p-5 bg-gradient-to-br from-gray-50 to-white">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-700">Receipt Layout Notes</h4>
-                      <ul className="mt-3 space-y-2 text-xs text-gray-600">
-                        <li>- Shop heading and identity at top</li>
-                        <li>- Item lines with qty and price alignment</li>
-                        <li>- Total block with strong visual hierarchy</li>
-                        <li>- Thank-you footer and invoice/barcode strip</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Layout Options */}
+                {/* Print Layout Selection */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-800 mb-3">
-                    Invoice/Sale Receipt Layout
+                    Print Layout
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'standard' ? 'border-gray-900 bg-gray-900/5' : 'border-gray-200 hover:bg-gray-50'}`}>
@@ -2209,23 +2722,8 @@ export const Settings2 = () => {
                         className="mr-3 h-4 w-4 accent-gray-900"
                       />
                       <div>
-                        <div className="text-sm font-semibold text-gray-900">Standard</div>
-                        <div className="text-xs text-gray-500">Balanced layout for regular invoices</div>
-                      </div>
-                    </label>
-
-                    <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'detailed' ? 'border-gray-900 bg-gray-900/5' : 'border-gray-200 hover:bg-gray-50'}`}>
-                      <input
-                        type="radio"
-                        name="invoiceLayout"
-                        value="detailed"
-                        checked={printSettings.invoiceLayout === 'detailed'}
-                        onChange={handlePrintSettingsChange}
-                        className="mr-3 h-4 w-4 accent-gray-900"
-                      />
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">Detailed</div>
-                        <div className="text-xs text-gray-500">Extended receipt with additional information</div>
+                        <div className="text-sm font-semibold text-gray-900">Print 1 (Professional)</div>
+                        
                       </div>
                     </label>
 
@@ -2239,8 +2737,21 @@ export const Settings2 = () => {
                         className="mr-3 h-4 w-4 accent-gray-900"
                       />
                       <div>
-                        <div className="text-sm font-semibold text-gray-900">Layout 2 (Professional)</div>
-                        <div className="text-xs text-gray-500">Professional boxed layout</div>
+                        <div className="text-sm font-semibold text-gray-900">Print 2 (Standard)</div>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'compact' ? 'border-gray-900 bg-gray-900/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                      <input
+                        type="radio"
+                        name="invoiceLayout"
+                        value="compact"
+                        checked={printSettings.invoiceLayout === 'compact'}
+                        onChange={handlePrintSettingsChange}
+                        className="mr-3 h-4 w-4 accent-gray-900"
+                      />
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900">Print 3 (80mm Thermal)</div>
                       </div>
                     </label>
                   </div>
@@ -2341,15 +2852,15 @@ export const Settings2 = () => {
                           </div>
                         </div>
 
-                        {/* Standard Toggle Boxes */}
+                        {/* Standard Toggle Boxes — filtered per layout */}
                         {[
-                          { id: 'showLogo', label: 'Display Logo', icon: <Printer className="h-3.5 w-3.5" /> },
-                          { id: 'showCompanyDetails', label: 'Company Header', icon: <Building className="h-3.5 w-3.5" />, hidden: printSettings.invoiceLayout === 'layout2' },
-                          { id: 'showEmail', label: 'Show Email', icon: <Mail className="h-3.5 w-3.5" /> },
-                          { id: 'showFooter', label: 'Show Footer', icon: <FileText className="h-3.5 w-3.5" /> },
-                          { id: 'mobilePrintPreview', label: 'Mobile View', icon: <Eye className="h-3.5 w-3.5" /> },
-                          { id: 'showDate', label: 'Doc Date', icon: <Clock className="h-3.5 w-3.5" /> },
-                        ].map(item => !item.hidden && (
+                          { id: 'showLogo', label: 'Display Logo', icon: <Printer className="h-3.5 w-3.5" />, layouts: ['standard', 'layout2'] },
+                          { id: 'showCompanyDetails', label: 'Company Header', icon: <Building className="h-3.5 w-3.5" />, layouts: ['standard', 'layout2'] },
+                          { id: 'showEmail', label: 'Show Email', icon: <Mail className="h-3.5 w-3.5" />, layouts: ['standard', 'layout2'] },
+                          { id: 'showFooter', label: 'Show Footer', icon: <FileText className="h-3.5 w-3.5" />, layouts: ['standard', 'layout2'] },
+                          { id: 'mobilePrintPreview', label: 'Mobile View', icon: <Eye className="h-3.5 w-3.5" />, layouts: ['standard'] },
+                          { id: 'showDate', label: 'Doc Date', icon: <Clock className="h-3.5 w-3.5" />, layouts: ['standard', 'layout2'] },
+                        ].filter(item => !item.layouts || item.layouts.includes(printSettings.invoiceLayout)).map(item => (
                           <div key={item.id} className="flex items-center space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
                             <Checkbox
                               id={item.id}
@@ -2374,11 +2885,11 @@ export const Settings2 = () => {
                       </div>
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         {[
-                          { id: 'showTax', label: 'Tax Breakdown' },
-                          { id: 'showDiscount', label: 'Discounts' },
-                          { id: 'showDescription', label: 'Item Desc' },
-                          { id: 'showCameraTime', label: 'Cam Timestamp' },
-                        ].map(item => (
+                          { id: 'showTax', label: 'Tax Breakdown', layouts: ['standard'] },
+                          { id: 'showDiscount', label: 'Discounts', layouts: ['standard', 'layout2'] },
+                          { id: 'showDescription', label: 'Item Desc', layouts: ['standard', 'layout2'] },
+                          { id: 'showCameraTime', label: 'Cam Timestamp', layouts: ['standard'] },
+                        ].filter(item => !item.layouts || item.layouts.includes(printSettings.invoiceLayout)).map(item => (
                           <div key={item.id} className="flex items-center space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-emerald-300 hover:shadow-md transition-all duration-200 group">
                             <Checkbox
                               id={item.id}
@@ -2402,13 +2913,13 @@ export const Settings2 = () => {
                       </div>
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         {[
-                          { id: 'showPrintBusinessName', label: 'Business Name' },
-                          { id: 'showPrintContactName', label: 'Contact Name' },
-                          { id: 'showPrintAddress', label: 'Full Address' },
-                          { id: 'showPrintCity', label: 'City' },
-                          { id: 'showPrintState', label: 'State / Prov' },
-                          { id: 'showPrintPostalCode', label: 'Postal Code' },
-                        ].map(item => (
+                          { id: 'showPrintBusinessName', label: 'Business Name', layouts: ['standard', 'layout2'] },
+                          { id: 'showPrintContactName', label: 'Contact Name', layouts: ['standard'] },
+                          { id: 'showPrintAddress', label: 'Full Address', layouts: ['standard', 'layout2'] },
+                          { id: 'showPrintCity', label: 'City', layouts: ['standard', 'layout2'] },
+                          { id: 'showPrintState', label: 'State / Prov', layouts: ['standard'] },
+                          { id: 'showPrintPostalCode', label: 'Postal Code', layouts: ['standard'] },
+                        ].filter(item => !item.layouts || item.layouts.includes(printSettings.invoiceLayout)).map(item => (
                           <div key={item.id} className="flex items-center space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-amber-300 hover:shadow-md transition-all duration-200 group">
                             <Checkbox
                               id={item.id}
@@ -2432,15 +2943,15 @@ export const Settings2 = () => {
                       </div>
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         {[
-                          { id: 'showPrintInvoiceNumber', label: 'Invoice #' },
-                          { id: 'showPrintInvoiceDate', label: 'Inv Date' },
-                          { id: 'showPrintInvoiceStatus', label: 'Doc Status' },
-                          { id: 'showPrintInvoiceType', label: 'Doc Type' },
-                          { id: 'showPrintPaymentStatus', label: 'Pay Status' },
-                          { id: 'showPrintPaymentMethod', label: 'Pay Method' },
-                          { id: 'showPrintPaymentAmount', label: 'Pay Amount' },
-                          { id: 'showPrintLedgerBalance', label: 'Ledger balance on invoice' },
-                        ].map(item => (
+                          { id: 'showPrintInvoiceNumber', label: 'Invoice #', layouts: ['standard', 'layout2'] },
+                          { id: 'showPrintInvoiceDate', label: 'Inv Date', layouts: ['standard', 'layout2'] },
+                          { id: 'showPrintInvoiceStatus', label: 'Doc Status', layouts: ['standard'] },
+                          { id: 'showPrintInvoiceType', label: 'Doc Type', layouts: ['standard'] },
+                          { id: 'showPrintPaymentStatus', label: 'Pay Status', layouts: ['standard'] },
+                          { id: 'showPrintPaymentMethod', label: 'Pay Method', layouts: ['standard'] },
+                          { id: 'showPrintPaymentAmount', label: 'Pay Amount', layouts: ['standard'] },
+                          { id: 'showPrintLedgerBalance', label: 'Ledger balance on invoice', layouts: ['standard', 'layout2'] },
+                        ].filter(item => !item.layouts || item.layouts.includes(printSettings.invoiceLayout)).map(item => (
                           <div key={item.id} className="flex items-center space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-indigo-300 hover:shadow-md transition-all duration-200 group">
                             <Checkbox
                               id={item.id}
@@ -2545,7 +3056,7 @@ export const Settings2 = () => {
         )}
 
         {/* Other Tab */}
-        {activeTab === 'other' && (
+        {activeTab === 'other' && hasPermission('manage_advanced_settings') && (
           <div className="card">
             <div className="card-header">
               <div className="flex items-center space-x-2">
@@ -2632,6 +3143,32 @@ export const Settings2 = () => {
                       <span className="text-[10px] text-gray-400">Header visibility across pages</span>
                     </Label>
                   </div>
+
+                  <div className="flex items-center space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
+                    <Checkbox
+                      id="useMarketPurchasePrices"
+                      className="w-5 h-5 rounded-md border-2 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      checked={useMarketPurchasePrices}
+                      onCheckedChange={(checked) => handleMarketPriceFeatureToggle(!!checked)}
+                    />
+                    <Label htmlFor="useMarketPurchasePrices" className="flex flex-col cursor-pointer group-hover:text-blue-700">
+                      <span className="text-sm font-semibold">Enable Market Purchase Prices</span>
+                      <span className="text-[10px] text-gray-400">Uses Current Purchase Market Prices in Purchase and shows sidebar link</span>
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-3 p-3.5 border border-gray-200 rounded-xl bg-white hover:border-blue-300 hover:shadow-md transition-all duration-200 group">
+                    <Checkbox
+                      id="enableImportPurchaseLandedCost"
+                      className="w-5 h-5 rounded-md border-2 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                      checked={enableImportPurchaseLandedCost}
+                      onCheckedChange={(checked) => handleImportPurchaseFeatureToggle(!!checked)}
+                    />
+                    <Label htmlFor="enableImportPurchaseLandedCost" className="flex flex-col cursor-pointer group-hover:text-blue-700">
+                      <span className="text-sm font-semibold">Enable Import Purchase Duties & Landed Cost</span>
+                      <span className="text-[10px] text-gray-400">When off (default), Import Purchase works like old purchase flow</span>
+                    </Label>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">
@@ -2660,7 +3197,7 @@ export const Settings2 = () => {
           </div>
         )}
 
-        {activeTab === 'products' && (
+        {activeTab === 'products' && hasPermission('manage_product_settings') && (
           <div className="card">
             <div className="card-header">
               <div className="flex items-center space-x-2">
@@ -2778,7 +3315,7 @@ export const Settings2 = () => {
           </div>
         )}
 
-        {activeTab === 'customers' && (
+        {activeTab === 'customers' && hasPermission('manage_customer_settings') && (
           <div className="card">
             <div className="card-header">
               <div className="flex items-center space-x-2">
@@ -2845,7 +3382,7 @@ export const Settings2 = () => {
           </div>
         )}
 
-        {activeTab === 'suppliers' && (
+        {activeTab === 'suppliers' && hasPermission('manage_supplier_settings') && (
           <div className="card">
             <div className="card-header">
               <div className="flex items-center space-x-2">
@@ -2951,7 +3488,7 @@ export const Settings2 = () => {
                                   <label className="flex items-center gap-2 text-[11px] font-semibold text-gray-600 bg-white px-2.5 py-1.5 rounded-lg border border-gray-200">
                                     <Checkbox
                                       id={`sidebar-group-${item.name}`.replace(/\s+/g, '-')}
-                                      checked={item.children.every((child) => sidebarConfig[child.name] !== false)}
+                                      checked={item.children.every((child) => isSidebarItemEnabled(child.name))}
                                       onCheckedChange={(checked) => {
                                         const newConfig = { ...sidebarConfig };
                                         item.children.forEach((child) => {
@@ -2979,7 +3516,7 @@ export const Settings2 = () => {
                                     >
                                       <Checkbox
                                         id={childId}
-                                        checked={sidebarConfig[child.name] !== false}
+                                        checked={isSidebarItemEnabled(child.name)}
                                         onCheckedChange={(checked) => {
                                           const newConfig = { ...sidebarConfig, [child.name]: checked };
                                           setSidebarConfig(newConfig);
@@ -3011,7 +3548,7 @@ export const Settings2 = () => {
                           >
                             <Checkbox
                               id={singleId}
-                              checked={sidebarConfig[item.name] !== false}
+                              checked={isSidebarItemEnabled(item.name)}
                               onCheckedChange={(checked) => {
                                 const newConfig = { ...sidebarConfig, [item.name]: checked };
                                 setSidebarConfig(newConfig);
@@ -3159,7 +3696,8 @@ export const Settings2 = () => {
                       </div>
                     ) : (
                       bottomNavConfig.map((item, index) => {
-                        const IconComponent = item.icon && Icons[item.icon] ? Icons[item.icon] : Smartphone;
+                        const IconComponent =
+                          item.icon && LUCIDE_ICON_MAP[item.icon] ? LUCIDE_ICON_MAP[item.icon] : Smartphone;
                         return (
                           <div
                             key={`${item.href}-${index}`}
@@ -3231,7 +3769,11 @@ export const Settings2 = () => {
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className={`p-1.5 rounded-lg ${isAdded ? 'bg-gray-200 text-gray-500' : 'bg-gray-50 text-gray-400'}`}>
-                                {typeof IconComp === 'string' ? (Icons[IconComp] ? React.createElement(Icons[IconComp], { className: "h-4 w-4" }) : IconComp) : <IconComp className="h-4 w-4" />}
+                                {typeof IconComp === 'string'
+                                  ? LUCIDE_ICON_MAP[IconComp]
+                                    ? React.createElement(LUCIDE_ICON_MAP[IconComp], { className: 'h-4 w-4' })
+                                    : IconComp
+                                  : <IconComp className="h-4 w-4" />}
                               </div>
                               <div className="min-w-0">
                                 <p className="text-xs font-bold text-gray-700 truncate">{item.name}</p>
@@ -3652,6 +4194,15 @@ export const Settings2 = () => {
           </div>
         )}
       </div>
+
+      <DeleteConfirmationDialog
+        isOpen={deleteUserConfirmation.isOpen}
+        onClose={handleDeleteUserCancel}
+        onConfirm={handleDeleteUserConfirm}
+        itemName={deleteUserConfirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
+        itemType="User"
+        isLoading={deleteUserConfirmation.isLoading}
+      />
     </div>
   );
 };

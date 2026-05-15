@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { SearchableDropdown } from './SearchableDropdown';
-import { Button } from '@/pos/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 /**
  * Searchable product picker (name / SKU / barcode filter via SearchableDropdown).

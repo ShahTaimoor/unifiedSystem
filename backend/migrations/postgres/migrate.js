@@ -89,8 +89,9 @@ const MIGRATIONS = [
   '067_add_user_preferences_and_two_factor_auth.sql',
   '068_settings_tax_enabled.sql',
   '069_add_last_sale_price_to_products.sql',
-  '070_add_shipping_fields_to_sales.sql',
-  '071_increase_image_url_length.sql'
+  '070_market_purchase_prices.sql',
+  '071_dashboard_api_indexes.sql',
+  '072_discounts_product_discount_rules.sql'
 ];
 
 async function ensureMigrationsTable() {

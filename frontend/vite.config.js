@@ -33,6 +33,17 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      '@/components': path.resolve(__dirname, './src/pos/components'),
+      '@/hooks': path.resolve(__dirname, './src/pos/hooks'),
+      '@/utils': path.resolve(__dirname, './src/pos/utils'),
+      '@/store': path.resolve(__dirname, './src/pos/store'),
+      '@/services': path.resolve(__dirname, './src/pos/services'),
+      '@/contexts': path.resolve(__dirname, './src/pos/contexts'),
+      '@/features': path.resolve(__dirname, './src/pos/features'),
+      '@/pages': path.resolve(__dirname, './src/pos/pages'),
+      '@/config': path.resolve(__dirname, './src/pos/config'),
+      '@/lib': path.resolve(__dirname, './src/pos/lib'),
+      '@/i18n': path.resolve(__dirname, './src/pos/i18n'),
       '@': path.resolve(__dirname, './src'),
     },
   },

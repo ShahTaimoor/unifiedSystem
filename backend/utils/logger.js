@@ -25,8 +25,9 @@ winston.addColors(colors);
 // Define which level to log based on environment
 const level = () => {
   const env = process.env.NODE_ENV || 'development';
-  const isDevelopment = env === 'development';
-  return isDevelopment ? 'debug' : 'warn';
+  const override = process.env.LOG_LEVEL;
+  if (override) return override;
+  return env === 'development' ? 'debug' : 'info';
 };
 
 // Define format for logs
@@ -37,15 +38,12 @@ const format = winston.format.combine(
   winston.format.colorize({ all: true }),
   // Define format of the message
   winston.format.printf(
-    (info) => {
-      const metadata = Object.keys(info)
-        .filter(key => !['timestamp', 'level', 'message'].includes(key))
-        .map(key => `\n  ${key}: ${typeof info[key] === 'object' ? JSON.stringify(info[key], null, 2) : info[key]}`)
-        .join('');
-      return `${info.timestamp} ${info.level}: ${info.message}${metadata}`;
-    },
+    (info) => `${info.timestamp} ${info.level}: ${info.message}`,
   ),
 );
+
+const env = process.env.NODE_ENV || 'development';
+const writeFileLogs = process.env.LOG_TO_FILE === 'true' || env !== 'development';
 
 // Define which transports the logger must use
 const transports = [
@@ -55,34 +53,31 @@ const transports = [
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
       winston.format.colorize({ all: true }),
       winston.format.printf(
-        (info) => {
-          const metadata = Object.keys(info)
-            .filter(key => !['timestamp', 'level', 'message'].includes(key))
-            .map(key => `\n  ${key}: ${typeof info[key] === 'object' ? JSON.stringify(info[key], null, 2) : info[key]}`)
-            .join('');
-          return `${info.timestamp} ${info.level}: ${info.message}${metadata}`;
-        },
+        (info) => `${info.timestamp} ${info.level}: ${info.message}`,
       ),
     ),
   }),
-  // File transport for errors
-  new winston.transports.File({
-    filename: path.join(__dirname, '../logs/error.log'),
-    level: 'error',
-    format: winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-      winston.format.json(),
-    ),
-  }),
-  // File transport for all logs
-  new winston.transports.File({
-    filename: path.join(__dirname, '../logs/combined.log'),
-    format: winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-      winston.format.json(),
-    ),
-  }),
 ];
+
+if (writeFileLogs) {
+  transports.push(
+    new winston.transports.File({
+      filename: path.join(__dirname, '../logs/error.log'),
+      level: 'error',
+      format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+        winston.format.json(),
+      ),
+    }),
+    new winston.transports.File({
+      filename: path.join(__dirname, '../logs/combined.log'),
+      format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+        winston.format.json(),
+      ),
+    })
+  );
+}
 
 // Create the logger
 const logger = winston.createLogger({

@@ -73,26 +73,25 @@ const MobileNavigation = ({ user, onLogout, isLoggingOut = false }) => {
   }, [isOpen]);
 
   const navigationItems = [
-    { path: '/pos/dashboard', icon: Home, label: 'Dashboard', badge: null },
-    { path: '/pos/sales', icon: ShoppingCart, label: 'Sales', badge: null },
+    { path: '/pos/', icon: Home, label: 'Dashboard', badge: null },
     { path: '/pos/sales-orders', icon: FileText, label: 'Sales Orders', badge: null },
-    { path: '/pos/sales-invoices', icon: FileText, label: 'Sales Invoices', badge: null },
-    { path: '/pos/purchase', icon: Truck, label: 'Purchase', badge: null },
+    { path: '/pos/sales', icon: ShoppingCart, label: 'Sales', badge: null },
+    { path: '/pos/sale-returns', icon: RotateCcw, label: 'Sale Returns', badge: null },
     { path: '/pos/purchase-orders', icon: FileText, label: 'Purchase Orders', badge: null },
-    { path: '/pos/purchase-invoices', icon: FileText, label: 'Purchase Invoices', badge: null },
-    { path: '/pos/purchase-by-supplier', icon: BarChart3, label: 'Products by Supplier', badge: null },
+    { path: '/pos/purchase', icon: Truck, label: 'Purchase', badge: null },
+    { path: '/pos/import-purchase', icon: Truck, label: 'Import Purchase', badge: null },
+    { path: '/pos/purchase-returns', icon: RotateCcw, label: 'Purchase Returns', badge: null },
     { path: '/pos/products', icon: Package, label: 'Products', badge: null },
     { path: '/pos/customers', icon: Users, label: 'Customers', badge: null },
     { path: '/pos/suppliers', icon: Truck, label: 'Suppliers', badge: null },
     { path: '/pos/banks', icon: Building2, label: 'Bank & cash opening', badge: null },
     { path: '/pos/investors', icon: TrendingUp, label: 'Investors', badge: null },
     { path: '/pos/drop-shipping', icon: ArrowRight, label: 'Drop Shipping', badge: null },
+    { path: '/pos/discounts', icon: Tag, label: 'Discounts', badge: null },
+    { path: '/pos/cctv-access', icon: Camera, label: 'CCTV Access', badge: null },
     { path: '/pos/inventory', icon: Package, label: 'Inventory', badge: null },
     { path: '/pos/stock-movements', icon: ArrowUpDown, label: 'Stock Movements', badge: null },
     { path: '/pos/stock-ledger', icon: FileText, label: 'Stock Ledger', badge: null },
-    { path: '/pos/sale-returns', icon: RotateCcw, label: 'Sale Returns', badge: null },
-    { path: '/pos/purchase-returns', icon: RotateCcw, label: 'Purchase Returns', badge: null },
-    { path: '/pos/discounts', icon: Tag, label: 'Discounts', badge: null },
     { path: '/pos/pl-statements', icon: BarChart3, label: 'P&L Statements', badge: null },
     { path: '/pos/balance-sheet-statement', icon: FileText, label: 'Balance Sheet', badge: null },
     { path: '/pos/sales-performance', icon: TrendingUp, label: 'Sales Performance', badge: null },
@@ -104,11 +103,9 @@ const MobileNavigation = ({ user, onLogout, isLoggingOut = false }) => {
     { path: '/pos/account-ledger', icon: FileText, label: 'Account Ledger Summary', badge: null },
     { path: '/pos/employees', icon: Users, label: 'Employees', badge: null },
     { path: '/pos/attendance', icon: Clock, label: 'Attendance', badge: null },
-    { path: '/pos/settings2', icon: Settings, label: 'Settings', badge: null },
     { path: '/pos/expenses', icon: Wallet, label: 'Record Expense', badge: null },
     { path: '/pos/cash-receipts', icon: Receipt, label: 'Cash Receipts', badge: null },
-    { path: '/pos/cash-payments', icon: CreditCard, label: 'Cash Payments', badge: null },
-    { path: '/pos/cctv-access', icon: Camera, label: 'CCTV Access', badge: null }
+    { path: '/pos/cash-payments', icon: CreditCard, label: 'Cash Payments', badge: null }
   ];
 
   // Sidebar visibility state
@@ -134,8 +131,8 @@ const MobileNavigation = ({ user, onLogout, isLoggingOut = false }) => {
   });
 
   const isActive = (path) => {
-    if (path === '/') {
-      return location.pathname === '/';
+    if (path === '/pos/') {
+      return location.pathname === '/pos/' || location.pathname === '/pos';
     }
     return location.pathname.startsWith(path);
   };
@@ -148,7 +145,7 @@ const MobileNavigation = ({ user, onLogout, isLoggingOut = false }) => {
     <>
       {/* Mobile Search Overlay */}
       {isSearchOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-all duration-300 z-50 flex items-start justify-center pt-20">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center space-x-3">
@@ -176,7 +173,7 @@ const MobileNavigation = ({ user, onLogout, isLoggingOut = false }) => {
 
       {/* Mobile Sidebar Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-all duration-300 z-[60] lg:hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] lg:hidden">
           <div className="mobile-menu fixed inset-y-0 left-0 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">

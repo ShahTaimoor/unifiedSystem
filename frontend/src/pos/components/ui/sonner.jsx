@@ -1,5 +1,5 @@
 import { Toaster as Sonner } from "sonner";
-import { cn } from "@/pos/lib/utils";
+import { cn } from "@/lib/utils";
 
 const Toaster = ({ className, toastOptions, ...props }) => {
   return (

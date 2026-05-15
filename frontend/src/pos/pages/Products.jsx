@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Plus,
   Search,
@@ -9,6 +9,9 @@ import {
   Printer,
   Download,
   MoreHorizontal,
+  FileSpreadsheet,
+  FileText,
+  FileUp,
 } from 'lucide-react';
 import {
   useGetProductsQuery,
@@ -25,10 +28,11 @@ import { flattenCategoryApiTree } from '../utils/categoryTree';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { LoadingPage } from '../components/LoadingSpinner';
-import { DeleteConfirmationDialog, BulkDeleteConfirmationDialog } from '../components/ConfirmationDialog';
-import { useDeleteConfirmation, useBulkDeleteConfirmation } from '../hooks/useConfirmation';
+import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
+import { useDeleteConfirmation } from '../hooks/useConfirmation';
 
 import ProductFilters from '../components/ProductFilters';
+import { PageHeader } from '../components/layout/PageHeader';
 import { useTab } from '../contexts/TabContext';
 import { useBulkOperations } from '../hooks/useBulkOperations';
 import BulkOperationsBar from '../components/BulkOperationsBar';
@@ -51,15 +55,15 @@ import { api } from '../store/api';
 import { useProductOperations } from '../hooks/useProductOperations';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/pos/components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import ExcelExportButton from '../components/ExcelExportButton';
 import ExcelImportButton from '../components/ExcelImportButton';
 import PdfExportButton from '../components/PdfExportButton';
@@ -85,6 +89,9 @@ export const Products = () => {
   const [showNotes, setShowNotes] = useState(false);
   const [notesEntity, setNotesEntity] = useState(null);
   const { openTab } = useTab();
+  const excelExportRef = useRef(null);
+  const pdfExportRef = useRef(null);
+  const excelImportRef = useRef(null);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 350);
 
@@ -117,10 +124,19 @@ export const Products = () => {
     return flattenCategoryApiTree(roots);
   }, [categoryTreeRaw]);
 
-  const allProducts = useMemo(() => data?.products || [], [data]);
+  const allProducts = useMemo(() => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (data?.data?.products) return data.data.products;
+    if (data?.products) return data.products;
+    if (data?.data?.data?.products) return data.data.data.products;
+    if (data?.items) return data.items;
+    return [];
+  }, [data]);
 
   const pagination = useMemo(() => {
-    return getUiPagination(data?.pagination || {}, itemsPerPage);
+    const raw = data?.pagination || data?.data?.pagination || {};
+    return getUiPagination(raw, itemsPerPage);
   }, [data, getUiPagination, itemsPerPage]);
 
   const products = allProducts;
@@ -131,7 +147,6 @@ export const Products = () => {
   });
 
   const { confirmation, confirmDelete, handleConfirm, handleCancel } = useDeleteConfirmation();
-  const { confirmation: bulkConfirmation, confirmBulkDelete, handleConfirm: handleBulkConfirm, handleCancel: handleBulkCancel } = useBulkDeleteConfirmation();
 
   const productOps = useProductOperations(allProducts, refetch);
 
@@ -293,100 +308,124 @@ export const Products = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 w-full max-w-full min-w-0">
-      <div className="flex items-center justify-between gap-2 min-w-0">
-        <div className="min-w-0 pr-2">
-          <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Products</h1>
-          <p className="hidden sm:block text-sm sm:text-base text-gray-600 mt-1">Manage your product catalog</p>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-end gap-2 sm:gap-3 overflow-x-auto">
-            <Button
-              onClick={() => productOps.handleAdd()}
-              variant="default"
-              size="default"
-              className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white transition-all shadow-md active:scale-95 px-6 font-bold tracking-tight"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline uppercase">ADD PRODUCT</span>
-              <span className="sm:hidden uppercase">ADD</span>
-            </Button>
-            <ExcelExportButton
-              getData={getExportData}
-              label="Export"
-            />
-            <PdfExportButton
-              getData={getExportData}
-              label="PDF"
-            />
-            <ExcelImportButton
-              onDataImported={handleImportData}
-              label="Import"
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="default"
-                  className="flex items-center justify-center gap-2 border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all shadow-sm"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                  <span className="font-semibold">More</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    const componentInfo = getComponentInfo('/categories');
-                    if (componentInfo) {
-                      openTab({
-                        title: 'Add Product Category',
-                        path: '/categories?action=add',
-                        component: componentInfo.component,
-                        icon: componentInfo.icon,
-                        allowMultiple: true,
-                        props: { action: 'add' }
-                      });
-                    }
-                  }}
-                >
-                  <Tag className="h-4 w-4 mr-2 text-indigo-600" />
-                  Add Category
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); refreshCategories(); }}>
-                  <RefreshCw className="h-4 w-4 mr-2 text-teal-600" />
-                  Refresh Categories
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowBarcodeScanner(true); }}>
-                  <Camera className="h-4 w-4 mr-2 text-amber-600" />
-                  Scan Barcode
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowLabelPrinter(true); }}>
-                  <Printer className="h-4 w-4 mr-2 text-purple-600" />
-                  Print Barcode Labels
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDownloadTemplate(); }}>
-                  <Download className="h-4 w-4 mr-2 text-orange-600" />
-                  Download Template
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default">
-                  <label className="inline-flex items-center gap-2 text-xs text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={autoCreateImportCategories}
-                      onChange={(e) => setAutoCreateImportCategories(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    Auto-create category
-                  </label>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Products"
+        subtitle="Manage your product catalog"
+        actions={<>
+          <Button
+            onClick={() => productOps.handleAdd()}
+            variant="default"
+            size="default"
+            className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white transition-all shadow-md active:scale-95 px-6 font-bold tracking-tight"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline uppercase">ADD PRODUCT</span>
+            <span className="sm:hidden uppercase">ADD</span>
+          </Button>
+          <ExcelExportButton
+            ref={excelExportRef}
+            getData={getExportData}
+            label="Export"
+            className="hidden sm:flex"
+          />
+          <PdfExportButton
+            ref={pdfExportRef}
+            getData={getExportData}
+            label="PDF"
+            className="hidden sm:flex"
+          />
+          <ExcelImportButton
+            ref={excelImportRef}
+            onDataImported={handleImportData}
+            label="Import"
+            className="hidden sm:flex"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="default"
+                className="flex items-center justify-center gap-2 border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all shadow-sm"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="font-semibold">More</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem 
+                onSelect={(e) => { e.preventDefault(); excelExportRef.current?.handleExport(); }}
+                className="sm:hidden"
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                Export to Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onSelect={(e) => { e.preventDefault(); pdfExportRef.current?.handleExport(); }}
+                className="sm:hidden"
+              >
+                <FileText className="h-4 w-4 mr-2 text-red-600" />
+                Export to PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onSelect={(e) => { e.preventDefault(); excelImportRef.current?.handleButtonClick(); }}
+                className="sm:hidden"
+              >
+                <FileUp className="h-4 w-4 mr-2 text-blue-600" />
+                Import from Excel
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="sm:hidden" />
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  const componentInfo = getComponentInfo('/categories');
+                  if (componentInfo) {
+                    openTab({
+                      title: 'Add Product Category',
+                      path: '/categories?action=add',
+                      component: componentInfo.component,
+                      icon: componentInfo.icon,
+                      allowMultiple: true,
+                      props: { action: 'add' }
+                    });
+                  }
+                }}
+              >
+                <Tag className="h-4 w-4 mr-2 text-indigo-600" />
+                Add Category
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); refreshCategories(); }}>
+                <RefreshCw className="h-4 w-4 mr-2 text-teal-600" />
+                Refresh Categories
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowBarcodeScanner(true); }}>
+                <Camera className="h-4 w-4 mr-2 text-amber-600" />
+                Scan Barcode
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setShowLabelPrinter(true); }}>
+                <Printer className="h-4 w-4 mr-2 text-purple-600" />
+                Print Barcode Labels
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDownloadTemplate(); }}>
+                <Download className="h-4 w-4 mr-2 text-orange-600" />
+                Download Template
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-default">
+                <label className="inline-flex items-center gap-2 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={autoCreateImportCategories}
+                    onChange={(e) => setAutoCreateImportCategories(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  Auto-create category
+                </label>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>}
+      />
 
       <div className="w-full">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -434,7 +473,7 @@ export const Products = () => {
           setBulkUpdateType('update');
           setShowBulkUpdateModal(true);
         }}
-        onBulkDelete={() => productOps.handleBulkDelete(bulkOps, confirmBulkDelete)}
+        onBulkDelete={() => productOps.handleBulkDelete(bulkOps)}
 
         onBulkStatusChange={() => {
           setBulkUpdateType('status');
@@ -557,24 +596,17 @@ export const Products = () => {
         isLoading={productOps.deleting}
       />
 
-      <BulkDeleteConfirmationDialog
-        isOpen={bulkConfirmation.isOpen}
-        onClose={handleBulkCancel}
-        onConfirm={handleBulkConfirm}
-        itemCount={bulkOps.selectedCount}
-        itemType="products"
-        isLoading={bulkConfirmation.isLoading}
-      />
-
-      <ProductInvestorsModal
+      {productOps.selectedProductForInvestors && (
+        <ProductInvestorsModal
           product={productOps.selectedProductForInvestors}
-          isOpen={!!(productOps.isInvestorsModalOpen && productOps.selectedProductForInvestors)}
+          isOpen={productOps.isInvestorsModalOpen}
           onClose={() => {
             productOps.setIsInvestorsModalOpen(false);
             productOps.setSelectedProductForInvestors(null);
           }}
           onSave={productOps.handleLinkInvestors}
         />
+      )}
 
       <BarcodeScanner
         isOpen={showBarcodeScanner}

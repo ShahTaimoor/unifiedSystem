@@ -28,9 +28,9 @@ import {
   useReverseStockMovementMutation,
 } from '../store/services/inventoryApi';
 import { useGetProductsQuery } from '../store/services/productsApi';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
-import { Textarea } from '@/pos/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
 import { handleApiError } from '../utils/errorHandler';
 import { toast } from 'sonner';

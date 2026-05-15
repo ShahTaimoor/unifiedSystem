@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import {
-  Plus,
-  Search,
-  Edit,
+import { 
+  Plus, 
+  Search, 
+  Edit, 
   Trash2,
   User,
   X,
@@ -32,12 +32,13 @@ import {
 } from '../store/services/investorsApi';
 import { toast } from 'sonner';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage } from '../components/LoadingSpinner';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
-import { Textarea } from '@/pos/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 import { useTab } from '../contexts/TabContext';
+import { PageHeader } from '../components/layout/PageHeader';
 
 /** Amount display without a currency prefix (e.g. no leading $). */
 function formatAmount(value) {
@@ -99,32 +100,40 @@ function openPrintDocument(title, innerHtml) {
     dateStyle: 'medium',
     timeStyle: 'short'
   });
-  const w = window.open('', '_blank');
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.left = '-9999px';
+  iframe.style.top = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  document.body.appendChild(iframe);
+  const w = iframe.contentWindow;
   if (!w) {
-    toast.error('Pop-up blocked — allow pop-ups to print.');
+    document.body.removeChild(iframe);
     return;
   }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; padding: 24px; color: #111827; }
+    @page { size: A4 landscape; margin: 10mm; }
+    body { font-family: 'Inter', system-ui, sans-serif; padding: 24px; color: #111827; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     h1 { font-size: 20px; margin: 0 0 6px; }
     .printed { color: #6b7280; font-size: 12px; margin: 0 0 20px; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { border: 1px solid #e5e7eb; padding: 8px 10px; }
-    th { background: #f9fafb; text-align: left; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { border: 1px solid #000; padding: 4px 6px; }
+    th { background: #f3f4f6; text-align: left; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     td.num { text-align: right; font-variant-numeric: tabular-nums; }
     .note { margin-top: 16px; font-size: 11px; color: #6b7280; }
-    @media print { body { padding: 12px; } }
   </style></head><body>
   <h1>${escapeHtml(title)}</h1>
   <p class="printed">Printed on: ${escapeHtml(printedAt)}</p>
   ${innerHtml}
   </body></html>`);
   w.document.close();
-  w.focus();
-  requestAnimationFrame(() => {
+  setTimeout(() => {
+    w.focus();
     w.print();
-  });
+    setTimeout(() => document.body.removeChild(iframe), 1000);
+  }, 250);
 }
 
 const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
@@ -152,7 +161,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -197,7 +206,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <Input
-                        {...register('email', {
+                        {...register('email', { 
                           required: 'Email is required',
                           pattern: {
                             value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -213,7 +222,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                       <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
                     )}
                   </div>
-
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Phone
@@ -260,7 +269,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                       placeholder="Enter city"
                     />
                   </div>
-
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       State/Province
@@ -282,7 +291,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                       placeholder="Enter zip code"
                     />
                   </div>
-
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Country
@@ -307,7 +316,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                   <div className="relative">
                     <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
-                      {...register('totalInvestment', {
+                      {...register('totalInvestment', { 
                         valueAsNumber: true,
                         min: { value: 0, message: 'Investment must be positive' }
                       })}
@@ -321,7 +330,7 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                     <p className="text-red-500 text-sm mt-1">{errors.totalInvestment.message}</p>
                   )}
                 </div>
-
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status
@@ -390,7 +399,7 @@ export const Investors = ({ tabId }) => {
   const [showProductsModal, setShowProductsModal] = useState(null);
   const { updateTabTitle } = useTab();
 
-  const queryParams = {
+  const queryParams = { 
     search: searchTerm || undefined,
     status: statusFilter || undefined
   };
@@ -502,37 +511,38 @@ export const Investors = ({ tabId }) => {
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="flex items-center justify-between gap-2 mb-6">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Investors</h1>
-          <p className="hidden sm:block text-sm sm:text-base text-gray-600 mt-1">Manage investors and track profit distributions</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 overflow-x-auto">
-          <Button
-            type="button"
-            onClick={handlePrintInvestorsList}
-            variant="outline"
-            size="default"
-            className="flex items-center justify-center gap-2"
-            disabled={investors.length === 0}
-          >
-            <Printer className="h-4 w-4" />
-            <span>Print</span>
-          </Button>
-          <Button
-            onClick={() => {
-              setSelectedInvestor(null);
-              setIsModalOpen(true);
-            }}
-            variant="default"
-            size="default"
-            className="flex items-center justify-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Investor</span>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Investors"
+        subtitle="Manage investors and track profit distributions"
+        actions={
+          <>
+            <Button
+              type="button"
+              onClick={handlePrintInvestorsList}
+              variant="outline"
+              size="default"
+              className="flex items-center justify-center gap-2"
+              disabled={investors.length === 0}
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print</span>
+            </Button>
+            <Button
+              onClick={() => {
+                setSelectedInvestor(null);
+                setIsModalOpen(true);
+              }}
+              variant="default"
+              size="default"
+              className="flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Investor</span>
+            </Button>
+          </>
+        }
+      />
 
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -658,10 +668,11 @@ export const Investors = ({ tabId }) => {
 
                     {/* Status */}
                     <div className="col-span-6 sm:col-span-4 lg:col-span-1 flex lg:justify-center justify-start">
-                      <span className={`badge ${investor.status === 'active' ? 'badge-success' :
-                          investor.status === 'inactive' ? 'badge-gray' :
-                            'badge-danger'
-                        }`}>
+                      <span className={`badge ${
+                        investor.status === 'active' ? 'badge-success' :
+                        investor.status === 'inactive' ? 'badge-gray' :
+                        'badge-danger'
+                      }`}>
                         {investor.status}
                       </span>
                     </div>
@@ -833,7 +844,7 @@ const InvestorProductsModal = ({ investor, onClose }) => {
   }, [data]);
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -878,10 +889,11 @@ const InvestorProductsModal = ({ investor, onClose }) => {
                           <h3 className="text-lg font-medium text-gray-900">
                             {product.name}
                           </h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.status === 'active' ? 'bg-green-100 text-green-800' :
-                              product.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                                'bg-red-100 text-red-800'
-                            }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            product.status === 'active' ? 'bg-green-100 text-green-800' :
+                            product.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
                             {product.status}
                           </span>
                         </div>
@@ -899,10 +911,11 @@ const InvestorProductsModal = ({ investor, onClose }) => {
                           </div>
                           <div>
                             <span className="text-gray-500">Stock:</span>
-                            <span className={`ml-2 font-medium ${(product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
+                            <span className={`ml-2 font-medium ${
+                              (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
                                 ? 'text-red-600'
                                 : 'text-gray-900'
-                              }`}>
+                            }`}>
                               {product.inventory?.currentStock || 0}
                             </span>
                           </div>
@@ -969,10 +982,10 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
   const profitSharesErrorMessage =
     isError && error?.data != null
       ? String(
-        typeof error.data === 'object' && error.data?.message != null
-          ? error.data.message
-          : error.data
-      )
+          typeof error.data === 'object' && error.data?.message != null
+            ? error.data.message
+            : error.data
+        )
       : isError
         ? 'Could not load profit shares. Try again or check the server.'
         : null;
@@ -990,15 +1003,15 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
         const investorShare = isThisInvestor
           ? Number(share.investor_share ?? share.investorShare ?? 0)
           : share.investors?.find((inv) => {
-            const invId = inv.investor?._id || inv.investor;
-            return invId && invId.toString() === investorId.toString();
-          })?.shareAmount || 0;
+              const invId = inv.investor?._id || inv.investor;
+              return invId && invId.toString() === investorId.toString();
+            })?.shareAmount || 0;
         const sharePercentage = isThisInvestor
           ? Number(share.investor_share_percentage ?? share.investorSharePercentage ?? 0)
           : share.investors?.find((inv) => {
-            const invId = inv.investor?._id || inv.investor;
-            return invId && invId.toString() === investorId.toString();
-          })?.sharePercentage || 0;
+              const invId = inv.investor?._id || inv.investor;
+              return invId && invId.toString() === investorId.toString();
+            })?.sharePercentage || 0;
         const lineDate =
           share.order_date ?? share.orderDate ?? share.created_at ?? share.createdAt;
         const dateStr = lineDate
@@ -1037,7 +1050,7 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
@@ -1101,23 +1114,23 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
                     const isThisInvestor = shareInvestorId && (
                       shareInvestorId.toString() === investorId.toString()
                     );
-
+                    
                     const investorShare = isThisInvestor
                       ? Number(share.investor_share ?? share.investorShare ?? 0)
                       : share.investors?.find(inv => {
-                        const invId = inv.investor?._id || inv.investor;
-                        return invId && invId.toString() === investorId.toString();
-                      })?.shareAmount || 0;
-
+                          const invId = inv.investor?._id || inv.investor;
+                          return invId && invId.toString() === investorId.toString();
+                        })?.shareAmount || 0;
+                        
                     const sharePercentage = isThisInvestor
                       ? Number(share.investor_share_percentage ?? share.investorSharePercentage ?? 0)
                       : share.investors?.find(inv => {
-                        const invId = inv.investor?._id || inv.investor;
-                        return invId && invId.toString() === investorId.toString();
-                      })?.sharePercentage || 0;
+                          const invId = inv.investor?._id || inv.investor;
+                          return invId && invId.toString() === investorId.toString();
+                        })?.sharePercentage || 0;
 
                     const lineDate = share.order_date ?? share.orderDate ?? share.created_at ?? share.createdAt;
-
+                    
                     return (
                       <tr key={share.id || share._id}>
                         <td className="px-4 py-3 text-sm text-gray-900">
@@ -1173,10 +1186,10 @@ const PayoutHistoryModal = ({ investorId, investorName, onClose }) => {
   const errMsg =
     isError && error?.data != null
       ? String(
-        typeof error.data === 'object' && error.data?.message != null
-          ? error.data.message
-          : error.data
-      )
+          typeof error.data === 'object' && error.data?.message != null
+            ? error.data.message
+            : error.data
+        )
       : isError
         ? 'Could not load payout history.'
         : null;
@@ -1214,7 +1227,7 @@ const PayoutHistoryModal = ({ investorId, investorName, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
@@ -1327,7 +1340,7 @@ const PayoutModal = ({ investor, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -1484,7 +1497,7 @@ const InvestmentModal = ({ investor, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">

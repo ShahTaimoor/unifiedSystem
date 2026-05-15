@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import {
   ShoppingCart,
@@ -12,7 +12,10 @@ import {
   Trash2,
   Edit,
   Printer,
-  BookOpen
+  BookOpen,
+  MoreHorizontal,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
 import {
   useGetOrdersQuery,
@@ -27,13 +30,22 @@ import { getComponentInfo } from '../components/ComponentRegistry';
 import DateFilter from '../components/DateFilter';
 import PrintModal from '../components/PrintModal';
 import BaseModal from '../components/BaseModal';
-import { Button } from '@/pos/components/ui/button';
+import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
+import { useDeleteConfirmation } from '../hooks/useConfirmation';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatDateForInput, getCurrentDatePakistan, getLocalDateString } from '../utils/dateUtils';
 import ExcelExportButton from '../components/ExcelExportButton';
 import PdfExportButton from '../components/PdfExportButton';
 import { getInvoicePdfPayload } from '../utils/invoicePdfUtils';
 import PaginationControls from '../components/PaginationControls';
 import { useCursorPagination } from '../hooks/useCursorPagination';
+import { useSensitiveDataPermissions } from '../hooks/useSensitiveDataPermissions';
 
 const INVOICE_PAGE_SIZE = 50;
 
@@ -190,6 +202,18 @@ const OrderCard = ({ order, onView, onEdit, onPrint }) => {
 };
 
 export const Orders = () => {
+  const { getPartyPermissions } = useSensitiveDataPermissions();
+  const {
+    confirmation: deleteConfirmation,
+    confirmDelete,
+    handleConfirm: handleDeleteConfirm,
+    handleCancel: handleDeleteCancel,
+  } = useDeleteConfirmation();
+
+  // Refs for responsive actions
+  const excelExportRef = useRef(null);
+  const pdfExportRef = useRef(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebouncedValue(searchTerm, 350);
   const [statusFilter, setStatusFilter] = useState('');
@@ -458,9 +482,8 @@ export const Orders = () => {
   };
 
   const handleDelete = (order) => {
-    if (window.confirm(`Are you sure you want to delete invoice ${order.order_number ?? order.orderNumber ?? order.id ?? 'this'}?`)) {
-      handleDeleteOrder(order._id);
-    }
+    const label = order.order_number ?? order.orderNumber ?? order.id ?? 'this invoice';
+    confirmDelete(label, 'Sales Invoice', () => handleDeleteOrder(order._id));
   };
 
   const handleView = (order) => {
@@ -557,32 +580,66 @@ export const Orders = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {/* Post to Ledger Button (Desktop & Mobile) */}
           <button
             type="button"
             onClick={handlePostMissingToLedger}
             disabled={isPostingToLedger}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed h-10"
             title="Post any past sales/invoices that were never recorded to the account ledger"
           >
             <BookOpen className="h-4 w-4" />
-            {isPostingToLedger ? 'Posting…' : 'Post missing to ledger'}
+            <span className="hidden sm:inline">{isPostingToLedger ? 'Posting…' : 'Post missing to ledger'}</span>
+            <span className="sm:hidden text-xs">{isPostingToLedger ? 'Posting…' : 'Post'}</span>
           </button>
-          <ExcelExportButton
-            getData={getExportData}
-            label="Export"
-          />
-          <PdfExportButton
-            getData={getExportData}
-            label="PDF"
-          />
-          <DateFilter
-            startDate={fromDate}
-            endDate={toDate}
-            onDateChange={handleDateChange}
-            compact={true}
-            showPresets={true}
-            className="flex-1 min-w-[200px]"
-          />
+
+          {/* Desktop Export Buttons */}
+          <div className="hidden sm:flex items-center gap-2">
+            <ExcelExportButton
+              ref={excelExportRef}
+              getData={getExportData}
+              label="Export"
+            />
+            <PdfExportButton
+              ref={pdfExportRef}
+              getData={getExportData}
+              label="PDF"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+            <div className="flex-1 sm:flex-none">
+              <DateFilter
+                startDate={fromDate}
+                endDate={toDate}
+                onDateChange={handleDateChange}
+                compact={true}
+                showPresets={true}
+                className="w-full"
+              />
+            </div>
+
+            {/* Mobile Actions Dropdown */}
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-10 border-gray-200 bg-white">
+                    <MoreHorizontal className="h-5 w-5 text-gray-600" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => excelExportRef.current?.handleExport()}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                    Excel Export
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => pdfExportRef.current?.handleExport()}>
+                    <FileText className="h-4 w-4 mr-2 text-red-600" />
+                    PDF Export
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -733,17 +790,18 @@ export const Orders = () => {
                       <button onClick={() => handlePrint(order)} className="p-1 text-green-600 hover:text-green-800" title="Print"><Printer className="h-4 w-4" /></button>
                       <ExcelExportButton
                         getData={async () => {
+                          const printPerms = getPartyPermissions('customer');
                           try {
                             const result = await fetchOrderById(order._id || order.id).unwrap();
                             const freshOrder = result?.order || result?.data?.order || result || order;
-                            const payload = getInvoicePdfPayload(freshOrder, companySettings, 'Sales Invoice', 'Customer');
+                            const payload = getInvoicePdfPayload(freshOrder, companySettings, 'Sales Invoice', 'Customer', null, printPerms);
                             return {
                               ...payload,
                               filename: `Invoice_${order.order_number ?? order.orderNumber}.xlsx`
                             };
                           } catch (err) {
                             return {
-                              ...getInvoicePdfPayload(order, companySettings, 'Sales Invoice', 'Customer'),
+                              ...getInvoicePdfPayload(order, companySettings, 'Sales Invoice', 'Customer', null, printPerms),
                               filename: `Invoice_${order.order_number ?? order.orderNumber}.xlsx`
                             };
                           }
@@ -753,12 +811,13 @@ export const Orders = () => {
                       />
                       <PdfExportButton
                         getData={async () => {
+                          const printPerms = getPartyPermissions('customer');
                           try {
                             const result = await fetchOrderById(order._id || order.id).unwrap();
                             const freshOrder = result?.order || result?.data?.order || result || order;
-                            return getInvoicePdfPayload(freshOrder, companySettings, 'Sales Invoice', 'Customer');
+                            return getInvoicePdfPayload(freshOrder, companySettings, 'Sales Invoice', 'Customer', null, printPerms);
                           } catch (err) {
-                            return getInvoicePdfPayload(order, companySettings, 'Sales Invoice', 'Customer');
+                            return getInvoicePdfPayload(order, companySettings, 'Sales Invoice', 'Customer', null, printPerms);
                           }
                         }}
                         label=""
@@ -837,14 +896,11 @@ export const Orders = () => {
                   size="sm"
                   variant="destructive"
                   onClick={() => {
-                    if (
-                      window.confirm(
-                        `Are you sure you want to delete invoice ${selectedOrder.order_number ?? selectedOrder.orderNumber ?? 'this'}?`
-                      )
-                    ) {
-                      handleDeleteOrder(selectedOrder._id);
+                    const label = selectedOrder.order_number ?? selectedOrder.orderNumber ?? 'this invoice';
+                    confirmDelete(label, 'Sales Invoice', async () => {
+                      await handleDeleteOrder(selectedOrder._id);
                       setShowViewModal(false);
-                    }
+                    });
                   }}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -918,8 +974,8 @@ export const Orders = () => {
 
             {/* CCTV Camera Time Section */}
             {(selectedOrder.billStartTime || selectedOrder.billEndTime) && (
-              <div className="mb-8 p-4 bg-blue-50/50 backdrop-blur-sm border border-blue-200/50 rounded-lg">
-                <h3 className="font-semibold text-gray-900 border-b border-blue-300/50 pb-2 mb-4 flex items-center gap-2">
+              <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="font-semibold text-gray-900 border-b border-blue-300 pb-2 mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
@@ -971,9 +1027,9 @@ export const Orders = () => {
             <div className="mb-8">
               <h3 className="font-semibold text-gray-900 border-b border-gray-300 pb-2 mb-4">Items:</h3>
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300/50">
+                <table className="w-full border-collapse border border-gray-300">
                   <thead>
-                    <tr className="bg-gray-50/50 backdrop-blur-sm">
+                    <tr className="bg-gray-50">
                       <th className="border border-gray-300 px-4 py-2 text-left">Item</th>
                       <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
                       <th className="border border-gray-300 px-4 py-2 text-right">Qty</th>
@@ -983,13 +1039,9 @@ export const Orders = () => {
                   </thead>
                   <tbody>
                     {selectedOrder.items?.map((item, index) => (
-                      <tr key={index} className="hover:bg-gray-50/30 transition-colors">
-                        <td className="border border-gray-300/50 px-4 py-2">
-                          {item.product?.name || item.name || item.productName || item.product?.displayName || 'Unknown Product'}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          {item.product?.description || item.description || ''}
-                        </td>
+                      <tr key={index}>
+                        <td className="border border-gray-300 px-4 py-2">{item.product?.name || 'Unknown Product'}</td>
+                        <td className="border border-gray-300 px-4 py-2">{item.product?.description || ''}</td>
                         <td className="border border-gray-300 px-4 py-2 text-right">{item.quantity}</td>
                         <td className="border border-gray-300 px-4 py-2 text-right">{Math.round(item.unitPrice)}</td>
                         <td className="border border-gray-300 px-4 py-2 text-right">{Math.round(item.total)}</td>
@@ -1067,6 +1119,15 @@ export const Orders = () => {
         orderData={printOrderData}
         documentTitle="Sales Invoice"
         partyLabel="Customer"
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={deleteConfirmation.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        itemName={deleteConfirmation.message?.match(/"([^"]*)"/)?.[1] || ''}
+        itemType="Sales Invoice"
+        isLoading={deleteConfirmation.isLoading}
       />
     </div>
   );

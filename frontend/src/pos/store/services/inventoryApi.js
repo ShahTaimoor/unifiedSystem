@@ -20,17 +20,10 @@ export const inventoryApi = api.injectEndpoints({
         };
       },
       keepUnusedDataFor: 60,
-      transformResponse: (response) => {
-        const result = response.data || response;
-        return {
-          items: result.items || result.inventory || [],
-          pagination: result.pagination || {}
-        };
-      },
       providesTags: (result) =>
-        result?.items
+        result?.data?.items
           ? [
-              ...result.items.map(({ _id, id }) => ({ type: 'Inventory', id: _id || id })),
+              ...result.data.items.map(({ _id, id }) => ({ type: 'Inventory', id: _id || id })),
               { type: 'Inventory', id: 'LIST' },
             ]
           : [{ type: 'Inventory', id: 'LIST' }],
@@ -41,7 +34,6 @@ export const inventoryApi = api.injectEndpoints({
         method: 'get',
       }),
       keepUnusedDataFor: 120,
-      transformResponse: (response) => response.data?.summary || response.summary || response.data || response,
       providesTags: [{ type: 'Inventory', id: 'SUMMARY' }],
     }),
     getLowStockItems: builder.query({
@@ -54,7 +46,7 @@ export const inventoryApi = api.injectEndpoints({
     }),
     createStockAdjustment: builder.mutation({
       query: (data) => ({
-        url: 'inventory/adjustments',
+        url: 'inventory/stock-adjustments',
         method: 'post',
         data,
       }),
@@ -143,7 +135,6 @@ export const inventoryApi = api.injectEndpoints({
         { type: 'StockLedger', id: 'LIST' },
         { type: 'Reports', id: 'INVENTORY_REPORT' },
         { type: 'Reports', id: 'PRODUCT_REPORT' },
-        { type: 'Reports', id: 'PURCHASE_BY_SUPPLIER' },
         { type: 'Reports', id: 'SUMMARY_CARDS' },
         { type: 'Reports', id: 'STOCK_MOVEMENTS_STATS' },
       ],

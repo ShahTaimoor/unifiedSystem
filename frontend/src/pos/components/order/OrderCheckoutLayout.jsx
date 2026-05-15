@@ -1,4 +1,4 @@
-import { cn } from '@/pos/lib/utils';
+import { cn } from '@/lib/utils';
 import { ShowDetailsSectionHeader } from '../ShowDetailsSectionHeader';
 
 /**

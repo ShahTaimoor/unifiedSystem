@@ -21,6 +21,12 @@ export const componentRegistry = {
     allowMultiple: true,
     component: () => import('../pages/Purchase').then(m => m.default || m.Purchase)
   },
+  '/pos/import-purchase': {
+    title: 'Import Purchase',
+    icon: 'Truck',
+    allowMultiple: true,
+    component: () => import('../pages/ImportPurchase').then(m => m.default || m.ImportPurchase)
+  },
   '/pos/products': {
     title: 'Products',
     icon: 'Package',
@@ -114,10 +120,11 @@ export const componentRegistry = {
     icon: 'Search',
     component: () => import('../pages/PurchaseInvoices').then(m => m.default || m.PurchaseInvoices)
   },
-  '/pos/purchase-by-supplier': {
-    title: 'Products by Supplier',
-    icon: 'BarChart3',
-    component: () => import('../pages/PurchaseBySupplierReport').then(m => m.default)
+  '/pos/market-prices': {
+    title: 'Current Purchase Market Prices',
+    icon: 'Tag',
+    allowMultiple: true,
+    component: () => import('../pages/MarketPrices').then(m => m.default || m.MarketPrices)
   },
   '/pos/help': {
     title: 'Help & Support',
@@ -183,7 +190,7 @@ export const componentRegistry = {
     component: () => import('../pages/CashReceipts').then(m => m.default || m.CashReceipts)
   },
   '/pos/cash-receiving': {
-    title: 'Cash Receiving',
+    title: 'Multi Cash Receipt',
     icon: 'Receipt',
     allowMultiple: true,
     component: () => import('../pages/CashReceiving').then(m => m.default || m.CashReceiving)

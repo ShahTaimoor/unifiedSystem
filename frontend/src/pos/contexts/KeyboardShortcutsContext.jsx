@@ -81,7 +81,7 @@ export const KeyboardShortcutsProvider = ({ children, customShortcuts = {} }) =>
         newOrderBtn.click();
       }
     } else {
-      navigate('/sales');
+      navigate('/pos/sales');
     }
   }, [navigate, location]);
 
@@ -133,7 +133,7 @@ export const KeyboardShortcutsProvider = ({ children, customShortcuts = {} }) =>
   }, [getTopModal]);
 
   const handleHelp = useCallback(() => {
-    navigate('/help');
+    navigate('/pos/help');
   }, [navigate]);
 
   const handleFocusSearch = useCallback(() => {
@@ -151,7 +151,7 @@ export const KeyboardShortcutsProvider = ({ children, customShortcuts = {} }) =>
         newProductBtn.click();
       }
     } else {
-      navigate('/products');
+      navigate('/pos/products');
       // Wait a bit for page to load, then trigger
       setTimeout(() => {
         const buttons = Array.from(document.querySelectorAll('button'));
@@ -177,7 +177,7 @@ export const KeyboardShortcutsProvider = ({ children, customShortcuts = {} }) =>
         newCustomerBtn.click();
       }
     } else {
-      navigate('/customers');
+      navigate('/pos/customers');
       setTimeout(() => {
         const buttons = Array.from(document.querySelectorAll('button'));
         const newCustomerBtn = buttons.find(btn => {

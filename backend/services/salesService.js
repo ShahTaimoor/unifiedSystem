@@ -455,13 +455,30 @@ class SalesService {
         amountPaid = parseFloat(ledgerResult.rows[0]?.total || 0);
       } catch (_) { /* ignore */ }
     }
-    if (amountPaid === 0 && normalizedPaymentStatus === 'paid') {
-      amountPaid = parseFloat(order.total) || 0;
-    }
+    // Do NOT infer "amount received" from invoice total when payment_status is `paid`.
+    // POS marks many cash invoices as `paid` while amount_paid is still 0 (collected later).
+    // Substituting the full total here made Edit Sale show the entire invoice as paid incorrectly.
+    let bankAccount = null;
+    try {
+      const bankResult = await query(
+        `SELECT bank_id
+         FROM account_ledger
+         WHERE reference_type = 'sale_payment'
+           AND reference_id::text = $1
+           AND bank_id IS NOT NULL
+           AND status = 'completed'
+           AND reversed_at IS NULL
+         ORDER BY transaction_date DESC, created_at DESC
+         LIMIT 1`,
+        [String(orderId)]
+      );
+      bankAccount = bankResult.rows[0]?.bank_id || null;
+    } catch (_) { /* ignore */ }
     order.payment = {
       ...(order.payment || {}),
       amountPaid,
       method: order.payment?.method || order.payment_method || 'N/A',
+      bankAccount,
       status: order.payment?.status || order.payment_status || 'pending',
     };
 
@@ -483,29 +500,17 @@ class SalesService {
    * @returns {Promise<object>}
    */
   async getPeriodSummary(dateFrom, dateTo) {
-    const raw = await salesRepository.findByDateRange(dateFrom, dateTo);
-    const orders = Array.isArray(raw) ? raw : [];
-
-    const totalRevenue = orders.reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0);
-    const totalOrders = orders.length;
-    const totalItems = orders.reduce((sum, order) => {
-      const items = Array.isArray(order?.items) ? order.items : [];
-      return sum + items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0);
-    }, 0);
+    const agg = await salesRepository.getDashboardSaleAggregates(dateFrom, dateTo);
+    const totalRevenue = agg.totalRevenue;
+    const totalOrders = agg.totalOrders;
+    const totalItems = agg.totalItems;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const totalDiscounts = agg.totalDiscounts;
 
-    // Calculate discounts
-    const totalDiscounts = orders.reduce((sum, order) =>
-      sum + (parseFloat(order?.discount) || 0), 0);
-
-    // Calculate by payment status (orderType not in PostgreSQL schema, using payment_status)
     const revenueByPaymentStatus = {
-      paid: orders.filter(o => o && (o.payment_status === 'paid'))
-        .reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0),
-      pending: orders.filter(o => o && (o.payment_status === 'pending'))
-        .reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0),
-      partial: orders.filter(o => o && (o.payment_status === 'partial'))
-        .reduce((sum, order) => sum + (parseFloat(order?.total) || 0), 0)
+      paid: agg.revPaid,
+      pending: agg.revPending,
+      partial: agg.revPartial
     };
 
     return {
@@ -514,8 +519,16 @@ class SalesService {
       totalItems,
       averageOrderValue,
       totalDiscounts,
-      revenueByType: {}, // Not available in PostgreSQL schema
-      ordersByType: {}, // Not available in PostgreSQL schema
+      revenueByType: {
+        retail: agg.revRetail,
+        wholesale: agg.revWholesale
+      },
+      ordersByType: {
+        retail: agg.cntRetail,
+        wholesale: agg.cntWholesale,
+        return: agg.cntReturn,
+        exchange: agg.cntExchange
+      },
       revenueByPaymentStatus
     };
   }
@@ -558,12 +571,7 @@ class SalesService {
    */
   async createSale(data, user, options = {}) {
     const { skipInventoryUpdate = false } = options;
-    const {
-      clientSideId, customer, items, orderType, payment, notes, isTaxExempt, billDate, billStartTime,
-      salesOrderId, appliedDiscounts: payloadDiscounts, discountAmount: payloadDiscountAmount,
-      subtotal: payloadSubtotal, total: payloadTotal, tax: payloadTax,
-      shippingAddress, shippingPhone, shippingCity
-    } = data;
+    const { clientSideId, customer, items, orderType, payment, notes, isTaxExempt, billDate, billStartTime, salesOrderId, appliedDiscounts: payloadDiscounts, discountAmount: payloadDiscountAmount, subtotal: payloadSubtotal, total: payloadTotal, tax: payloadTax } = data;
 
     // Check for idempotency if clientSideId is provided
     if (clientSideId) {
@@ -713,7 +721,7 @@ class SalesService {
       const prefix = orderSettings.invoiceSequencePrefix || 'INV-';
       const nextNum = orderSettings.invoiceSequenceNext || 1;
       const padding = orderSettings.invoiceSequencePadding || 3;
-
+      
       // If no orderNumber provided by frontend, use the one from settings
       if (!orderNumber) {
         orderNumber = `${prefix}${String(nextNum).padStart(padding, '0')}`;
@@ -744,10 +752,7 @@ class SalesService {
       createdBy: user.id || user._id?.toString(),
       appliedDiscounts: appliedDiscountsForSale,
       orderType: orderType || 'retail',
-      clientSideId: clientSideId || null,
-      shippingAddress: shippingAddress || null,
-      shippingPhone: shippingPhone || null,
-      shippingCity: shippingCity || null
+      clientSideId: clientSideId || null
     };
 
     const order = await withBusinessTransaction(async ({ client, addPostCommit }) => {
@@ -773,6 +778,13 @@ class SalesService {
       await AccountingService.recordSale(createdOrder, { client });
 
       if (amountPaidAtCreate > 0 && customer) {
+        const pm = String(payment?.method || 'cash').toLowerCase();
+        const ledgerUsesBank = pm === 'bank' || pm === 'bank_transfer';
+        const paymentTxnDate =
+          createdOrder.sale_date ||
+          createdOrder.saleDate ||
+          saleData.saleDate ||
+          new Date();
         await AccountingService.recordSalePaymentAdjustment({
           saleId: createdOrder.id || createdOrder._id,
           orderNumber: createdOrder.order_number || createdOrder.orderNumber,
@@ -780,6 +792,8 @@ class SalesService {
           oldAmountPaid: 0,
           newAmountPaid: amountPaidAtCreate,
           paymentMethod: payment?.method || 'cash',
+          bankId: ledgerUsesBank ? (payment?.bankAccount || null) : null,
+          transactionDate: paymentTxnDate,
           createdBy: user?.id || user?._id
         }, { client });
       }
@@ -819,7 +833,7 @@ class SalesService {
         const productService = require('./productServicePostgres');
         for (const item of orderItems) {
           if (item.isManual || !item.product) continue;
-
+          
           try {
             const product = await productService.getProductById(item.product);
             if (!product) continue;
@@ -960,10 +974,7 @@ class SalesService {
       isTaxExempt: salesOrder.is_tax_exempt ?? salesOrder.isTaxExempt ?? false,
       billDate: salesOrder.order_date || salesOrder.orderDate || new Date(),
       salesOrderId: salesOrder.id || salesOrder._id,
-      orderNumber: `INV-${(salesOrder.so_number || salesOrder.soNumber || salesOrder.id || '').toString().replace(/^SO-/, '')}`,
-      shippingAddress: salesOrder.shipping_address || salesOrder.shippingAddress,
-      shippingPhone: salesOrder.shipping_phone || salesOrder.shippingPhone,
-      shippingCity: salesOrder.shipping_city || salesOrder.shippingCity
+      orderNumber: `INV-${(salesOrder.so_number || salesOrder.soNumber || salesOrder.id || '').toString().replace(/^SO-/, '')}`
     };
     return await this.createSale(saleData, user, { skipInventoryUpdate: true });
   }
@@ -994,10 +1005,7 @@ class SalesService {
       isTaxExempt: salesOrder.is_tax_exempt ?? salesOrder.isTaxExempt ?? false,
       billDate: salesOrder.order_date || salesOrder.orderDate || new Date(),
       salesOrderId: salesOrder.id || salesOrder._id,
-      orderNumber: `INV-${soRef}-${Date.now().toString(36)}`,
-      shippingAddress: salesOrder.shipping_address || salesOrder.shippingAddress,
-      shippingPhone: salesOrder.shipping_phone || salesOrder.shippingPhone,
-      shippingCity: salesOrder.shipping_city || salesOrder.shippingCity
+      orderNumber: `INV-${soRef}-${Date.now().toString(36)}`
     };
     return await this.createSale(saleData, user, { skipInventoryUpdate: true });
   }
@@ -1153,7 +1161,8 @@ class SalesService {
             total: sale.total,
             transactionDate: txnDate,
             customerId,
-            referenceNumber: refNum
+            referenceNumber: refNum,
+            notes: sale.notes
           });
           updated++;
         }

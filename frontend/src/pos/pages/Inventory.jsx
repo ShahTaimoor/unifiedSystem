@@ -23,7 +23,7 @@ import {
 import { useGetWarehousesQuery } from '../store/services/warehousesApi';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { LoadingSpinner, LoadingButton, LoadingPage } from '../components/LoadingSpinner';
-import { Button } from '@/pos/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { useResponsive, ResponsiveContainer } from '../components/ResponsiveContainer';
 import ResponsiveTable from '../components/ResponsiveTable';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
@@ -33,6 +33,7 @@ import StockAdjustmentModal from '../components/StockAdjustmentModal';
 import StockUpdateModal from '../components/StockUpdateModal';
 import { useNavigate } from 'react-router-dom';
 import { useTab } from '../contexts/TabContext';
+import { PageHeader } from '../components/layout/PageHeader';
 import { getComponentInfo } from '../utils/componentUtils';
 
 const LIMIT_OPTIONS = [50, 500, 1000, 5000];
@@ -100,7 +101,7 @@ export const Inventory = () => {
 
   // Extract warehouses array from RTK Query response
   const warehouseList = useMemo(() => {
-    return warehousesData?.warehouses || warehousesData?.data || warehousesData || [];
+    return warehousesData?.data?.warehouses || warehousesData?.warehouses || warehousesData?.data || warehousesData || [];
   }, [warehousesData]);
 
   const handleLimitChange = (e) => {
@@ -141,7 +142,7 @@ export const Inventory = () => {
         props: { tabId },
       });
     } else {
-      navigate('/warehouses');
+      navigate('/pos/warehouses');
     }
   };
 
@@ -352,44 +353,43 @@ export const Inventory = () => {
   return (
     <ResponsiveContainer className="space-y-4 xl:space-y-6 min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Inventory Management</h1>
-          <p className="hidden sm:block text-sm sm:text-base text-gray-600 mt-1">Track and manage product stock levels</p>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 overflow-x-auto">
-          {!lowStockFilter && (
+      <PageHeader
+        title="Inventory Management"
+        subtitle="Track and manage product stock levels"
+        actions={
+          <>
+            {!lowStockFilter && (
+              <Button
+                onClick={() => setShowAdjustmentModal(true)}
+                variant="default"
+                size="default"
+                className="flex items-center justify-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Stock Adjustment
+              </Button>
+            )}
             <Button
-              onClick={() => setShowAdjustmentModal(true)}
-              variant="default"
+              onClick={() => refetch()}
+              variant="secondary"
               size="default"
               className="flex items-center justify-center gap-2"
             >
-              <Plus className="h-4 w-4" />
-              Stock Adjustment
+              <RefreshCw className="h-4 w-4" />
+              Refresh
             </Button>
-          )}
-          <Button
-            onClick={() => refetch()}
-            variant="secondary"
-            size="default"
-            className="flex items-center justify-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-          <Button
-            onClick={handleOpenWarehousesTab}
-            variant="ghost"
-            size="default"
-            className="flex items-center justify-center gap-2"
-          >
-            <Warehouse className="h-4 w-4" />
-            Add Warehouse
-          </Button>
-        </div>
-      </div>
+            <Button
+              onClick={handleOpenWarehousesTab}
+              variant="ghost"
+              size="default"
+              className="flex items-center justify-center gap-2"
+            >
+              <Warehouse className="h-4 w-4" />
+              Add Warehouse
+            </Button>
+          </>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -536,7 +536,7 @@ export const Inventory = () => {
       {/* Inventory Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden min-w-0">
         <ResponsiveTable
-          data={inventoryData?.items || []}
+          data={inventoryData?.inventory ?? inventoryData?.data?.inventory ?? inventoryData?.data?.items ?? []}
           columns={columns}
           onRowClick={handleRowClick}
           onEdit={handleEdit}
@@ -549,11 +549,11 @@ export const Inventory = () => {
       </div>
 
       {/* Pagination */}
-      {inventoryData?.pagination && (
+      {(inventoryData?.pagination || inventoryData?.data?.pagination) && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="text-xs sm:text-sm text-gray-700">
             {(() => {
-              const pagination = inventoryData?.pagination;
+              const pagination = inventoryData?.pagination || inventoryData?.data?.pagination;
               const total = pagination?.total || 0;
               const start = ((currentPage - 1) * itemsPerPage) + 1;
               const end = Math.min(currentPage * itemsPerPage, total);
@@ -562,7 +562,7 @@ export const Inventory = () => {
           </div>
           <div className="flex space-x-2 w-full sm:w-auto">
             {(() => {
-              const pagination = inventoryData?.pagination;
+              const pagination = inventoryData?.pagination || inventoryData?.data?.pagination;
               return (
                 <>
                   <Button

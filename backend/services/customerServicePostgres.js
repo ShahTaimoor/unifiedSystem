@@ -131,12 +131,6 @@ class CustomerService {
 
   async createCustomer(customerData, userId, options = {}) {
     const data = { ...customerData, createdBy: userId };
-    
-    // Fallback name to businessName if missing
-    if (!data.name || data.name.trim() === '') {
-      data.name = data.businessName || data.business_name || 'Unnamed Customer';
-    }
-    
     if (options.openingBalance != null) data.openingBalance = options.openingBalance;
     const customer = await customerRepository.create(data);
 
@@ -187,12 +181,6 @@ class CustomerService {
 
   async updateCustomer(id, customerData, userId, options = {}) {
     const data = { ...customerData, updatedBy: userId };
-    
-    // Fallback name if provided as empty string
-    if (data.name === '') {
-      data.name = data.businessName || data.business_name;
-    }
-    
     if (options.openingBalance != null) data.openingBalance = options.openingBalance;
     const customer = await customerRepository.update(id, data);
     if (!customer) throw new Error('Customer not found');

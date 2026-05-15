@@ -316,9 +316,10 @@ class PurchaseInvoiceRepository {
       params.push(filters.paymentStatus);
     }
     if (filters.search) {
-      sql += ` AND (pi.invoice_number ILIKE $${paramCount++} OR pi.notes ILIKE $${paramCount++} OR s.company_name ILIKE $${paramCount++} OR (pi.supplier_info->>'companyName') ILIKE $${paramCount++})`;
+      sql += ` AND (pi.invoice_number ILIKE $${paramCount++} OR pi.notes ILIKE $${paramCount++} OR s.company_name ILIKE $${paramCount++} OR (pi.supplier_info->>'companyName') ILIKE $${paramCount})`;
       const term = `%${filters.search}%`;
       params.push(term, term, term, term);
+      paramCount += 4;
     }
     // Filter by invoice date (bill date) only so "today" shows only today's invoices
     if (filters.dateFrom) {
@@ -552,14 +553,14 @@ class PurchaseInvoiceRepository {
       pagination: getAll
         ? { current: 1, pages: 1, total, hasNext: false, hasPrev: false, mode: 'offset' }
         : {
-          current: page,
-          pages: Math.ceil(total / limit),
-          total,
-          hasNext: page < Math.ceil(total / limit),
-          hasPrev: page > 1,
-          mode: 'offset',
-          nextCursor: null
-        }
+            current: page,
+            pages: Math.ceil(total / limit),
+            total,
+            hasNext: page < Math.ceil(total / limit),
+            hasPrev: page > 1,
+            mode: 'offset',
+            nextCursor: null
+          }
     };
   }
 

@@ -256,52 +256,6 @@ router.post('/', [
   }
 });
 
-// @route   PUT /api/products/bulk
-// @desc    Bulk update products
-// @access  Private
-router.put('/bulk', [
-  auth,
-  requirePermission('update_products'),
-  body('productIds').isArray().withMessage('Product IDs array is required'),
-  body('updates').isObject().withMessage('Updates object is required')
-], async (req, res, next) => {
-  try {
-    const { productIds, updates } = req.body;
-    
-    // Call service to bulk update products
-    const result = await productService.bulkUpdateProductsAdvanced(productIds, updates);
-    
-    res.json(result);
-  } catch (error) {
-    return next(error);
-  }
-});
-
-// @route   DELETE /api/products/bulk
-// @desc    Bulk delete products
-// @access  Private
-router.delete('/bulk', [
-  auth,
-  requirePermission('delete_products'),
-  body('productIds').isArray().withMessage('Product IDs array is required')
-], async (req, res, next) => {
-  try {
-    const { productIds } = req.body;
-    
-    // Call service to bulk delete products
-    const result = await productService.bulkDeleteProducts(productIds);
-    
-    res.json(result);
-  } catch (error) {
-    // Return appropriate status code based on error type
-    const statusCode = error.message && error.message.includes('Cannot delete') ? 400 : 500;
-    if (statusCode === 400) {
-      return res.status(400).json({ message: error.message || 'Cannot delete selected products' });
-    }
-    return next(error);
-  }
-});
-
 // @route   PUT /api/products/:id
 // @desc    Update product
 // @access  Private
@@ -384,6 +338,7 @@ router.delete('/:id', [
     return next(error);
   }
 });
+
 // @route   POST /api/products/:id/restore
 // @desc    Restore soft-deleted product
 // @access  Private
@@ -431,6 +386,51 @@ router.get('/search/:query', auth, maskSensitiveData('view_product_costs', 'pric
   }
 });
 
+// @route   PUT /api/products/bulk
+// @desc    Bulk update products
+// @access  Private
+router.put('/bulk', [
+  auth,
+  requirePermission('update_products'),
+  body('productIds').isArray().withMessage('Product IDs array is required'),
+  body('updates').isObject().withMessage('Updates object is required')
+], async (req, res, next) => {
+  try {
+    const { productIds, updates } = req.body;
+    
+    // Call service to bulk update products
+    const result = await productService.bulkUpdateProductsAdvanced(productIds, updates);
+    
+    res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// @route   DELETE /api/products/bulk
+// @desc    Bulk delete products
+// @access  Private
+router.delete('/bulk', [
+  auth,
+  requirePermission('delete_products'),
+  body('productIds').isArray().withMessage('Product IDs array is required')
+], async (req, res, next) => {
+  try {
+    const { productIds } = req.body;
+    
+    // Call service to bulk delete products
+    const result = await productService.bulkDeleteProducts(productIds);
+    
+    res.json(result);
+  } catch (error) {
+    // Return appropriate status code based on error type
+    const statusCode = error.message && error.message.includes('Cannot delete') ? 400 : 500;
+    if (statusCode === 400) {
+      return res.status(400).json({ message: error.message || 'Cannot delete selected products' });
+    }
+    return next(error);
+  }
+});
 
 // @route   GET /api/products/low-stock
 // @desc    Get products with low stock

@@ -20,17 +20,10 @@ export const suppliersApi = api.injectEndpoints({
         };
       },
       keepUnusedDataFor: 60,
-      transformResponse: (response) => {
-        const result = response.data || response;
-        return {
-          suppliers: result.suppliers || result.items || [],
-          pagination: result.pagination || {}
-        };
-      },
       providesTags: (result) =>
-        result?.suppliers
+        result?.data?.suppliers
           ? [
-              ...result.suppliers.map(({ _id, id }) => ({
+              ...result.data.suppliers.map(({ _id, id }) => ({
                 type: 'Suppliers',
                 id: _id || id,
               })),
@@ -51,7 +44,6 @@ export const suppliersApi = api.injectEndpoints({
         { type: 'Suppliers', id: 'CHECK' },
         { type: 'Accounting' },
         { type: 'Reports', id: 'PARTY_BALANCE' },
-        { type: 'Reports', id: 'PURCHASE_BY_SUPPLIER' },
         { type: 'Reports', id: 'SUMMARY_CARDS' },
         { type: 'Reports', id: 'FINANCIAL_REPORT' },
       ],
@@ -72,7 +64,6 @@ export const suppliersApi = api.injectEndpoints({
         { type: 'Orders', id: 'PO_LIST' },
         { type: 'Orders', id: 'PI_LIST' },
         { type: 'Reports', id: 'PARTY_BALANCE' },
-        { type: 'Reports', id: 'PURCHASE_BY_SUPPLIER' },
         { type: 'Reports', id: 'SUMMARY_CARDS' },
         { type: 'Reports', id: 'FINANCIAL_REPORT' },
       ],
@@ -92,7 +83,6 @@ export const suppliersApi = api.injectEndpoints({
         { type: 'Orders', id: 'PO_LIST' },
         { type: 'Orders', id: 'PI_LIST' },
         { type: 'Reports', id: 'PARTY_BALANCE' },
-        { type: 'Reports', id: 'PURCHASE_BY_SUPPLIER' },
       ],
     }),
     checkEmail: builder.query({
@@ -131,7 +121,6 @@ export const suppliersApi = api.injectEndpoints({
         url: `suppliers/${id}`,
         method: 'get',
       }),
-      transformResponse: (response) => response.data?.supplier || response.supplier || response.data || response,
       providesTags: (_r, _e, id) => [{ type: 'Suppliers', id }],
     }),
     searchSuppliers: builder.query({

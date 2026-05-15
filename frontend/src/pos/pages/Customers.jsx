@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Plus,
   Search,
@@ -6,21 +6,24 @@ import {
   MoreHorizontal,
   RefreshCw,
   BarChart3,
+  FileSpreadsheet,
+  FileText,
+  Upload
 } from 'lucide-react';
 import {
   useGetCustomersQuery,
   useBulkCreateCustomersMutation,
 } from '../store/services/customersApi';
 import { LoadingPage } from '../components/LoadingSpinner';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/pos/components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import ExcelExportButton from '../components/ExcelExportButton';
 import PdfExportButton from '../components/PdfExportButton';
 import ExcelImportButton from '../components/ExcelImportButton';
@@ -30,6 +33,7 @@ import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 
 import CustomerFilters from '../components/CustomerFilters';
+import { PageHeader } from '../components/layout/PageHeader';
 import NotesPanel from '../components/NotesPanel';
 import { CustomerFormModal } from '../components/CustomerFormModal';
 import { CustomerList } from '../components/CustomerList';
@@ -39,6 +43,11 @@ const LIMIT_OPTIONS = [50, 500, 1000, 5000];
 const DEFAULT_LIMIT = 50;
 
 export const Customers = () => {
+  // Refs for responsive actions
+  const excelExportRef = useRef(null);
+  const pdfExportRef = useRef(null);
+  const excelImportRef = useRef(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_LIMIT);
@@ -80,10 +89,12 @@ export const Customers = () => {
     setCurrentPage(1);
   };
 
-  const customers = useMemo(() => data?.customers || [], [data]);
+  const customers = useMemo(() => {
+    return data?.data?.customers || data?.customers || [];
+  }, [data]);
 
   const pagination = useMemo(() => {
-    const raw = data?.pagination || {};
+    const raw = data?.pagination || data?.data?.pagination || {};
     return {
       current: raw.current ?? raw.page ?? 1,
       pages: raw.pages ?? 1,
@@ -179,12 +190,10 @@ export const Customers = () => {
 
   return (
     <div className="space-y-6 w-full ">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0 flex items-center gap-2">
-          <BarChart3 className="h-7 w-7 text-primary-600 shrink-0 hidden sm:block" aria-hidden />
-          <h1 className="text-lg sm:text-3xl font-bold text-gray-900 truncate">Customers</h1>
-        </div>
-        <div className="flex-shrink-0 flex items-center gap-2 overflow-x-auto">
+      <PageHeader
+        title="Customers"
+        icon={BarChart3}
+        actions={<>
           <Button
             onClick={() => customerOps.handleAdd()}
             variant="default"
@@ -194,9 +203,14 @@ export const Customers = () => {
             <Plus className="h-4 w-4" />
             <span className="uppercase">ADD CUSTOMER</span>
           </Button>
-          <ExcelExportButton getData={getExportData} label="Export" />
-          <PdfExportButton getData={getExportData} label="PDF" />
-          <ExcelImportButton onDataImported={handleImportData} label="Import" />
+
+          {/* Desktop Actions */}
+          <div className="hidden sm:flex items-center gap-2">
+            <ExcelExportButton ref={excelExportRef} getData={getExportData} label="Export" />
+            <PdfExportButton ref={pdfExportRef} getData={getExportData} label="PDF" />
+            <ExcelImportButton ref={excelImportRef} onDataImported={handleImportData} label="Import" />
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -205,10 +219,27 @@ export const Customers = () => {
                 className="flex items-center justify-center gap-2 border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all shadow-sm"
               >
                 <MoreHorizontal className="h-4 w-4" />
-                <span className="font-semibold">More</span>
+                <span className="font-semibold hidden sm:inline">More</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {/* Mobile-only export/import items */}
+              <div className="sm:hidden">
+                <DropdownMenuItem onClick={() => excelExportRef.current?.handleExport()}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+                  Excel Export
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => pdfExportRef.current?.handleExport()}>
+                  <FileText className="h-4 w-4 mr-2 text-red-600" />
+                  PDF Export
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => excelImportRef.current?.handleButtonClick()}>
+                  <Upload className="h-4 w-4 mr-2 text-blue-600" />
+                  Import Excel
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </div>
+
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
@@ -241,8 +272,8 @@ export const Customers = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </div>
+          </>}
+      />
 
       {/* Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">

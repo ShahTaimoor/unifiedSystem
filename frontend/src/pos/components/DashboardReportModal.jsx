@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ArrowUpDown, RefreshCw } from 'lucide-react';
 import BaseModal from './BaseModal';
-import { Button } from '@/pos/components/ui/button';
-import { Input } from '@/pos/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { formatDate, formatCurrency } from '../utils/formatters';
 import DateFilter from './DateFilter';
 

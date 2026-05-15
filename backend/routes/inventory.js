@@ -411,7 +411,7 @@ router.post('/release-stock', [
 // @route   POST /api/inventory/adjustments
 // @desc    Create a stock adjustment request
 // @access  Private (requires 'create_inventory_adjustments' permission)
-router.post(['/adjustments', '/stock-adjustments'], [
+router.post('/adjustments', [
   auth,
   requirePermission('create_inventory_adjustments'),
   sanitizeRequest,
@@ -456,7 +456,7 @@ router.post(['/adjustments', '/stock-adjustments'], [
 // @route   GET /api/inventory/adjustments
 // @desc    Get stock adjustment requests
 // @access  Private (requires 'view_inventory_adjustments' permission)
-router.get(['/adjustments', '/stock-adjustments'], [
+router.get('/adjustments', [
   auth,
   requirePermission('view_inventory_adjustments'),
   sanitizeRequest,
@@ -498,7 +498,7 @@ router.get(['/adjustments', '/stock-adjustments'], [
 // @route   PUT /api/inventory/adjustments/:adjustmentId/approve
 // @desc    Approve a stock adjustment request
 // @access  Private (requires 'approve_inventory_adjustments' permission)
-router.put(['/adjustments/:adjustmentId/approve', '/stock-adjustments/:adjustmentId/approve'], [
+router.put('/adjustments/:adjustmentId/approve', [
   auth,
   requirePermission('approve_inventory_adjustments'),
   sanitizeRequest,
@@ -523,7 +523,7 @@ router.put(['/adjustments/:adjustmentId/approve', '/stock-adjustments/:adjustmen
 // @route   PUT /api/inventory/adjustments/:adjustmentId/complete
 // @desc    Complete a stock adjustment
 // @access  Private (requires 'complete_inventory_adjustments' permission)
-router.put(['/adjustments/:adjustmentId/complete', '/stock-adjustments/:adjustmentId/complete'], [
+router.put('/adjustments/:adjustmentId/complete', [
   auth,
   requirePermission('complete_inventory_adjustments'),
   sanitizeRequest,

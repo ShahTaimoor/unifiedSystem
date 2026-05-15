@@ -6,7 +6,7 @@
 import React from 'react';
 import { X, Keyboard } from 'lucide-react';
 import { useKeyboardShortcutsContext } from '../contexts/KeyboardShortcutsContext';
-import { Button } from '@/pos/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 export const KeyboardShortcutsHints = () => {
   const { shortcuts, showHints, setShowHints, formatKeyDisplay } = useKeyboardShortcutsContext();

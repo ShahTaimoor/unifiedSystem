@@ -36,7 +36,6 @@ import {
   Camera,
   Eye,
   EyeOff,
-  Layers,
   PieChart,
   ClipboardList,
   HelpCircle,
@@ -48,13 +47,13 @@ import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../utils/componentUtils';
 import TabBar from './TabBar';
 import TabContent from './TabContent';
-import { toast } from 'sonner';
 import ErrorBoundary from './ErrorBoundary';
 import MobileNavigation from './MobileNavigation';
 import MobileBottomNav from './MobileBottomNav';
 import { useResponsive } from './ResponsiveContainer';
 import { useGetAlertSummaryQuery } from '../store/services/inventoryAlertsApi';
-import { Button } from '@/pos/components/ui/button';
+import { POLLING_INTERVALS } from '../config/polling';
+import { Button } from '@/components/ui/button';
 import PresenceHeartbeat from './PresenceHeartbeat';
 import OnlineAvatarStack from './OnlineAvatarStack';
 
@@ -115,8 +114,8 @@ export const navigation = withRouteAccess([
     permission: 'view_sales',
     children: [
       { name: 'Sales Orders', href: '/pos/sales-orders', icon: FileText, permission: 'view_sales_orders' },
-      { name: 'Sales', href: '/pos/sales', icon: CreditCard, permission: 'manage_sales' },
-      { name: 'Sales Invoices', href: '/pos/sales-invoices', icon: Search, permission: 'view_sales_invoices' },
+      { name: 'Sales', href: '/pos/sales', icon: CreditCard, permission: 'view_sales' },
+      { name: 'Sale Returns', href: '/pos/sale-returns', icon: RotateCcw, permission: 'view_sale_returns' },
     ]
   },
 
@@ -127,28 +126,18 @@ export const navigation = withRouteAccess([
     children: [
       { name: 'Purchase Orders', href: '/pos/purchase-orders', icon: FileText, permission: 'view_purchase_orders' },
       { name: 'Purchase', href: '/pos/purchase', icon: Truck, permission: 'view_purchase_orders' },
-      { name: 'Purchase Invoices', href: '/pos/purchase-invoices', icon: Search, permission: 'view_purchase_invoices' },
-      { name: 'Products by Supplier', href: '/pos/purchase-by-supplier', icon: BarChart3, permission: 'view_reports' },
-    ]
-  },
-
-  {
-    name: 'Operations',
-    icon: Layers,
-    children: [
-      { name: 'Sale Returns', href: '/pos/sale-returns', icon: RotateCcw, permission: 'view_returns' },
-      { name: 'Purchase Returns', href: '/pos/purchase-returns', icon: RotateCcw, permission: 'view_returns' },
-      { name: 'Discounts', href: '/pos/discounts', icon: Tag, permission: 'view_discounts' },
-      { name: 'CCTV Access', href: '/pos/cctv-access', icon: Camera, permission: 'view_sales_invoices', allowMultiple: true },
+      { name: 'Import Purchase', href: '/pos/import-purchase', icon: Truck, permission: 'view_import_purchase' },
+      { name: 'Current Purchase Market Prices', href: '/pos/market-prices', icon: Tag, permissionAny: ['view_market_prices', 'create_market_prices', 'edit_market_prices', 'delete_market_prices', 'manage_market_prices', 'import_market_prices'] },
+      { name: 'Purchase Returns', href: '/pos/purchase-returns', icon: RotateCcw, permission: 'view_purchase_returns' },
     ]
   },
 
   {
     name: 'Financials',
     icon: Wallet,
-    permission: 'view_reports',
+    permissionAny: ['view_cash_receiving', 'view_cash_receipts', 'view_cash_payments', 'view_bank_receipts', 'view_bank_payments', 'view_expenses'],
     children: [
-      { name: 'Cash Receiving', href: '/pos/cash-receiving', icon: Receipt, permission: 'view_accounting' },
+      { name: 'Multi Cash Receipt', href: '/pos/cash-receiving', icon: Receipt, permission: 'view_cash_receiving' },
       { name: 'Cash Receipts', href: '/pos/cash-receipts', icon: Receipt, permission: 'view_cash_receipts' },
       { name: 'Cash Payments', href: '/pos/cash-payments', icon: CreditCard, permission: 'view_cash_payments' },
       { name: 'Bank Receipts', href: '/pos/bank-receipts', icon: Building, permission: 'view_bank_receipts' },
@@ -162,16 +151,18 @@ export const navigation = withRouteAccess([
     icon: DatabaseIcon,
     children: [
       { name: 'Products', href: '/pos/products', icon: Package, permission: 'view_products' },
-      { name: 'Product Variants', href: '/pos/product-variants', icon: Tag, permission: 'view_products' },
-      { name: 'Product Transformations', href: '/pos/product-transformations', icon: ArrowRight, permission: 'update_inventory' },
-      { name: 'Categories', href: '/pos/categories', icon: Tag, permission: 'view_products' },
+      { name: 'Product Variants', href: '/pos/product-variants', icon: Tag, permission: 'view_product_variants' },
+      { name: 'Product Transformations', href: '/pos/product-transformations', icon: ArrowRight, permission: 'view_product_transformations' },
+      { name: 'Categories', href: '/pos/categories', icon: Tag, permission: 'view_product_categories' },
       { name: 'Customers', href: '/pos/customers', icon: Users, permission: 'view_customers' },
       { name: 'Customer Analytics', href: '/pos/customer-analytics', icon: BarChart3, permission: 'view_customer_analytics' },
       { name: 'Suppliers', href: '/pos/suppliers', icon: Building, permission: 'view_suppliers' },
-      { name: 'Bank & cash opening', href: '/pos/banks', icon: Building2, permission: 'manage_settings' },
+      { name: 'Bank & cash opening', href: '/pos/banks', icon: Building2, permission: 'view_banks' },
       { name: 'Investors', href: '/pos/investors', icon: TrendingUp, permission: 'view_investors' },
-      { name: 'Drop Shipping', href: '/pos/drop-shipping', icon: ArrowRight, permission: 'create_drop_shipping' },
-      { name: 'Cities', href: '/pos/cities', icon: MapPin, permission: 'manage_users' },
+      { name: 'Drop Shipping', href: '/pos/drop-shipping', icon: ArrowRight, permission: 'view_drop_shipping' },
+      { name: 'Cities', href: '/pos/cities', icon: MapPin, permission: 'view_cities' },
+      { name: 'Discounts', href: '/pos/discounts', icon: Tag, permission: 'view_discounts' },
+      { name: 'CCTV Access', href: '/pos/cctv-access', icon: Camera, permission: 'view_cctv_access', allowMultiple: true },
     ]
   },
 
@@ -182,19 +173,19 @@ export const navigation = withRouteAccess([
     children: [
       { name: 'Inventory', href: '/pos/inventory', icon: Warehouse, permission: 'view_inventory' },
       { name: 'Inventory Alerts', href: '/pos/inventory-alerts', icon: AlertTriangle, permission: 'view_inventory', allowMultiple: true },
-      { name: 'Warehouses', href: '/pos/warehouses', icon: Warehouse, permission: 'view_inventory' },
+      { name: 'Warehouses', href: '/pos/warehouses', icon: Warehouse, permission: 'view_warehouses' },
       { name: 'Stock Movements', href: '/pos/stock-movements', icon: ArrowUpDown, permission: 'view_stock_movements' },
-      { name: 'Stock Ledger', href: '/pos/stock-ledger', icon: FileText, permission: 'view_reports' },
+      { name: 'Stock Ledger', href: '/pos/stock-ledger', icon: FileText, permission: 'view_inventory_levels' },
     ]
   },
 
   {
     name: 'Accounting',
     icon: ClipboardList,
-    permission: 'view_chart_of_accounts',
+    permissionAny: ['view_chart_of_accounts', 'view_journal_vouchers', 'view_accounting_summary'],
     children: [
       { name: 'Chart of Accounts', href: '/pos/chart-of-accounts', icon: FolderTree, permission: 'view_chart_of_accounts' },
-      { name: 'Journal Vouchers', href: '/pos/journal-vouchers', icon: FileText, permission: 'view_accounting_transactions', allowMultiple: true },
+      { name: 'Journal Vouchers', href: '/pos/journal-vouchers', icon: FileText, permission: 'view_journal_vouchers', allowMultiple: true },
       { name: 'Account Ledger Summary', href: '/pos/account-ledger', icon: FileText, permission: 'view_accounting_summary', allowMultiple: true },
     ]
   },
@@ -214,23 +205,6 @@ export const navigation = withRouteAccess([
     ]
   },
 
-  {
-    name: 'HR/Admin',
-    icon: Users,
-    children: [
-      { name: 'Employees', href: '/pos/employees', icon: Users, permission: 'manage_users', allowMultiple: true },
-      { name: 'Attendance', href: '/pos/attendance', icon: Clock, permission: 'view_own_attendance' },
-    ]
-  },
-
-  {
-    name: 'System',
-    icon: Settings,
-    children: [
-      { name: 'Settings', href: '/pos/settings2', icon: Settings, permission: 'manage_users' },
-      { name: 'Help', href: '/pos/help', icon: HelpCircle, permission: null },
-    ]
-  }
 ]);
 
 /** Migrate legacy parent-only sidebar keys to per-child keys (see Settings → Sidebar). */
@@ -258,16 +232,30 @@ export function loadSidebarConfig() {
     'Customer Analytics': false,
     'Investors': false,
     'Drop Shipping': false,
+    'Import Purchase': false,
     'CCTV Access': false,
     'Warehouses': false,
     'Stock Movements': false,
     'Inventory Reports': false,
     'Backdate Report': false,
-    'Sales Performance': false
+    'Sales Performance': false,
+    'Current Purchase Market Prices': false
   };
   try {
     const parsed = JSON.parse(saved);
     const migrated = migrateSidebarConfig(parsed);
+    // Carry over old key if it exists.
+    if (migrated['Current Purchase Market Prices'] === undefined) {
+      if (migrated['Current Market Prices'] !== undefined) {
+        migrated['Current Purchase Market Prices'] = migrated['Current Market Prices'];
+      } else {
+        migrated['Current Purchase Market Prices'] = false;
+      }
+    }
+    if (migrated['Import Purchase'] === undefined) {
+      migrated['Import Purchase'] = false;
+    }
+    delete migrated['Current Market Prices'];
     if (JSON.stringify(migrated) !== JSON.stringify(parsed)) {
       localStorage.setItem('sidebarConfig', JSON.stringify(migrated));
     }
@@ -279,12 +267,14 @@ export function loadSidebarConfig() {
       'Customer Analytics': false,
       'Investors': false,
       'Drop Shipping': false,
+      'Import Purchase': false,
       'CCTV Access': false,
       'Warehouses': false,
       'Stock Movements': false,
       'Inventory Reports': false,
       'Backdate Report': false,
-      'Sales Performance': false
+      'Sales Performance': false,
+      'Current Purchase Market Prices': false
     };
   }
 }
@@ -314,17 +304,15 @@ const sidebarHeaderColors = {
   Dashboard: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
   Sales: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
   Purchase: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  Operations: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
   Financials: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
   'Master Data': { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
   Inventory: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
   Accounting: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
   Analytics: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
   'HR/Admin': { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  System: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
 };
 const getHeaderColors = (name) => sidebarHeaderColors[name] || { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' };
-const defaultOpenSections = ['Sales', 'Purchase', 'Operations'];
+const defaultOpenSections = ['Sales', 'Purchase'];
 const isItemPermitted = (item, user, hasPermission) => {
   if (!item) return false;
   if (item.href) {
@@ -427,7 +415,9 @@ const SidebarItem = ({ item, isActivePath, sidebarConfig, user, hasPermission, o
 // Inventory Alerts Badge Component - Always visible with professional design
 const InventoryAlertsBadge = ({ onNavigate }) => {
   const { data: summaryData } = useGetAlertSummaryQuery(undefined, {
-    pollingInterval: 60000, // Refetch every minute
+    pollingInterval: POLLING_INTERVALS.INVENTORY_ALERT_SUMMARY_MS,
+    skipPollingIfUnfocused: true,
+    refetchOnFocus: true,
     skip: false,
   });
 
@@ -504,7 +494,9 @@ export const MultiTabLayout = ({ children }) => {
 
   // Get alert summary for mobile bottom navbar
   const { data: summaryData } = useGetAlertSummaryQuery(undefined, {
-    pollingInterval: 60000,
+    pollingInterval: POLLING_INTERVALS.INVENTORY_ALERT_SUMMARY_MS,
+    skipPollingIfUnfocused: true,
+    refetchOnFocus: true,
     skip: false,
   });
   const summary = summaryData?.data || summaryData || {};
@@ -535,8 +527,7 @@ export const MultiTabLayout = ({ children }) => {
     const currentPath = location.pathname;
 
     // Don't redirect if we are on settings, login, or any other critical page
-    if (currentPath === '/settings' || currentPath === '/settings2' || currentPath === '/login' || currentPath === '/profile' ||
-      currentPath === '/pos/settings' || currentPath === '/pos/settings2' || currentPath === '/pos/login' || currentPath === '/pos/profile') {
+    if (currentPath === '/pos/settings' || currentPath === '/pos/settings2' || currentPath === '/pos/login' || currentPath === '/pos/profile') {
       return;
     }
 
@@ -562,7 +553,6 @@ export const MultiTabLayout = ({ children }) => {
 
         if (firstVisiblePage && firstVisiblePage.href !== currentPath) {
           navigate(firstVisiblePage.href);
-          toast.error(`"${currentNavItem.name}" is hidden. Redirecting to ${firstVisiblePage.name}.`, { id: 'nav-redirect' });
         }
       }
     }
@@ -574,12 +564,6 @@ export const MultiTabLayout = ({ children }) => {
   };
 
   const reuseNavigationPaths = new Set([
-    '/sales-invoices',
-    '/sales-invoices/',
-    '/orders',
-    '/purchase-invoices',
-    '/settings',
-    '/settings2',
     '/pos/sales-invoices',
     '/pos/sales-invoices/',
     '/pos/orders',
@@ -662,7 +646,7 @@ export const MultiTabLayout = ({ children }) => {
 
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-[60] lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-all duration-300" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gray-100 shadow-xl">
           <div className="flex h-14 items-center justify-between px-4 bg-gray-100">
             <div className="flex items-center gap-2">
@@ -725,188 +709,199 @@ export const MultiTabLayout = ({ children }) => {
         {/* Top bar — matches TabBar (bg-gray-100) */}
         {showTopBar && (
           <div className="sticky top-0 z-40 flex h-14 shrink-0 items-center bg-gray-100 px-3 sm:px-4 lg:px-6 overflow-visible">
-            {/* Mobile Menu Button */}
-            <button
-              type="button"
-              className="-m-2.5 p-2.5 text-gray-700 lg:hidden mr-2"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
+          {/* Mobile Menu Button */}
+          <button
+            type="button"
+            className="-m-2.5 p-2.5 text-gray-700 lg:hidden mr-2"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </button>
 
-            {/* Main Navigation Container */}
-            <div className="flex flex-1 items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
-              {/* Mobile Top Bar Buttons - Cash Receiving and Record Expense */}
-              <div className="flex-shrink-0 lg:hidden flex items-center gap-2">
-                {sidebarConfig['Cash Receipts'] !== false && isItemPermitted({ permission: 'view_cash_receipts' }, user, hasPermission) && (
-                  <button
-                    onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
-                    className="bg-black hover:bg-gray-800 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
-                  >
-                    <Receipt className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Receiving</span>
-                  </button>
-                )}
-                {sidebarConfig['Record Expense'] !== false && isItemPermitted({ permission: 'view_expenses' }, user, hasPermission) && (
-                  <button
-                    onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
-                    className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
-                  >
-                    <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Expense</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Action Buttons - Shrink when zoom/screen percentage increases (responsive) */}
-              <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
-                {sidebarConfig['Cash Receiving'] !== false && isItemPermitted({ permission: 'view_accounting' }, user, hasPermission) && (
-                  <button
-                    onClick={() => handleNavigationClick({ href: '/pos/cash-receiving', name: 'Cash Receiving' })}
-                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                  >
-                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                      <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                    </span>
-                    <span>Multiple Cash Receipt</span>
-                  </button>
-                )}
-                {sidebarConfig['Cash Receipts'] !== false && isItemPermitted({ permission: 'view_cash_receipts' }, user, hasPermission) && (
-                  <button
-                    onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
-                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                  >
-                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                      <ArrowDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                    </span>
-                    <span className="hidden sm:inline">Cash Receipt</span>
-                    <span className="sm:hidden">Cash R.</span>
-                  </button>
-                )}
-                {sidebarConfig['Bank Receipts'] !== false && isItemPermitted({ permission: 'view_bank_receipts' }, user, hasPermission) && (
-                  <button
-                    onClick={() => handleNavigationClick({ href: '/pos/bank-receipts', name: 'Bank Receipts' })}
-                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                  >
-                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                      <ArrowDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                    </span>
-                    <span className="hidden sm:inline">Bank Receipt</span>
-                    <span className="sm:hidden">Bank R.</span>
-                  </button>
-                )}
-                {sidebarConfig['Cash Payments'] !== false && isItemPermitted({ permission: 'view_cash_payments' }, user, hasPermission) && (
-                  <button
-                    onClick={() => handleNavigationClick({ href: '/pos/cash-payments', name: 'Cash Payments' })}
-                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                  >
-                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                      <ArrowUp className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                    </span>
-                    <span className="hidden sm:inline">Cash Payment</span>
-                    <span className="sm:hidden">Cash P.</span>
-                  </button>
-                )}
-                {sidebarConfig['Bank Payments'] !== false && isItemPermitted({ permission: 'view_bank_payments' }, user, hasPermission) && (
-                  <button
-                    onClick={() => handleNavigationClick({ href: '/pos/bank-payments', name: 'Bank Payments' })}
-                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                  >
-                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                      <ArrowUp className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                    </span>
-                    <span className="hidden sm:inline">Bank Payment</span>
-                    <span className="sm:hidden">Bank P.</span>
-                  </button>
-                )}
-                {sidebarConfig['Record Expense'] !== false && isItemPermitted({ permission: 'view_expenses' }, user, hasPermission) && (
-                  <button
-                    onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
-                    className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                  >
-                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
-                      <Wallet className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                    </span>
-                    <span className="hidden sm:inline">Record Expense</span>
-                    <span className="sm:hidden">Expense</span>
-                  </button>
-                )}
-              </div>
-
-
-              {/* User Profile Section - Right Aligned with Dropdown */}
-              <div className="relative flex items-center gap-2 sm:gap-4 ml-auto flex-shrink-0 overflow-visible" ref={userMenuRef}>
-                {/* Presence Hook */}
-                <PresenceHeartbeat />
-
-                <div className="hidden min-[1100px]:block">
-                  <OnlineAvatarStack />
-                </div>
-
-                {/* Alerts Button - Right side, left of Admin user */}
-                {sidebarConfig['Inventory Alerts'] !== false && isItemPermitted({ permission: 'view_inventory' }, user, hasPermission) && (
-                  <div className="flex-shrink-0 ml-1">
-                    <InventoryAlertsBadge onNavigate={handleNavigationClick} />
-                  </div>
-                )}
+          {/* Main Navigation Container */}
+          <div className="flex flex-1 items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
+            {/* Mobile Top Bar Buttons - Multi Cash Receipt and Record Expense */}
+            <div className="flex-shrink-0 lg:hidden flex items-center gap-2">
+              {sidebarConfig['Cash Receipts'] !== false && isItemPermitted({ permission: 'view_cash_receipts' }, user, hasPermission) && (
                 <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  title={`${user?.fullName} - ${user?.role}`}
+                  onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
+                  className="bg-black hover:bg-gray-800 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
                 >
-                  <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                  </div>
-                  <div className="hidden md:block text-left">
-                    <p className="text-sm font-semibold text-gray-900 leading-tight">{user?.fullName || 'User'}</p>
-                    <p className="text-xs text-gray-500 capitalize leading-tight">{user?.role || 'Admin'}</p>
-                  </div>
-                  <ChevronRight className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0 hidden sm:block transition-transform ${userMenuOpen ? 'rotate-90' : ''}`} />
+                  <Receipt className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>Receiving</span>
                 </button>
+              )}
+              {sidebarConfig['Record Expense'] !== false && isItemPermitted({ permission: 'view_expenses' }, user, hasPermission) && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
+                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
+                >
+                  <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>Expense</span>
+                </button>
+              )}
+            </div>
 
-                {/* Dropdown Menu */}
-                {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-md shadow-xl border border-gray-200 py-1 z-[60]">
-                    <div className="px-4 py-2 border-b border-gray-200">
-                      <p className="text-sm font-semibold text-gray-900">{user?.fullName || 'User'}</p>
-                      {user?.email ? (
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                      ) : (
-                        <p className="text-xs text-gray-500 capitalize">{user?.role || 'Admin'}</p>
-                      )}
-                    </div>
-                    <div className="py-1">
-                      {isItemPermitted({ permission: 'manage_users' }, user, hasPermission) && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleNavigationClick({ href: '/pos/settings2', name: 'Settings' });
-                            setUserMenuOpen(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
-                        >
-                          <Settings className="h-4 w-4 flex-shrink-0" />
-                          <span>Settings</span>
-                        </button>
-                      )}
+            {/* Action Buttons - Shrink when zoom/screen percentage increases (responsive) */}
+            <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
+              {sidebarConfig['Multi Cash Receipt'] !== false && isItemPermitted({ permission: 'view_accounting' }, user, hasPermission) && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/pos/cash-receiving', name: 'Multi Cash Receipt' })}
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                    <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                  </span>
+                  <span>Multi Cash Receipt</span>
+                </button>
+              )}
+              {sidebarConfig['Cash Receipts'] !== false && isItemPermitted({ permission: 'view_cash_receipts' }, user, hasPermission) && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/pos/cash-receipts', name: 'Cash Receipts' })}
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                    <ArrowDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                  </span>
+                  <span className="hidden sm:inline">Cash Receipt</span>
+                  <span className="sm:hidden">Cash R.</span>
+                </button>
+              )}
+              {sidebarConfig['Bank Receipts'] !== false && isItemPermitted({ permission: 'view_bank_receipts' }, user, hasPermission) && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/pos/bank-receipts', name: 'Bank Receipts' })}
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                    <ArrowDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                  </span>
+                  <span className="hidden sm:inline">Bank Receipt</span>
+                  <span className="sm:hidden">Bank R.</span>
+                </button>
+              )}
+              {sidebarConfig['Cash Payments'] !== false && isItemPermitted({ permission: 'view_cash_payments' }, user, hasPermission) && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/pos/cash-payments', name: 'Cash Payments' })}
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                    <ArrowUp className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                  </span>
+                  <span className="hidden sm:inline">Cash Payment</span>
+                  <span className="sm:hidden">Cash P.</span>
+                </button>
+              )}
+              {sidebarConfig['Bank Payments'] !== false && isItemPermitted({ permission: 'view_bank_payments' }, user, hasPermission) && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/pos/bank-payments', name: 'Bank Payments' })}
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                    <ArrowUp className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                  </span>
+                  <span className="hidden sm:inline">Bank Payment</span>
+                  <span className="sm:hidden">Bank P.</span>
+                </button>
+              )}
+              {sidebarConfig['Record Expense'] !== false && isItemPermitted({ permission: 'view_expenses' }, user, hasPermission) && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/pos/expenses', name: 'Record Expense' })}
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                >
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                    <Wallet className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                  </span>
+                  <span className="hidden sm:inline">Record Expense</span>
+                  <span className="sm:hidden">Expense</span>
+                </button>
+              )}
+            </div>
+
+
+            {/* User Profile Section - Right Aligned with Dropdown */}
+            <div className="relative flex items-center gap-2 sm:gap-4 ml-auto flex-shrink-0 overflow-visible" ref={userMenuRef}>
+              {/* Presence Hook */}
+              <PresenceHeartbeat />
+              
+              <div className="hidden min-[1100px]:block">
+                <OnlineAvatarStack />
+              </div>
+
+              {/* Alerts Button - Right side, left of Admin user */}
+              {sidebarConfig['Inventory Alerts'] !== false && isItemPermitted({ permission: 'view_inventory' }, user, hasPermission) && (
+                <div className="flex-shrink-0 ml-1">
+                  <InventoryAlertsBadge onNavigate={handleNavigationClick} />
+                </div>
+              )}
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                title={`${user?.fullName} - ${user?.role}`}
+              >
+                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                </div>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-semibold text-gray-900 leading-tight">{user?.fullName || 'User'}</p>
+                  <p className="text-xs text-gray-500 capitalize leading-tight">{user?.role || 'Admin'}</p>
+                </div>
+                <ChevronRight className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 flex-shrink-0 hidden sm:block transition-transform ${userMenuOpen ? 'rotate-90' : ''}`} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-md shadow-xl border border-gray-200 py-1 z-[60]">
+                  <div className="px-4 py-2 border-b border-gray-200">
+                    <p className="text-sm font-semibold text-gray-900">{user?.fullName || 'User'}</p>
+                    {user?.email ? (
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    ) : (
+                      <p className="text-xs text-gray-500 capitalize">{user?.role || 'Admin'}</p>
+                    )}
+                  </div>
+                  <div className="py-1">
+                    {isItemPermitted({ permission: 'manage_users' }, user, hasPermission) && (
                       <button
                         type="button"
                         onClick={() => {
-                          if (isLoggingOut) return;
+                          handleNavigationClick({ href: '/pos/settings2', name: 'Settings' });
                           setUserMenuOpen(false);
-                          handleLogout();
                         }}
-                        disabled={isLoggingOut}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
                       >
-                        <LogOut className="h-4 w-4 flex-shrink-0" />
-                        <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                        <Settings className="h-4 w-4 flex-shrink-0" />
+                        <span>Settings</span>
                       </button>
-                    </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleNavigationClick({ href: '/pos/help', name: 'Help' });
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                    >
+                      <HelpCircle className="h-4 w-4 flex-shrink-0" />
+                      <span>Help</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isLoggingOut) return;
+                        setUserMenuOpen(false);
+                        handleLogout();
+                      }}
+                      disabled={isLoggingOut}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4 flex-shrink-0" />
+                      <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                    </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+          </div>
           </div>
         )}
 
@@ -919,8 +914,8 @@ export const MultiTabLayout = ({ children }) => {
             <ErrorBoundary>
               {(() => {
                 const pathname = location.pathname;
-                const isFormPage = pathname === '/customers/new' ||
-                  /^\/customers\/[^/]+\/edit$/.test(pathname);
+                const isFormPage = pathname === '/pos/customers/new' ||
+                  /^\/pos\/customers\/[^/]+\/edit$/.test(pathname);
                 const showRoutes = tabs.length === 0 || isFormPage;
                 return showRoutes ? children : <TabContent />;
               })()}
