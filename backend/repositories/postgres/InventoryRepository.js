@@ -52,37 +52,18 @@ class InventoryRepository {
     return result.rows;
   }
 
-  async count(filters = {}, client = null) {
-    let sql = 'SELECT COUNT(*) as count FROM inventory WHERE deleted_at IS NULL';
-    const params = [];
-    let paramCount = 1;
-
-    if (filters.status) {
-      sql += ` AND status = $${paramCount++}`;
-      params.push(filters.status);
-    }
-    if (filters.warehouse || filters['location.warehouse']) {
-      sql += ` AND location->>'warehouse' = $${paramCount++}`;
-      params.push(filters.warehouse || filters['location.warehouse']);
-    }
-
-    const q = client ? client.query.bind(client) : query;
-    const result = await q(sql, params);
-    return parseInt(result.rows[0].count, 10) || 0;
-  }
-
   async findByProduct(productId, options = {}) {
     return this.findOne({ product: productId, productId }, null, options.includeDeleted);
   }
 
   async findByProductIds(productIds, options = {}) {
     if (!productIds || productIds.length === 0) return [];
-    
+
     // Filter to only include valid UUIDs to avoid Postgres casting errors (manual items are not in inventory)
-    const validUuids = productIds.filter(id => 
+    const validUuids = productIds.filter(id =>
       typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
     );
-    
+
     if (validUuids.length === 0) return [];
 
     const result = await query(
@@ -173,7 +154,7 @@ class InventoryRepository {
       `UPDATE inventory SET ${updates.join(', ')} WHERE id = $${paramCount} AND deleted_at IS NULL RETURNING *`,
       params
     );
-    
+
     const updated = result.rows[0] || null;
     if (updated && (data.currentStock !== undefined || data.reservedStock !== undefined)) {
       try {

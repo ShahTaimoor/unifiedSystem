@@ -101,19 +101,12 @@ class InvestorService {
       throw new Error('Investor with this email already exists');
     }
 
-    try {
-      const newInvestor = await InvestorRepository.create({
-        ...investorData,
-        createdBy: userId
-      });
+    const newInvestor = await InvestorRepository.create({
+      ...investorData,
+      createdBy: userId
+    });
 
-      return toApiInvestor(newInvestor);
-    } catch (error) {
-      if (error.code === '23505' && error.constraint === 'investors_email_key') {
-        throw new Error('Investor with this email already exists');
-      }
-      throw error;
-    }
+    return toApiInvestor(newInvestor);
   }
 
   /**
@@ -137,19 +130,12 @@ class InvestorService {
       }
     }
 
-    try {
-      const updatedInvestor = await InvestorRepository.updateById(id, {
-        ...updateData,
-        updatedBy: userId
-      });
+    const updatedInvestor = await InvestorRepository.updateById(id, {
+      ...updateData,
+      updatedBy: userId
+    });
 
-      return toApiInvestor(updatedInvestor);
-    } catch (error) {
-      if (error.code === '23505' && error.constraint === 'investors_email_key') {
-        throw new Error('Investor with this email already exists');
-      }
-      throw error;
-    }
+    return toApiInvestor(updatedInvestor);
   }
 
   /**
@@ -167,8 +153,8 @@ class InvestorService {
     const paymentMethod = options.paymentMethod === 'bank' ? 'bank' : 'cash';
     const debitAccountCode = String(
       options.debitAccountCode ||
-        process.env.INVESTOR_PAYOUT_DEBIT_ACCOUNT ||
-        '3100'
+      process.env.INVESTOR_PAYOUT_DEBIT_ACCOUNT ||
+      '3100'
     ).toUpperCase();
 
     return await transaction(async (client) => {
