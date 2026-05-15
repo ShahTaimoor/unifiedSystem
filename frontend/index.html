@@ -11,7 +11,16 @@
     <meta name="apple-mobile-web-app-title" content="Gultraders" />
     <title>Unified POS & Storefront</title>
   </head>
-  <body>
+  <body class="storefront-app">
+    <script>
+      (function() {
+        const path = window.location.pathname;
+        if (path.startsWith('/pos')) {
+          document.body.classList.remove('storefront-app');
+          document.body.classList.add('pos-app');
+        }
+      })();
+    </script>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

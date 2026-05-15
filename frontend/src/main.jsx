@@ -42,7 +42,7 @@ if (typeof window !== 'undefined') {
   patchObj(window.ReactDOM);
 }
 
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 // Storefront entry component
 import StorefrontApp from './storefront/App';
@@ -51,27 +51,31 @@ import POSApp from './pos/App';
 
 import './index.css';
 
+const AppContent = () => {
+  const { pathname } = useLocation();
+  
+  React.useEffect(() => {
+    if (pathname.startsWith('/pos')) {
+      document.body.classList.add('pos-app');
+      document.body.classList.remove('storefront-app');
+    } else {
+      document.body.classList.add('storefront-app');
+      document.body.classList.remove('pos-app');
+    }
+  }, [pathname]);
+
+  return (
+    <Routes>
+      <Route path="/pos/*" element={<POSApp />} />
+      <Route path="/*" element={<StorefrontApp />} />
+    </Routes>
+  );
+};
+
 const Main = () => {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route 
-          path="/pos/*" 
-          element={
-            <div className="pos-app">
-              <POSApp />
-            </div>
-          } 
-        />
-        <Route 
-          path="/*" 
-          element={
-            <div className="storefront-app">
-              <StorefrontApp />
-            </div>
-          } 
-        />
-      </Routes>
+      <AppContent />
     </BrowserRouter>
   );
 };

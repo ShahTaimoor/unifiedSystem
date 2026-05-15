@@ -89,66 +89,66 @@ const BaseModal = ({
 
   const wrapperClasses =
     variant === 'centered'
-      ? 'flex items-center justify-center p-4 min-h-[100dvh]'
-      : 'overflow-y-auto h-full w-full p-4';
+      ? 'flex items-center justify-center min-h-full p-4'
+      : 'flex items-start justify-center min-h-full p-4 pt-10 sm:pt-16';
 
   const modalContent = (
-    <div
-      className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 overflow-auto"
-      style={{ zIndex }}
-      onClick={handleBackdropClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={title ? 'modal-title' : undefined}
-    >
-      <div className={`${wrapperClasses} flex ${variant === 'centered' ? 'items-center justify-center min-h-full' : 'pt-20'} relative w-full min-w-0`}>
-        <div
-          className={`relative mx-auto ${widthClasses} ${maxWidthClasses[maxWidth]} shadow-lg rounded-md bg-white flex flex-col ${
-            variant === 'scrollable' ? 'max-h-[90vh]' : ''
-          } ${className}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {(title || subtitle || headerExtra || showCloseButton) && (
-            <div
-              className={`flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0 ${headerClassName}`}
-            >
-              <div className="flex-1 min-w-0">
-                {title && (
-                  <h3 id="modal-title" className="text-lg font-medium text-gray-900">
-                    {title}
-                  </h3>
-                )}
-                {subtitle && <div className="text-sm text-gray-600 mt-1">{subtitle}</div>}
-              </div>
-              {headerExtra && <div className="flex items-center gap-3 mx-4">{headerExtra}</div>}
-              {showCloseButton && (
-                <Button
-                  type="button"
-                  onClick={onClose}
-                  variant="ghost"
-                  size="icon"
-                  className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
-                  aria-label="Close"
-                >
-                  <X className="h-6 w-6" />
-                </Button>
-              )}
-            </div>
-          )}
-
+    <div className="pos-app">
+      <div
+        className="fixed inset-0 bg-gray-600/50 z-[100] overflow-y-auto"
+        style={{ zIndex }}
+        onClick={handleBackdropClick}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+      >
+        <div className={`${wrapperClasses} relative w-full`}>
           <div
-            className={`${
-              variant === 'scrollable' ? 'min-h-0 flex-1 overflow-y-auto' : 'flex-none overflow-visible'
-            } ${contentClassName}`}
+            className={`relative w-full ${maxWidthClasses[maxWidth]} shadow-xl rounded-xl bg-white flex flex-col ${variant === 'scrollable' ? 'max-h-[calc(100vh-6rem)]' : ''
+              } ${className}`}
+            onClick={(e) => e.stopPropagation()}
           >
-            {children}
-          </div>
+            {(title || subtitle || headerExtra || showCloseButton) && (
+              <div
+                className={`flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0 ${headerClassName}`}
+              >
+                <div className="flex-1 min-w-0">
+                  {title && (
+                    <h3 id="modal-title" className="text-lg font-medium text-gray-900">
+                      {title}
+                    </h3>
+                  )}
+                  {subtitle && <div className="text-sm text-gray-600 mt-1">{subtitle}</div>}
+                </div>
+                {headerExtra && <div className="flex items-center gap-3 mx-4">{headerExtra}</div>}
+                {showCloseButton && (
+                  <Button
+                    type="button"
+                    onClick={onClose}
+                    variant="ghost"
+                    size="icon"
+                    className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
+                    aria-label="Close"
+                  >
+                    <X className="h-6 w-6" />
+                  </Button>
+                )}
+              </div>
+            )}
 
-          {footer && (
-            <div className={`flex-shrink-0 p-5 border-t border-gray-200 bg-gray-50 rounded-b-md ${footerClassName}`}>
-              {footer}
+            <div
+              className={`${variant === 'scrollable' ? 'min-h-0 flex-1 overflow-y-auto' : 'flex-none overflow-visible'
+                } ${contentClassName}`}
+            >
+              {children}
             </div>
-          )}
+
+            {footer && (
+              <div className={`flex-shrink-0 p-5 border-t border-gray-200 bg-gray-50 rounded-b-md ${footerClassName}`}>
+                {footer}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

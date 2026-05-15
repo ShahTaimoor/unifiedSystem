@@ -205,7 +205,7 @@ export const BalanceSheetStatement = () => {
               <button
                 onClick={handleSearch}
                 disabled={isButtonLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gray-900 border border-gray-900 rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-primary border border-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isButtonLoading ? (
                   <LoadingSpinner className="h-5 w-5 border-2 border-white/30 border-t-white" />
@@ -276,7 +276,7 @@ export const BalanceSheetStatement = () => {
                 <p className="text-xl font-bold text-gray-900">{formatCurrency(totalEquity)}</p>
                 <p className="mt-1 text-xs text-gray-500">Owner Capital + Retained</p>
               </div>
-              <div className={`rounded-lg p-5 border shadow-sm ${isBalanced ? 'bg-gray-900 border-gray-900' : 'bg-white border-red-200'}`}>
+              <div className={`rounded-lg p-5 border shadow-sm ${isBalanced ? 'bg-primary border-primary' : 'bg-white border-red-200'}`}>
                 <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isBalanced ? 'text-gray-400' : 'text-red-600'}`}>Balance Check</p>
                 <p className={`text-xl font-bold ${isBalanced ? 'text-white' : 'text-red-600'}`}>
                   {formatCurrency(balanceDifference)}
@@ -344,7 +344,7 @@ export const BalanceSheetStatement = () => {
                     </tbody>
                   </table>
                 </div>
-                <div className="bg-gray-900 px-4 py-5 sm:px-6 flex items-center justify-between border-t border-gray-800">
+                <div className="bg-primary px-4 py-5 sm:px-6 flex items-center justify-between border-t border-primary/20">
                   <span className="text-white font-bold uppercase text-xs tracking-wider">Total Assets</span>
                   <span className="text-right font-bold text-xl text-green-400 tabular-nums">{formatCurrency(totalAssets)}</span>
                 </div>
@@ -395,7 +395,7 @@ export const BalanceSheetStatement = () => {
                     </tbody>
                   </table>
                 </div>
-                <div className="bg-gray-900 px-4 py-5 sm:px-6 flex items-center justify-between border-t border-gray-800">
+                <div className="bg-primary px-4 py-5 sm:px-6 flex items-center justify-between border-t border-primary/20">
                   <span className="text-white font-bold uppercase text-xs tracking-wider">Total Liabilities + Equity</span>
                   <span className="text-right font-bold text-xl text-green-400 tabular-nums">
                     {formatCurrency(totalLiabilities + totalEquity)}

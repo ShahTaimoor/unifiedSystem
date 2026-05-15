@@ -33,6 +33,8 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      '@pos': path.resolve(__dirname, './src/pos'),
+      '@sf': path.resolve(__dirname, './src/storefront'),
       '@/components': path.resolve(__dirname, './src/pos/components'),
       '@/hooks': path.resolve(__dirname, './src/pos/hooks'),
       '@/utils': path.resolve(__dirname, './src/pos/utils'),

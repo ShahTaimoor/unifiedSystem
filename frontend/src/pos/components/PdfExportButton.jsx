@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -263,7 +264,11 @@ const PdfExportButton = React.forwardRef(({ getData, label = "PDF", className = 
         <button
             onClick={handleExport}
             disabled={isExporting}
-            className={`flex items-center ${label ? 'gap-2 px-3 sm:px-4' : 'px-1'} py-2 bg-white border border-gray-200 hover:border-red-500 hover:bg-red-50 text-gray-700 hover:text-red-700 rounded-lg transition-all duration-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group ${className}`}
+            className={cn(
+                "flex items-center py-2 bg-white border border-gray-200 text-gray-700 rounded-lg transition-all duration-200 shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group",
+                label ? 'gap-2 px-3 sm:px-4' : 'px-1',
+                className
+            )}
             title={label || "Export PDF"}
         >
             {isExporting ? (

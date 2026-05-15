@@ -49,18 +49,18 @@ const PrintModal = ({
   const footer = (
     <div className="flex justify-end gap-3 no-print">
       {getPdfData && (
-        <PdfExportButton 
-          getData={getPdfData} 
-          label="Download PDF" 
+        <PdfExportButton
+          getData={getPdfData}
+          label="Download PDF"
           className="bg-red-600 text-white hover:bg-red-700 hover:text-white border-red-600"
         />
       )}
       <PrintTrigger
         onPrint={handlePrint}
         disabled={!hasData}
-        variant="default"
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 bg-black text-white  border-black"
       />
+
       <Button type="button" onClick={onClose} variant="secondary">
         Close
       </Button>

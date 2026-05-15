@@ -186,17 +186,17 @@ function DatabaseIcon(props) {
 
 // Sidebar header colors per section - Black and White theme
 const sidebarHeaderColors = {
-  Dashboard: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  Sales: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  Purchase: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  Financials: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  'Master Data': { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  Inventory: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  Accounting: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  Analytics: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
-  System: { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' },
+  Dashboard: { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
+  Sales: { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
+  Purchase: { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
+  Financials: { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
+  'Master Data': { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
+  Inventory: { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
+  Accounting: { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
+  Analytics: { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
+  System: { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' },
 };
-const getHeaderColors = (name) => sidebarHeaderColors[name] || { bg: 'bg-black', text: 'text-white', hover: 'hover:bg-gray-800' };
+const getHeaderColors = (name) => sidebarHeaderColors[name] || { bg: 'bg-primary', text: 'text-primary-foreground', hover: 'hover:bg-primary/90' };
 const defaultOpenSections = ['Sales', 'Purchase'];
 const SidebarItem = ({ item, isActivePath, sidebarConfig, level = 0, categoryTree, categoriesLoading, refetchCategories, user }) => {
   const hasChildren = item.children && item.children.length > 0;
@@ -286,8 +286,8 @@ const SidebarItem = ({ item, isActivePath, sidebarConfig, level = 0, categoryTre
           <Link
             to={item.href}
             className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${isActive
-                ? (level === 0 ? 'bg-black text-white' : 'bg-primary-50 text-primary-700')
-                : (level === 0 ? 'text-gray-600 hover:bg-black hover:text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900')
+                ? (level === 0 ? 'bg-primary text-primary-foreground' : 'bg-primary-50 text-primary-700')
+                : (level === 0 ? 'text-gray-600 hover:bg-primary/10 hover:text-primary-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900')
               }`}
           >
             {item.icon && <item.icon className={`mr-3 h-4 w-4 ${isActive ? (level === 0 ? 'text-white' : 'text-primary-500') : 'text-gray-400 group-hover:text-gray-500'}`} />}
@@ -509,9 +509,9 @@ export const Layout = ({ children }) => {
               {sidebarConfig['Cash Receipts'] !== false && (
                 <button
                   onClick={() => navigate('/pos/cash-receipts')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
                 >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
                     <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
                   </span>
                   <span className="hidden md:inline">Cash Receipts</span>
@@ -520,9 +520,9 @@ export const Layout = ({ children }) => {
               {sidebarConfig['Bank Receipts'] !== false && (
                 <button
                   onClick={() => navigate('/pos/bank-receipts')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
                 >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
                     <Building className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
                   </span>
                   <span className="hidden md:inline">Bank Receipts</span>
@@ -531,9 +531,9 @@ export const Layout = ({ children }) => {
               {sidebarConfig['Cash Payments'] !== false && (
                 <button
                   onClick={() => navigate('/pos/cash-payments')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
                 >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
                     <CreditCard className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
                   </span>
                   <span className="hidden md:inline">Cash Payments</span>
@@ -542,9 +542,9 @@ export const Layout = ({ children }) => {
               {sidebarConfig['Bank Payments'] !== false && (
                 <button
                   onClick={() => navigate('/pos/bank-payments')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
                 >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
                     <ArrowUpDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
                   </span>
                   <span className="hidden md:inline">Bank Payments</span>
@@ -553,9 +553,9 @@ export const Layout = ({ children }) => {
               {sidebarConfig['Record Expense'] !== false && (
                 <button
                   onClick={() => navigate('/pos/expenses')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-black hover:text-white px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
                 >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-gray-800 flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
                     <Wallet className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
                   </span>
                   <span className="hidden md:inline">Record Expense</span>

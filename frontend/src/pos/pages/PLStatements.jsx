@@ -150,7 +150,7 @@ export const PLStatements = () => {
               <button
                 onClick={handleSearch}
                 disabled={isButtonLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gray-900 border border-gray-900 rounded-md hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-primary border border-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isButtonLoading ? (
                   <LoadingSpinner className="h-5 w-5 border-2 border-white/30 border-t-white" />
@@ -219,7 +219,7 @@ export const PLStatements = () => {
                 <p className={`text-xl font-bold ${operatingIncome >= 0 ? 'text-gray-900' : 'text-red-600'}`}>{formatCurrency(operatingIncome)}</p>
                 <p className="mt-1 text-xs text-gray-500">{operatingMargin?.toFixed(1) || 0}% margin</p>
               </div>
-              <div className={`rounded-lg p-5 border shadow-sm ${netIncome >= 0 ? 'bg-gray-900 border-gray-900' : 'bg-white border-red-200'}`}>
+              <div className={`rounded-lg p-5 border shadow-sm ${netIncome >= 0 ? 'bg-primary border-primary' : 'bg-white border-red-200'}`}>
                 <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${netIncome >= 0 ? 'text-gray-400' : 'text-red-600'}`}>Net Profit / Loss</p>
                 <p className={`text-xl font-bold ${netIncome >= 0 ? 'text-white' : 'text-red-600'}`}>{formatCurrency(netIncome)}</p>
                 <p className={`mt-1 text-xs ${netIncome >= 0 ? 'text-gray-400' : 'text-red-600'}`}>{netMargin?.toFixed(1) || 0}% net margin</p>
@@ -295,7 +295,7 @@ export const PLStatements = () => {
                       </tr>
                     </>
                   )}
-                  <tr className="bg-gray-900">
+                  <tr className="bg-primary">
                     <td className="px-4 py-4 sm:px-6 text-white font-bold uppercase text-xs tracking-wider">Net Profit / Loss for the Period</td>
                     <td className={`px-4 py-4 sm:px-6 text-right font-bold text-lg ${netIncome >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(netIncome)}</td>
                   </tr>
@@ -334,7 +334,7 @@ export const PLStatements = () => {
                 </li>
               </ul>
             </div>
-            <div className="bg-gray-900 border border-gray-900 rounded-lg p-5 shadow-sm">
+            <div className="bg-primary border border-primary rounded-lg p-5 shadow-sm">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Analysis Summary</h3>
               <div className="space-y-4">
                 <div>

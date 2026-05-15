@@ -29,10 +29,9 @@ const PaginationControls = ({
   const endItem = Math.min(page * limit, totalItems ?? page * limit);
 
   const pageButtonClass = (isActive) =>
-    `relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-      isActive
-        ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+    `relative inline-flex items-center px-4 py-2 border text-sm font-medium ${isActive
+      ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
     }`;
 
   const navButtonClass =

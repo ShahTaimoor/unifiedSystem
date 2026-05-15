@@ -2011,7 +2011,7 @@ export const Settings2 = () => {
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-6 border-b border-gray-100 bg-gray-50/50">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2.5 bg-gray-900 text-white rounded-xl shadow-sm">
+                  <div className="p-2.5 bg-primary text-white rounded-xl shadow-sm">
                     <Users className="h-5 w-5" />
                   </div>
                   <div>
@@ -2036,7 +2036,7 @@ export const Settings2 = () => {
                         }, 300);
                       }
                     }}
-                    className="bg-gray-900 text-white hover:bg-gray-800 shadow-md transition-all rounded-lg px-5 py-2.5 h-auto text-sm font-medium"
+                    className="bg-primary text-white hover:bg-primary/90 shadow-md transition-all rounded-lg px-5 py-2.5 h-auto text-sm font-medium"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add New User
@@ -2104,7 +2104,7 @@ export const Settings2 = () => {
 
                             <div className="flex flex-wrap items-center gap-2 mt-2.5">
                               {/* Role Badge */}
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold shadow-sm border ${systemUser.role === 'admin' ? 'bg-gray-900 text-white border-gray-900' :
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold shadow-sm border ${systemUser.role === 'admin' ? 'bg-primary text-white border-primary' :
                                 systemUser.role === 'manager' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                   systemUser.role === 'cashier' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                     'bg-gray-50 text-gray-700 border-gray-200'
@@ -2130,7 +2130,7 @@ export const Settings2 = () => {
                         </div>
 
                         <div className="mt-5 sm:mt-0 flex flex-nowrap items-center gap-2.5 flex-shrink-0 opacity-100 lg:opacity-60 group-hover:opacity-100 transition-opacity">
-                          <Button variant="outline" size="sm" onClick={() => openActivityModal(systemUser)} title="Activity Logs" className="h-10 w-10 p-0 rounded-xl hover:bg-gray-900 hover:text-white hover:border-gray-900 shadow-sm">
+                          <Button variant="outline" size="sm" onClick={() => openActivityModal(systemUser)} title="Activity Logs" className="h-10 w-10 p-0 rounded-xl hover:bg-primary hover:text-white hover:border-primary shadow-sm">
                             <BarChart3 className="h-4 w-4" />
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => openPasswordModal(systemUser)} title="Reset Password" className="h-10 w-10 p-0 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 shadow-sm border-gray-200">
@@ -2163,7 +2163,7 @@ export const Settings2 = () => {
                           setTimeout(() => form.querySelector('input[type="text"]')?.focus(), 300);
                         }
                       }}
-                      className="bg-gray-900 text-white hover:bg-gray-800 rounded-xl px-6 py-2.5 h-auto font-semibold shadow-md"
+                      className="bg-primary text-white hover:bg-primary/90 rounded-xl px-6 py-2.5 h-auto font-semibold shadow-md"
                     >
                       <Plus className="h-5 w-5 mr-2" />
                       Create First User
@@ -2175,7 +2175,7 @@ export const Settings2 = () => {
 
             {/* Add/Edit User Form */}
             <div id="add-edit-user-form" className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden relative mt-8">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-900"></div>
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-primary"></div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 md:p-8 border-b border-gray-100 bg-white">
                 <div className="flex items-center space-x-4">
@@ -2195,7 +2195,7 @@ export const Settings2 = () => {
                   <Button
                     onClick={resetNewUserForm}
                     variant="outline"
-                    className="mt-4 sm:mt-0 font-semibold px-4 shadow-sm rounded-lg hover:border-gray-900"
+                    className="mt-4 sm:mt-0 font-semibold px-4 shadow-sm rounded-lg hover:border-primary"
                   >
                     <X className="h-4 w-4 mr-2" />
                     Cancel Edit
@@ -2480,7 +2480,7 @@ export const Settings2 = () => {
 
                     {editingUser && editingUser._id === user?._id ? (
                       <div className="p-10 text-center bg-gray-50 border-t border-dashed border-gray-200">
-                        <div className="inline-flex bg-gray-900 text-white rounded-full p-4 mb-4 shadow-md">
+                        <div className="inline-flex bg-primary text-white rounded-full p-4 mb-4 shadow-md">
                           <Lock className="w-8 h-8" />
                         </div>
                         <h4 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">Security Lock Engaged</h4>
@@ -2508,7 +2508,7 @@ export const Settings2 = () => {
                                   key={groupKey}
                                   onClick={() => setActivePermissionGroup(groupKey)}
                                   className={`flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm font-semibold transition-all ${isActive
-                                    ? 'bg-gray-900 text-white shadow-sm'
+                                    ? 'bg-primary text-white shadow-sm'
                                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                     }`}
                                 >
@@ -2542,7 +2542,7 @@ export const Settings2 = () => {
                             return (
                               <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                                 {/* Group header */}
-                                <div className="flex items-center justify-between px-4 py-3 bg-gray-900 text-white">
+                                <div className="flex items-center justify-between px-4 py-3 bg-primary text-white">
                                   <div className="flex items-center gap-2">
                                     {group.icon && <group.icon className="h-5 w-5" />}
                                     <h4 className="font-bold tracking-tight text-sm md:text-base">{group.name}</h4>
@@ -2616,8 +2616,8 @@ export const Settings2 = () => {
                                             type="button"
                                             onClick={() => togglePageAllPermissions(page, !allChecked)}
                                             className={`text-[11px] font-bold px-3 py-1.5 rounded-md border transition-all ${allChecked
-                                              ? 'bg-gray-900 text-white border-gray-900 hover:bg-gray-800'
-                                              : 'bg-white text-gray-700 border-gray-200 hover:border-gray-900 hover:text-gray-900'
+                                              ? 'bg-primary text-white border-primary hover:bg-primary/90'
+                                              : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:text-gray-900'
                                               }`}
                                           >
                                             {allChecked ? 'Revoke' : 'Grant All'}
@@ -2670,7 +2670,7 @@ export const Settings2 = () => {
                       type="submit"
                       isLoading={editingUser ? isUpdatingUser : isCreatingUser}
                       variant="default"
-                      className="bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg rounded-xl px-10 py-3.5 h-auto text-base font-bold transition-all"
+                      className="bg-primary text-white hover:bg-primary/90 hover:shadow-lg rounded-xl px-10 py-3.5 h-auto text-base font-bold transition-all"
                     >
                       {editingUser ? (
                         <>
@@ -2712,7 +2712,7 @@ export const Settings2 = () => {
                     Print Layout
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'standard' ? 'border-gray-900 bg-gray-900/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                    <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'standard' ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`}>
                       <input
                         type="radio"
                         name="invoiceLayout"
@@ -2727,7 +2727,7 @@ export const Settings2 = () => {
                       </div>
                     </label>
 
-                    <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'layout2' ? 'border-gray-900 bg-gray-900/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                    <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'layout2' ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`}>
                       <input
                         type="radio"
                         name="invoiceLayout"
@@ -2741,7 +2741,7 @@ export const Settings2 = () => {
                       </div>
                     </label>
 
-                    <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'compact' ? 'border-gray-900 bg-gray-900/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                    <label className={`flex items-center p-3.5 border rounded-xl cursor-pointer transition-all ${printSettings.invoiceLayout === 'compact' ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`}>
                       <input
                         type="radio"
                         name="invoiceLayout"
@@ -3743,7 +3743,7 @@ export const Settings2 = () => {
                   <div className="flex justify-end pt-2">
                     <LoadingButton
                       onClick={handleSaveBottomNav}
-                      className="bg-gray-900 text-white hover:bg-gray-800 rounded-xl px-10 h-11 font-bold shadow-md"
+                      className="bg-primary text-white hover:bg-primary/90 rounded-xl px-10 h-11 font-bold shadow-md"
                     >
                       <Save className="h-4.5 w-4.5 mr-2" />
                       Save Configuration

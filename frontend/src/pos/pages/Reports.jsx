@@ -1130,14 +1130,14 @@ export const Reports = () => {
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                   <button
                     onClick={() => setPartyType('customer')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${partyType === 'customer' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${partyType === 'customer' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
                       }`}
                   >
                     Customers
                   </button>
                   <button
                     onClick={() => setPartyType('supplier')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${partyType === 'supplier' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${partyType === 'supplier' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
                       }`}
                   >
                     Suppliers
@@ -1288,7 +1288,7 @@ export const Reports = () => {
                     <button
                       key={group.id}
                       onClick={() => setSalesGroupBy(group.id)}
-                      className={`px-4 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all ${salesGroupBy === group.id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-all ${salesGroupBy === group.id ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
                         }`}
                     >
                       {group.label}
@@ -1781,7 +1781,7 @@ export const Reports = () => {
                         {financialReportData?.summary && (
                           <>
                             {financialType === 'trial-balance' && (
-                              <tr className="bg-gray-900 border-t-2 border-gray-800">
+                              <tr className="bg-primary border-t-2 border-gray-800">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">Grand Total</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white text-right"></td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
@@ -1793,7 +1793,7 @@ export const Reports = () => {
                               </tr>
                             )}
                             {financialType === 'pl-statement' && (
-                              <tr className="bg-gray-900 border-t-2 border-gray-800">
+                              <tr className="bg-primary border-t-2 border-gray-800">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">Net Profit / Loss</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white text-right"></td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
@@ -1803,14 +1803,14 @@ export const Reports = () => {
                             )}
                             {financialType === 'balance-sheet' && (
                               <>
-                                <tr className="bg-gray-900 border-t-2 border-gray-800">
+                                <tr className="bg-primary border-t-2 border-gray-800">
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">Total Assets</td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white text-right"></td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
                                     {(financialReportData.summary.totalAssets || 0).toLocaleString()}
                                   </td>
                                 </tr>
-                                <tr className="bg-gray-900 border-t border-gray-800">
+                                <tr className="bg-primary border-t border-gray-800">
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white uppercase">Total Liabilities + Equity</td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-white text-right"></td>
                                   <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-green-400 text-right">
@@ -2082,7 +2082,7 @@ const TabButton = ({ active, onClick, label }) => (
   <button
     onClick={onClick}
     className={`px-6 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-all ${active
-        ? 'border-blue-600 text-blue-600 bg-blue-50/30'
+        ? 'border-primary text-primary bg-primary-50/30'
         : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
       }`}
   >

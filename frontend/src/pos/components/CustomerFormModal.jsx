@@ -10,7 +10,7 @@ import {
 import { useGetAccountsQuery } from '../store/services/chartOfAccountsApi';
 import { useGetActiveCitiesQuery, useCreateCityMutation } from '../store/services/citiesApi';
 import { LoadingInline } from './LoadingSpinner';
-import toast from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { getContactPersonVisible } from '../utils/fieldVisibility';
 
 const defaultCustomerValues = {
@@ -238,14 +238,14 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
   const handleCitySubmit = (e) => {
     e.preventDefault();
     if (!cityFormData.name.trim()) {
-      toast.error('City name is required');
+      showErrorToast('City name is required');
       return;
     }
     const newCityName = cityFormData.name.trim();
     createCity(cityFormData)
       .unwrap()
       .then(() => {
-        toast.success('City created successfully');
+        showSuccessToast('City created successfully');
         setIsCityModalOpen(false);
         setCityFormData({
           name: '',
@@ -263,7 +263,7 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
         });
       })
       .catch((error) => {
-        toast.error(error?.data?.message || 'Failed to create city');
+        showErrorToast(error?.data?.message || 'Failed to create city');
       });
   };
 
@@ -330,11 +330,11 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
 
   const onSubmit = (data) => {
     if (emailExists) {
-      toast.error('Please use a different email address');
+      showErrorToast('Please use a different email address');
       return;
     }
     if (businessNameExists) {
-      toast.error('Please use a different business name');
+      showErrorToast('Please use a different business name');
       return;
     }
     onSave(data);

@@ -128,7 +128,7 @@ export default function MarketPrices() {
           <button
             type="submit"
             disabled={manualLoading}
-            className="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-60"
+            className="rounded bg-primary px-3 py-2 text-sm text-white disabled:opacity-60"
           >
             {manualLoading ? 'Saving...' : 'Update Price'}
           </button>
@@ -183,7 +183,7 @@ export default function MarketPrices() {
             type="button"
             onClick={handleApply}
             disabled={applyLoading}
-            className="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-60"
+            className="rounded bg-primary px-3 py-2 text-sm text-white disabled:opacity-60"
           >
             {applyLoading ? 'Applying...' : 'Apply Import'}
           </button>

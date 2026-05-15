@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
+import './index.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorProvider } from './contexts/ErrorContext';
 import { TabProvider } from './contexts/TabContext';
@@ -14,6 +15,7 @@ import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { store } from './store/store';
 import SyncManager from './services/SyncManager';
+import { Toaster } from './components/ui/sonner';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -171,6 +173,18 @@ function App() {
                   }
                 />
               </Routes>
+              <Toaster
+                position="top-right"
+                richColors
+                closeButton
+                toastOptions={{
+                  duration: 4000,
+                  classNames: {
+                    success: 'border-green-500/50',
+                    error: 'border-red-500/50',
+                  },
+                }}
+              />
             </TabProvider>
           </ErrorProvider>
         </ErrorBoundary>
