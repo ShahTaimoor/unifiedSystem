@@ -206,12 +206,17 @@ class SalesOrderRepository {
         so_number, customer_id, items, subtotal, tax, is_tax_exempt, total, status, confirmation_status,
         order_type, order_date, expected_delivery, confirmed_date, last_invoiced_date, notes, terms,
         conversions, ledger_posted, auto_posted, posted_at, ledger_reference_id, invoice_id, auto_converted,
+        shipping_address, shipping_phone, shipping_city,
         created_by, last_modified_by, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         (data.soNumber || data.so_number || '').toUpperCase(),
-        data.customer || data.customerId,
+        (() => {
+          const c = data.customer || data.customerId;
+          if (typeof c === 'object' && c !== null) return c.id || c._id || null;
+          return c || null;
+        })(),
         JSON.stringify(items),
         computedSubtotal,
         tax,
@@ -233,6 +238,9 @@ class SalesOrderRepository {
         data.ledgerReferenceId || data.ledger_reference_id || null,
         data.invoiceId || data.invoice_id || null,
         data.autoConverted === true,
+        data.shipping_address || data.shippingAddress || null,
+        data.shipping_phone || data.shippingPhone || null,
+        data.shipping_city || data.shippingCity || null,
         data.createdBy || data.created_by,
         data.lastModifiedBy || data.last_modified_by || null
       ]
@@ -257,12 +265,19 @@ class SalesOrderRepository {
       confirmedDate: 'confirmed_date', lastInvoicedDate: 'last_invoiced_date', notes: 'notes', terms: 'terms',
       conversions: 'conversions', ledgerPosted: 'ledger_posted', autoPosted: 'auto_posted',
       postedAt: 'posted_at', ledgerReferenceId: 'ledger_reference_id', invoiceId: 'invoice_id',
+      shippingAddress: 'shipping_address', shipping_address: 'shipping_address',
+      shippingPhone: 'shipping_phone', shipping_phone: 'shipping_phone',
+      shippingCity: 'shipping_city', shipping_city: 'shipping_city',
       lastModifiedBy: 'last_modified_by'
     };
     for (const [k, col] of Object.entries(map)) {
       if (data[k] !== undefined) {
+        let v = data[k];
+        if (col === 'customer_id' && typeof v === 'object' && v !== null) {
+          v = v.id || v._id || null;
+        }
         updates.push(`${col} = $${paramCount++}`);
-        params.push((typeof data[k] === 'object' || Array.isArray(data[k])) ? JSON.stringify(data[k]) : data[k]);
+        params.push((typeof v === 'object' || Array.isArray(v)) ? JSON.stringify(v) : v);
       }
     }
     if (updates.length === 0) return this.findById(id);

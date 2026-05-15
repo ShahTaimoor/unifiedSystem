@@ -505,20 +505,12 @@ const ProductList = () => {
     isInitialized,
   ]);
 
-  // Fetch categories on mount and ensure they stay loaded
+  // Fetch categories on mount
   useEffect(() => {
-    dispatch(AllCategory(""));
-  }, [dispatch]);
-
-  // Ensure categories are always available (refetch if empty)
-  useEffect(() => {
-    if (
-      (!categories || categories.length === 0) &&
-      categoriesStatus !== "loading"
-    ) {
+    if (categoriesStatus === 'idle') {
       dispatch(AllCategory(""));
     }
-  }, [dispatch, categories, categoriesStatus]);
+  }, [dispatch, categoriesStatus]);
 
   // Initialize quantities from cart items when cart loads
   useEffect(() => {

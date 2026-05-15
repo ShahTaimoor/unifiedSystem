@@ -150,7 +150,7 @@ class ProductServicePostgres {
     } else if (queryParams.search) {
       filters.search = queryParams.search;
     }
-    if (queryParams.category) filters.categoryId = queryParams.category;
+    if (queryParams.category && queryParams.category !== 'all') filters.categoryId = queryParams.category;
     else if (queryParams.categories) {
       try {
         const arr = JSON.parse(queryParams.categories);

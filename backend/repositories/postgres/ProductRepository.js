@@ -252,6 +252,9 @@ class ProductRepository {
     for (const [k, col] of Object.entries(map)) {
       if (data[k] !== undefined) {
         let v = data[k];
+        if (col === 'category_id' && typeof v === 'object' && v !== null) {
+          v = v.id || v._id || null;
+        }
         if ((col === 'category_id' || col === 'hs_code') && (v === '' || v == null)) {
           v = null;
         }

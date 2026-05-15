@@ -167,6 +167,7 @@ const adaptCategory = (category) => {
     id: category.id || category._id || null,
     slug: category.slug || slugify(category.name || ""),
     active: category.active !== undefined ? category.active : category.isActive,
+    position: category.position !== undefined ? category.position : category.sortOrder,
     image:
       category.image ||
       category.imageUrl ||
