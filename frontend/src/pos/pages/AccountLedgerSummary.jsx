@@ -139,7 +139,7 @@ const AccountLedgerSummary = () => {
 
   // Fetch suppliers for dropdown
   const { data: suppliersData, isLoading: suppliersLoading } = useGetSuppliersQuery(
-    { search: debouncedSupplierQuery, limit: 100 },
+    { search: supplierSearchQuery, limit: 100 },
     { refetchOnMountOrArgChange: true }
   );
 
