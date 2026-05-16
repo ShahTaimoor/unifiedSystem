@@ -1250,6 +1250,7 @@ class AccountingService {
     const customerId = cashReceipt.customer_id || cashReceipt.customerId;
     const supplierId = cashReceipt.supplier_id || cashReceipt.supplierId;
     const amount = parseFloat(cashReceipt.amount);
+    const description = cashReceipt.particular || cashReceipt.notes || `Cash Receipt: ${cashReceipt.receipt_number || cashReceipt.receiptNumber || cashReceipt.id}`;
 
     // Validation: Must have either customer or supplier, not both
     if (customerId && supplierId) {
@@ -1269,7 +1270,7 @@ class AccountingService {
       accountCode: '1000', // Cash Account
       debitAmount: amount,
       creditAmount: 0,
-      description: `Cash Receipt: ${cashReceipt.receipt_number || cashReceipt.receiptNumber || cashReceipt.id}`
+      description: description
     };
 
     // Entry 2: Credit AR (1100) for customer OR AP (2000) for supplier
@@ -1277,9 +1278,7 @@ class AccountingService {
       accountCode: creditAccount,
       debitAmount: 0,
       creditAmount: amount,
-      description: customerId
-        ? `Payment from Customer: ${cashReceipt.receipt_number || cashReceipt.receiptNumber}`
-        : `Refund/Advance from Supplier: ${cashReceipt.receipt_number || cashReceipt.receiptNumber}`
+      description: description
     };
 
     return await this.createTransaction(entry1, entry2, {
@@ -1315,6 +1314,7 @@ class AccountingService {
     const customerId = bankReceipt.customer_id || bankReceipt.customerId;
     const supplierId = bankReceipt.supplier_id || bankReceipt.supplierId;
     const amount = parseFloat(bankReceipt.amount);
+    const description = bankReceipt.particular || bankReceipt.notes || `Bank Receipt: ${bankReceipt.receipt_number || bankReceipt.receiptNumber || bankReceipt.id}`;
 
     // Validation: Must have either customer or supplier, not both
     if (customerId && supplierId) {
@@ -1334,7 +1334,7 @@ class AccountingService {
       accountCode: '1001', // Bank Account
       debitAmount: amount,
       creditAmount: 0,
-      description: `Bank Receipt: ${bankReceipt.receipt_number || bankReceipt.receiptNumber || bankReceipt.id}`
+      description: description
     };
 
     // Entry 2: Credit AR (1100) for customer OR AP (2000) for supplier
@@ -1342,9 +1342,7 @@ class AccountingService {
       accountCode: creditAccount,
       debitAmount: 0,
       creditAmount: amount,
-      description: customerId
-        ? `Payment from Customer: ${bankReceipt.receipt_number || bankReceipt.receiptNumber}`
-        : `Refund/Advance from Supplier: ${bankReceipt.receipt_number || bankReceipt.receiptNumber}`
+      description: description
     };
 
     return await this.createTransaction(entry1, entry2, {
@@ -1384,18 +1382,19 @@ class AccountingService {
     const expenseAccountCode = accountResult.rows[0].account_code;
     const amount = parseFloat(cashPayment.amount);
     const refNum = cashPayment.payment_number || cashPayment.paymentNumber || cashPayment.id;
+    const finalDescription = cashPayment.particular || cashPayment.notes || `Cash Payment: ${refNum}`;
 
     const entry1 = {
       accountCode: expenseAccountCode,
       debitAmount: amount,
       creditAmount: 0,
-      description: `Expense: ${cashPayment.particular || refNum}`
+      description: finalDescription
     };
     const entry2 = {
       accountCode: '1000',
       debitAmount: 0,
       creditAmount: amount,
-      description: `Cash Payment: ${refNum}`
+      description: finalDescription
     };
 
     return await this.createTransaction(entry1, entry2, {
@@ -1433,19 +1432,20 @@ class AccountingService {
     const supplierId = bankPayment.supplier_id || bankPayment.supplierId;
     const customerId = bankPayment.customer_id || bankPayment.customerId;
     const refNum = bankPayment.payment_number || bankPayment.paymentNumber || bankPayment.id;
+    const finalDescription = bankPayment.particular || bankPayment.notes || `Bank Payment: ${refNum}`;
 
     const entry1 = {
       accountCode: expenseAccountCode,
       debitAmount: amount,
       creditAmount: 0,
-      description: `Expense: ${bankPayment.particular || refNum}`
+      description: finalDescription
     };
 
     const entry2 = {
       accountCode: '1001', // Bank Account
       debitAmount: 0,
       creditAmount: amount,
-      description: `Bank Payment: ${refNum}`
+      description: finalDescription
     };
 
     return await this.createTransaction(entry1, entry2, {
@@ -1565,6 +1565,7 @@ class AccountingService {
     const supplierId = cashPayment.supplier_id || cashPayment.supplierId;
     const customerId = cashPayment.customer_id || cashPayment.customerId;
     const amount = parseFloat(cashPayment.amount);
+    const description = cashPayment.particular || cashPayment.notes || `Cash Payment: ${cashPayment.payment_number || cashPayment.paymentNumber || cashPayment.id}`;
 
     // Validation: Must have either customer or supplier, not both (expense-only handled by recordExpenseCashPayment)
     if (customerId && supplierId) {
@@ -1584,9 +1585,7 @@ class AccountingService {
       accountCode: debitAccount,
       debitAmount: amount,
       creditAmount: 0,
-      description: supplierId
-        ? `Payment to Supplier: ${cashPayment.payment_number || cashPayment.paymentNumber}`
-        : `Refund to Customer: ${cashPayment.payment_number || cashPayment.paymentNumber}`
+      description: description
     };
 
     // Entry 2: Credit Cash Account (1000)
@@ -1594,7 +1593,7 @@ class AccountingService {
       accountCode: '1000', // Cash Account
       debitAmount: 0,
       creditAmount: amount,
-      description: `Cash Payment: ${cashPayment.payment_number || cashPayment.paymentNumber || cashPayment.id}`
+      description: description
     };
 
     return await this.createTransaction(entry1, entry2, {
@@ -1630,6 +1629,7 @@ class AccountingService {
     const supplierId = bankPayment.supplier_id || bankPayment.supplierId;
     const customerId = bankPayment.customer_id || bankPayment.customerId;
     const amount = parseFloat(bankPayment.amount);
+    const description = bankPayment.particular || bankPayment.notes || `Bank Payment: ${bankPayment.payment_number || bankPayment.paymentNumber || bankPayment.id}`;
 
     // Validation: Must have either customer or supplier, not both
     if (customerId && supplierId) {
@@ -1649,9 +1649,7 @@ class AccountingService {
       accountCode: debitAccount,
       debitAmount: amount,
       creditAmount: 0,
-      description: supplierId
-        ? `Payment to Supplier: ${bankPayment.payment_number || bankPayment.paymentNumber}`
-        : `Refund to Customer: ${bankPayment.payment_number || bankPayment.paymentNumber}`
+      description: description
     };
 
     // Entry 2: Credit Bank Account (1001)
@@ -1659,7 +1657,7 @@ class AccountingService {
       accountCode: '1001', // Bank Account
       debitAmount: 0,
       creditAmount: amount,
-      description: `Bank Payment: ${bankPayment.payment_number || bankPayment.paymentNumber || bankPayment.id}`
+      description: description
     };
 
     return await this.createTransaction(entry1, entry2, {

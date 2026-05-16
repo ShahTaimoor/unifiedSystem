@@ -520,14 +520,14 @@ class AccountLedgerService {
             const closingBalance = openingBalance + totalDebitsWithPayments - totalCredits;
 
             // Build particular/description from ledger entries
-            // SINGLE SOURCE OF TRUTH: Use reference_number from ledger entries
+            // SINGLE SOURCE OF TRUTH: Use description from ledger entries, fallback to reference_number
             const particulars = [];
             periodLedgerEntries.forEach(entry => {
-              if (entry.referenceNumber) {
+              if (entry.description) {
+                particulars.push(entry.description);
+              } else if (entry.referenceNumber) {
                 const refType = entry.referenceType || 'Transaction';
                 particulars.push(`${refType}: ${entry.referenceNumber}`);
-              } else if (entry.description) {
-                particulars.push(entry.description);
               }
             });
 
@@ -703,14 +703,14 @@ class AccountLedgerService {
             const closingBalance = openingBalance + totalCredits - totalDebits;
 
             // Build particular/description from ledger entries
-            // SINGLE SOURCE OF TRUTH: Use reference_number from ledger entries
+            // SINGLE SOURCE OF TRUTH: Use description from ledger entries, fallback to reference_number
             const particulars = [];
             periodLedgerEntries.forEach(entry => {
-              if (entry.referenceNumber) {
+              if (entry.description) {
+                particulars.push(entry.description);
+              } else if (entry.referenceNumber) {
                 const refType = entry.referenceType || 'Transaction';
                 particulars.push(`${refType}: ${entry.referenceNumber}`);
-              } else if (entry.description) {
-                particulars.push(entry.description);
               }
             });
 
