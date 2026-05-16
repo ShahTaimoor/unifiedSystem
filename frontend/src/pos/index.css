@@ -674,6 +674,7 @@
   /* Custom Toast Styles for POS */
   [data-sonner-toaster] {
     z-index: 99999 !important;
+    pointer-events: none !important;
   }
 
   @media (min-width: 1024px) {
@@ -690,6 +691,7 @@
   }
 
   [data-sonner-toast] {
+    pointer-events: auto !important;
     border-radius: 0.5rem;
     font-weight: 500;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
