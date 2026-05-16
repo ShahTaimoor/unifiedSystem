@@ -43,6 +43,7 @@ import { loadSidebarConfig } from './MultiTabLayout';
 import { useResponsive } from './ResponsiveContainer';
 import { WhatsAppFloat } from './WhatsAppFloat';
 import { useGetCategoryTreeQuery } from '../store/services/categoriesApi';
+import { useFetchCompanyQuery } from '../store/services/companyApi';
 import { adaptApiCategoryTreeForSidebar } from '../utils/categoryTree';
 import { PERMISSIONS, hasPermission } from '../config/rbacConfig';
 
@@ -415,6 +416,11 @@ export const Layout = ({ children }) => {
     { skip: !user }
   );
 
+  const { data: companyResponse } = useFetchCompanyQuery();
+  const company = companyResponse?.data || {};
+  const companyName = company.companyName || 'ZARYAB IMPEX';
+  const companyInitial = companyName.charAt(0).toUpperCase();
+
   const categoryTree = React.useMemo(() => {
     const roots = Array.isArray(categoryTreeRaw) ? categoryTreeRaw : [];
     return adaptApiCategoryTreeForSidebar(roots);
@@ -437,8 +443,8 @@ export const Layout = ({ children }) => {
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gray-100 shadow-xl z-[1001]">
           <div className="flex h-16 items-center justify-between px-4 bg-gray-100">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white">Z</div>
-              <h1 className="text-lg font-bold tracking-tight text-gray-900">ZARYAB IMPEX</h1>
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white">{companyInitial}</div>
+              <h1 className="text-lg font-bold tracking-tight text-gray-900">{companyName}</h1>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -469,8 +475,8 @@ export const Layout = ({ children }) => {
         <div className="flex flex-col flex-grow bg-gray-100">
           <div className="flex h-16 items-center px-6 bg-gray-100">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white">Z</div>
-              <h1 className="text-lg font-bold tracking-tight text-gray-900">ZARYAB IMPEX</h1>
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white">{companyInitial}</div>
+              <h1 className="text-lg font-bold tracking-tight text-gray-900">{companyName}</h1>
             </div>
           </div>
           <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto max-h-[calc(100dvh-4rem)] scrollbar-thin scrollbar-thumb-gray-200">
