@@ -8,9 +8,11 @@ import {
   SECTION_TITLES,
 } from '@/storefront/constants/footer'
 import { getCurrentYear, renderSocialIcon } from '@/storefront/utils/footerHelpers'
+import { useCompany } from '../../contexts/CompanyContext'
 
 const Footer = () => {
   const [hoveredIcon, setHoveredIcon] = useState(null)
+  const { company } = useCompany()
 
   const currentYear = useMemo(() => getCurrentYear(), [])
 
@@ -46,7 +48,7 @@ const Footer = () => {
             <div className="lg:col-span-1 space-y-6">
               <div className="space-y-4">
                 <h2 className="text-3xl font-bold text-red-500">
-                  {COMPANY_INFO.name}
+                  {company.companyName}
                 </h2>
                 <p className="text-slate-300 text-sm font-medium tracking-wide uppercase">
                   {COMPANY_INFO.tagline}
@@ -85,7 +87,7 @@ const Footer = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-slate-300 text-sm">{CONTACT_INFO.phone}</p>
+                    <p className="text-slate-300 text-sm">{company.phone}</p>
                   </div>
                 </div>
 
@@ -96,8 +98,7 @@ const Footer = () => {
                     </svg>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-slate-300 text-sm">+92 3114000096</p>
-                    <p className="text-slate-300 text-sm">+92 3129991116</p>
+                    <p className="text-slate-300 text-sm">{company.phone}</p>
                   </div>
                 </div>
               </div>
@@ -116,11 +117,8 @@ const Footer = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-slate-300 text-sm leading-relaxed">
-                      Grand Dil jan Plaza, Block A,<br />
-                      Shop #7,8,9, Opposite Fahad CNG Pump,<br />
-                      Near Toyota Khyber, Ring Road<br />
-                      Peshawar, KPK, Pakistan
+                    <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                      {company.address}
                     </p>
                   </div>
                 </div>
@@ -147,7 +145,7 @@ const Footer = () => {
               <p className="text-slate-400 text-sm">
                 © {currentYear}{' '}
                 <span className="text-red-500 font-semibold">
-                  GULTRADERS
+                  {company.companyName}
                 </span>
                 . {COPYRIGHT_TEXT}
               </p>

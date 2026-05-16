@@ -6,6 +6,7 @@ const categoryService = require("../services/categoryServicePostgres");
 const salesOrderRepository = require("../repositories/postgres/SalesOrderRepository");
 const customerRepository = require("../repositories/postgres/CustomerRepository");
 const productRepository = require("../repositories/postgres/ProductRepository");
+const SettingsRepository = require("../repositories/postgres/SettingsRepository");
 const { query: pgQuery } = require("../config/postgres");
 
 const router = express.Router();
@@ -225,6 +226,25 @@ const handleValidation = (req, res, next) => {
   }
   next();
 };
+
+// @route GET /api/storefront-company
+// @desc  Get public company information for e-commerce storefront
+router.get("/storefront-company", async (req, res, next) => {
+  try {
+    const settings = await SettingsRepository.getSettings();
+    const company = settings || {};
+    res.json({
+      data: {
+        companyName: company.companyName || company.company_name || "GULTRADERS",
+        phone: company.contactNumber || company.contact_number || company.phone || "+92 311 4000096",
+        address: company.address || "Grand Dil jan Plaza, Block A, Shop #7,8,9, Opposite Fahad CNG Pump, Near Toyota Khyber, Ring Road Peshawar, KPK, Pakistan",
+        logo: company.logo || "/logo.jpeg"
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // @route GET /api/get-products
 // @desc  Product listing for e-commerce

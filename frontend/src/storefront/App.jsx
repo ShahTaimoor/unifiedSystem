@@ -10,6 +10,7 @@ import { Suspense, lazy } from 'react';
 import { AuthDrawerProvider } from './contexts/AuthDrawerContext';
 import AuthDrawer from './components/custom/AuthDrawer';
 import { Toaster } from './components/ui/sonner';
+import { CompanyProvider } from './contexts/CompanyContext';
 
 // Lazy-load layouts and custom components
 const RootLayout = lazy(() => import('./components/layouts/RootLayout'));
@@ -28,6 +29,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const App = () => {
   return (
     <Provider store={store}>
+      <CompanyProvider>
       <AuthDrawerProvider>
         <AuthInitializer />
         <TokenExpirationHandler />
@@ -48,6 +50,7 @@ const App = () => {
         </ErrorBoundary>
         <Toaster />
       </AuthDrawerProvider>
+      </CompanyProvider>
     </Provider>
   );
 };

@@ -23,6 +23,7 @@ import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
 import SearchSuggestions from "./SearchSuggestions";
+import { useCompany } from "../../contexts/CompanyContext";
 
 // Cart Product Component
 const CartProduct = ({ product, quantity }) => {
@@ -108,6 +109,7 @@ const Navbar = () => {
   
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   const { openDrawer } = useAuthDrawer();
+  const { company } = useCompany();
 
   // Calculate total quantity
   const totalQuantity = useMemo(() => 
@@ -149,7 +151,7 @@ const Navbar = () => {
                 />
               </div>
               <div className="hidden sm:block">
-                <div className="text-base font-semibold text-gray-900">GULTRADERS</div>
+                <div className="text-base font-semibold text-gray-900">{company.companyName}</div>
                 <div className="text-xs text-gray-500">Wholesale Dealers</div>
               </div>
             </Link>
@@ -170,7 +172,7 @@ const Navbar = () => {
             <div className="hidden md:flex items-center">
               <div className="text-sm text-gray-700">
                 <span className="font-medium text-gray-600">Contact:</span>
-                <span className="ml-2 text-primary font-semibold text-base">+92 311 4000096</span>
+                <span className="ml-2 text-primary font-semibold text-base">{company.phone}</span>
               </div>
             </div>
 
