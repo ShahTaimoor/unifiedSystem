@@ -6,7 +6,6 @@ import {
   emptyCart,
   removeFromCart,
 } from "@/storefront/redux/slices/cart/cartSlice";
-import { updateProfile } from "@/storefront/redux/slices/auth/authSlice";
 import { Button } from "@/storefront/components/ui/button";
 import OneLoader from "@/storefront/components/ui/OneLoader";
 import {
@@ -130,7 +129,6 @@ const Checkout = ({ closeModal }) => {
       setLoading(true);
       setError(null);
 
-      await dispatch(updateProfile({ address, phone, city })).unwrap();
 
       const orderData = {
         products: productArray,
@@ -150,7 +148,9 @@ const Checkout = ({ closeModal }) => {
       }
     } catch (err) {
       const errorMessage =
-        err?.message || err?.response?.data?.message || "Something went wrong!";
+        typeof err === "string"
+          ? err
+          : err?.message || err?.response?.data?.message || "Something went wrong!";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

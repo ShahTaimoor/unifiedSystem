@@ -631,7 +631,7 @@ router.post(
   [
     body("products").isArray({ min: 1 }).withMessage("Products are required"),
     body("products.*.id")
-      .isUUID(4)
+      .isUUID()
       .withMessage("Each product must include a valid ID"),
     body("products.*.quantity")
       .isInt({ min: 1 })
@@ -716,6 +716,7 @@ router.post(
       }
 
       const createdOrder = await salesOrderRepository.create({
+        soNumber: salesOrderRepository.generateSONumber(),
         customer: customerId,
         items: orderItems,
         subtotal: parseFloat(subtotal.toFixed(2)),
