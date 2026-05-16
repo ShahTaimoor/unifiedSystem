@@ -3,7 +3,7 @@ import axiosInstance from "../auth/axiosInstance";
 // all category
 const getAllCat = async (search = "") => {
   try {
-    const axiosResponse = await axiosInstance.get("/get-categories", {
+    const axiosResponse = await axiosInstance.get("/all-category", {
       params: { search },
       headers: {
         "Content-Type": "application/json",

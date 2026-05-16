@@ -7,7 +7,10 @@ import {
   Trash2, 
   Tag,
   Folder,
-  FolderOpen
+  FolderOpen,
+  Image as ImageIcon,
+  X,
+  UploadCloud
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage } from '../components/LoadingSpinner';
@@ -23,6 +26,7 @@ import {
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
+  useUploadCategoryImageMutation,
 } from '../store/services/categoriesApi';
 import PaginationControls from '../components/PaginationControls';
 import { flattenCategoryApiTree } from '../utils/categoryTree';
@@ -37,7 +41,8 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
     description: '',
     parentCategory: '',
     sortOrder: 0,
-    isActive: true
+    isActive: true,
+    image: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -49,7 +54,8 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
         description: category.description || '',
         parentCategory: category.parentCategory?._id || '',
         sortOrder: category.sortOrder || 0,
-        isActive: category.isActive !== undefined ? category.isActive : true
+        isActive: category.isActive !== undefined ? category.isActive : true,
+        image: category.image || ''
       });
     } else {
       setFormData({
@@ -57,11 +63,44 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
         description: '',
         parentCategory: '',
         sortOrder: 0,
-        isActive: true
+        isActive: true,
+        image: ''
       });
     }
     setErrors({});
   }, [category, isOpen]);
+
+  const [uploadImage, { isLoading: isUploading }] = useUploadCategoryImageMutation();
+  const fileInputRef = React.useRef(null);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await uploadImage(formData).unwrap();
+      if (response.success) {
+        setFormData(prev => ({ ...prev, image: response.data.urls.optimized }));
+        toast.success('Image uploaded successfully');
+      }
+    } catch (error) {
+      toast.error(error?.data?.message || 'Failed to upload image');
+    }
+  };
+
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, image: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -115,6 +154,69 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
                 />
               </div>
               {errors.name && <p className="text-[10px] font-bold text-red-500 px-1 uppercase tracking-tighter">{errors.name}</p>}
+            </div>
+
+            {/* Image Upload Field */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase px-1">Category Image</label>
+              <div className="flex items-center space-x-4">
+                <div 
+                  className={`relative w-24 h-24 rounded-2xl border-2 border-dashed flex items-center justify-center transition-all overflow-hidden bg-gray-50 group ${
+                    formData.image ? 'border-primary-500' : 'border-gray-200 hover:border-primary-400'
+                  }`}
+                >
+                  {formData.image ? (
+                    <>
+                      <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button 
+                          type="button" 
+                          onClick={removeImage}
+                          className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center justify-center space-y-1 text-gray-400 group-hover:text-primary-500"
+                      disabled={isUploading}
+                    >
+                      {isUploading ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <>
+                          <UploadCloud className="h-6 w-6" />
+                          <span className="text-[10px] font-bold uppercase">Upload</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-xs font-bold text-gray-700">Category Visualization</p>
+                  <p className="text-[10px] text-gray-400 font-medium">Recommended: Square image, max 10MB.</p>
+                  {!formData.image && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-[10px] font-bold text-primary-600 hover:text-primary-700 uppercase"
+                    >
+                      Select Image
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  className="hidden"
+                  accept="image/*"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -442,8 +544,9 @@ export const Categories = () => {
           {/* Table Header */}
           <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
             <div className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <div className="col-span-1">Image</div>
               <div className="col-span-1">Type</div>
-              <div className="col-span-4">Category Name</div>
+              <div className="col-span-3">Category Name</div>
               <div className="col-span-3">Description</div>
               <div className="col-span-1">Parent</div>
               <div className="col-span-1">Sort</div>
@@ -457,6 +560,17 @@ export const Categories = () => {
             {categories.map((category) => (
               <div key={category._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                 <div className="grid grid-cols-12 gap-4 items-center">
+                  {/* Image */}
+                  <div className="col-span-1">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
+                      {category.image ? (
+                        <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="h-5 w-5 text-gray-300" />
+                      )}
+                    </div>
+                  </div>
+
                   {/* Type Icon */}
                   <div className="col-span-1">
                     {category.parentCategory ? (
@@ -467,7 +581,7 @@ export const Categories = () => {
                   </div>
                   
                   {/* Category Name */}
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <div className="flex items-center space-x-2">
                       <h3 className="text-sm font-medium text-gray-900 truncate">{category.name}</h3>
                     </div>

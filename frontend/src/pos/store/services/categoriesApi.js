@@ -68,6 +68,13 @@ export const categoriesApi = api.injectEndpoints({
         { type: 'Reports', id: 'SUMMARY_CARDS' },
       ],
     }),
+    uploadCategoryImage: builder.mutation({
+      query: (formData) => ({
+        url: 'images/upload',
+        method: 'post',
+        data: formData,
+      }),
+    }),
   }),
   overrideExisting: false,
 });
@@ -78,5 +85,6 @@ export const {
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
+  useUploadCategoryImageMutation,
 } = categoriesApi;
 

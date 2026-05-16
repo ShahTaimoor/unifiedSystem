@@ -20,7 +20,7 @@ const initialState = {
   token: storedToken,
   status: 'idle',
   error: null,
-  isAuthenticated: !!storedToken,
+  isAuthenticated: !!storedToken || !!storedUser,
 };
 
 const authSlice = createSlice({
