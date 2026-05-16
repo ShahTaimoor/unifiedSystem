@@ -53,24 +53,29 @@ export function CompanySettingsForm() {
   const orderSettings = settings.orderSettings || {};
   const savedLogo = company.logo || '';
 
+  const cleanVal = (val) => {
+    if (val === null || val === undefined || String(val).trim().toLowerCase() === 'null') return '';
+    return String(val).trim();
+  };
+
   useEffect(() => {
     setForm((f) => ({
       ...f,
-      companyName: company.companyName ?? settings.companyName ?? '',
-      phone: company.phone ?? settings.contactNumber ?? '',
-      address: company.address ?? settings.address ?? '',
-      email: settings.email ?? '',
-      taxRegistrationNumber: settings.taxId ?? '',
+      companyName: cleanVal(company.companyName ?? settings.companyName),
+      phone: cleanVal(company.phone ?? settings.contactNumber),
+      address: cleanVal(company.address ?? settings.address),
+      email: cleanVal(settings.email),
+      taxRegistrationNumber: cleanVal(settings.taxId),
       taxEnabled: settings.taxEnabled === true,
       defaultTaxRate:
         settings.defaultTaxRate != null && settings.defaultTaxRate !== ''
           ? Number(settings.defaultTaxRate)
           : 0,
-      whatsappNumber: settings.whatsappNumber ?? '',
-      facebookLink: settings.facebookLink ?? '',
-      instagramLink: settings.instagramLink ?? '',
-      tiktokLink: settings.tiktokLink ?? '',
-      mapLocation: settings.mapLocation ?? '',
+      whatsappNumber: cleanVal(settings.whatsappNumber),
+      facebookLink: cleanVal(settings.facebookLink),
+      instagramLink: cleanVal(settings.instagramLink),
+      tiktokLink: cleanVal(settings.tiktokLink),
+      mapLocation: cleanVal(settings.mapLocation),
       showWhatsapp: settings.showWhatsapp !== false,
       showFacebook: settings.showFacebook !== false,
       showInstagram: settings.showInstagram !== false,
@@ -490,7 +495,7 @@ export function CompanySettingsForm() {
               className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
-          {form.mapLocation && form.showMapLocation && (
+          {form.mapLocation && form.mapLocation.startsWith('http') && form.showMapLocation && (
             <div className="mt-2 rounded-lg border border-gray-200 overflow-hidden h-40">
               <iframe
                 src={form.mapLocation}

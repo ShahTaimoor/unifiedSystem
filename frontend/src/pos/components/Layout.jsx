@@ -286,8 +286,8 @@ const SidebarItem = ({ item, isActivePath, sidebarConfig, level = 0, categoryTre
           <Link
             to={item.href}
             className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${isActive
-                ? (level === 0 ? 'bg-primary text-primary-foreground' : 'bg-primary-50 text-primary-700')
-                : (level === 0 ? 'text-gray-600 hover:bg-primary/10 hover:text-primary-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900')
+              ? (level === 0 ? 'bg-primary text-primary-foreground' : 'bg-primary-50 text-primary-700')
+              : (level === 0 ? 'text-gray-600 hover:bg-primary/10 hover:text-primary-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900')
               }`}
           >
             {item.icon && <item.icon className={`mr-3 h-4 w-4 ${isActive ? (level === 0 ? 'text-white' : 'text-primary-500') : 'text-gray-400 group-hover:text-gray-500'}`} />}
@@ -495,100 +495,100 @@ export const Layout = ({ children }) => {
         {/* Top bar */}
         {showTopBar && (
           <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 bg-gray-100 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-          <button
-            type="button"
-            className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
+            <button
+              type="button"
+              className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
 
-          <div className="flex flex-1 gap-x-2 sm:gap-x-4 self-stretch lg:gap-x-6 min-w-0 overflow-hidden">
-            {/* Action Buttons - Shrink when zoom/screen percentage increases (responsive) */}
-            <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
-              {sidebarConfig['Cash Receipts'] !== false && (
-                <button
-                  onClick={() => navigate('/pos/cash-receipts')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
-                    <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden md:inline">Cash Receipts</span>
-                </button>
-              )}
-              {sidebarConfig['Bank Receipts'] !== false && (
-                <button
-                  onClick={() => navigate('/pos/bank-receipts')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
-                    <Building className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden md:inline">Bank Receipts</span>
-                </button>
-              )}
-              {sidebarConfig['Cash Payments'] !== false && (
-                <button
-                  onClick={() => navigate('/pos/cash-payments')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
-                    <CreditCard className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden md:inline">Cash Payments</span>
-                </button>
-              )}
-              {sidebarConfig['Bank Payments'] !== false && (
-                <button
-                  onClick={() => navigate('/pos/bank-payments')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
-                    <ArrowUpDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden md:inline">Bank Payments</span>
-                </button>
-              )}
-              {sidebarConfig['Record Expense'] !== false && (
-                <button
-                  onClick={() => navigate('/pos/expenses')}
-                  className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
-                >
-                  <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
-                    <Wallet className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
-                  </span>
-                  <span className="hidden md:inline">Record Expense</span>
-                </button>
-              )}
-            </div>
-            <div className="flex flex-1 min-w-0"></div>
-            <div className="flex items-center gap-x-4 lg:gap-x-6">
-              {/* User menu */}
-              <div className="flex items-center gap-x-2">
+            <div className="flex flex-1 gap-x-2 sm:gap-x-4 self-stretch lg:gap-x-6 min-w-0 overflow-hidden">
+              {/* Action Buttons - Shrink when zoom/screen percentage increases (responsive) */}
+              <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 2xl:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
+                {sidebarConfig['Cash Receipts'] !== false && (
+                  <button
+                    onClick={() => navigate('/pos/cash-receipts')}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
+                      <Receipt className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden md:inline">Cash Receipts</span>
+                  </button>
+                )}
+                {sidebarConfig['Bank Receipts'] !== false && (
+                  <button
+                    onClick={() => navigate('/pos/bank-receipts')}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
+                      <Building className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden md:inline">Bank Receipts</span>
+                  </button>
+                )}
+                {sidebarConfig['Cash Payments'] !== false && (
+                  <button
+                    onClick={() => navigate('/pos/cash-payments')}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
+                      <CreditCard className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden md:inline">Cash Payments</span>
+                  </button>
+                )}
+                {sidebarConfig['Bank Payments'] !== false && (
+                  <button
+                    onClick={() => navigate('/pos/bank-payments')}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
+                      <ArrowUpDown className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden md:inline">Bank Payments</span>
+                  </button>
+                )}
+                {sidebarConfig['Record Expense'] !== false && (
+                  <button
+                    onClick={() => navigate('/pos/expenses')}
+                    className="bg-white text-gray-900 border border-gray-200 hover:bg-primary hover:text-white hover:border-primary px-2 py-1.5 xl:px-3 xl:py-2 rounded-md shadow-sm transition-all duration-200 flex items-center gap-1 xl:gap-1.5 text-[10px] xl:text-xs 2xl:text-sm font-medium flex-shrink-0 whitespace-nowrap min-w-0 group/btn"
+                  >
+                    <span className="inline-flex items-center justify-center w-5 h-5 xl:w-6 xl:h-6 rounded bg-gray-100 group-hover/btn:bg-primary/20 flex-shrink-0">
+                      <Wallet className="h-2.5 w-2.5 xl:h-3.5 xl:w-3.5 text-gray-900 group-hover/btn:text-white" />
+                    </span>
+                    <span className="hidden md:inline">Record Expense</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-1 min-w-0"></div>
+              <div className="flex items-center gap-x-4 lg:gap-x-6">
+                {/* User menu */}
                 <div className="flex items-center gap-x-2">
-                  <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary-600" />
+                  <div className="flex items-center gap-x-2">
+                    <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                      <User className="h-4 w-4 text-primary-600" />
+                    </div>
+                    <div className="hidden lg:block">
+                      <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
+                      <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                    </div>
                   </div>
-                  <div className="hidden lg:block">
-                    <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
-                    <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
-                  </div>
+                  <button
+                    onClick={() => {
+                      if (isLoggingOut) return;
+                      logout();
+                    }}
+                    disabled={isLoggingOut}
+                    className="text-gray-400 hover:text-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                    title="Logout"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    if (isLoggingOut) return;
-                    logout();
-                  }}
-                  disabled={isLoggingOut}
-                  className="text-gray-400 hover:text-gray-600 disabled:opacity-60 disabled:cursor-not-allowed"
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
               </div>
             </div>
-          </div>
           </div>
         )}
 

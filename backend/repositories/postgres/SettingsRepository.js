@@ -26,30 +26,35 @@ class SettingsRepository {
 
     if (!row) return null;
 
+    const cleanStrVal = (val) => {
+      if (val === null || val === undefined || String(val).trim().toLowerCase() === 'null') return '';
+      return String(val).trim();
+    };
+
     // Transform snake_case to camelCase for frontend compatibility
     return {
       id: row.id,
-      companyName: row.company_name,
-      contactNumber: row.contact_number,
-      address: row.address,
-      logo: row.logo,
-      email: row.email,
-      website: row.website,
-      taxId: row.tax_id,
-      registrationNumber: row.registration_number,
-      currency: row.currency,
-      dateFormat: row.date_format,
-      timeFormat: row.time_format,
-      fiscalYearStart: row.fiscal_year_start,
+      companyName: cleanStrVal(row.company_name),
+      contactNumber: cleanStrVal(row.contact_number),
+      address: cleanStrVal(row.address),
+      logo: cleanStrVal(row.logo),
+      email: cleanStrVal(row.email),
+      website: cleanStrVal(row.website),
+      taxId: cleanStrVal(row.tax_id),
+      registrationNumber: cleanStrVal(row.registration_number),
+      currency: cleanStrVal(row.currency),
+      dateFormat: cleanStrVal(row.date_format),
+      timeFormat: cleanStrVal(row.time_format),
+      fiscalYearStart: cleanStrVal(row.fiscal_year_start),
       taxEnabled: row.tax_enabled === true,
       defaultTaxRate: row.default_tax_rate != null ? parseFloat(row.default_tax_rate) : 0,
       printSettings: typeof row.print_settings === 'string' ? JSON.parse(row.print_settings) : (row.print_settings || {}),
       orderSettings: typeof row.order_settings === 'string' ? JSON.parse(row.order_settings || '{}') : (row.order_settings || {}),
-      whatsappNumber: row.whatsapp_number,
-      facebookLink: row.facebook_link,
-      instagramLink: row.instagram_link,
-      tiktokLink: row.tiktok_link,
-      mapLocation: row.map_location,
+      whatsappNumber: cleanStrVal(row.whatsapp_number),
+      facebookLink: cleanStrVal(row.facebook_link),
+      instagramLink: cleanStrVal(row.instagram_link),
+      tiktokLink: cleanStrVal(row.tiktok_link),
+      mapLocation: cleanStrVal(row.map_location),
       showWhatsapp: row.show_whatsapp !== false,
       showFacebook: row.show_facebook !== false,
       showInstagram: row.show_instagram !== false,
@@ -99,8 +104,12 @@ class SettingsRepository {
     let paramCount = 1;
     for (const [k, col] of Object.entries(map)) {
       if (updates[k] !== undefined) {
+        let val = updates[k];
+        if (typeof val === 'string' && val.trim().toLowerCase() === 'null') {
+          val = '';
+        }
         setClauses.push(`${col} = $${paramCount++}`);
-        params.push(typeof updates[k] === 'object' ? JSON.stringify(updates[k]) : updates[k]);
+        params.push(typeof val === 'object' ? JSON.stringify(val) : val);
       }
     }
     if (setClauses.length === 0) return settings;
