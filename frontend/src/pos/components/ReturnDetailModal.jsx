@@ -318,10 +318,10 @@ const ReturnDetailModal = ({
                 </table>
               </div>
             </div>
-            </div>
           </div>
         </div>
       </div>
+    </div>
 
       {/* Issue Refund Modal */}
       {showIssueRefundModal && (
@@ -350,6 +350,7 @@ const ReturnDetailModal = ({
               <Button onClick={handleIssueRefund} disabled={isIssuingRefund}>
                 {isIssuingRefund ? <LoadingSpinner size="sm" /> : 'Issue Refund'}
               </Button>
+            </div>
             </div>
           </div>
         </div>
