@@ -219,76 +219,80 @@ app.get("/health", (req, res) => {
 const path = require("path");
 app.use("/exports", express.static(path.join(__dirname, "exports")));
 
+const { auth, requireStaff } = require("./middleware/auth");
+
 // Routes
 app.use("/api/auth", require("./routes/auth"));
-app.use("/api/auth/users", require("./routes/users"));
+app.use("/api/auth/users", [auth, requireStaff], require("./routes/users"));
 app.use("/api", require("./routes/authCompat"));
 app.use("/api", require("./routes/ecommerceBridge"));
 
+// Shared Routes (Accessible by both POS staff and Storefront customers)
 app.use("/api/products", require("./routes/products"));
 app.use("/api/product-variants", require("./routes/productVariants"));
+app.use("/api/categories", require("./routes/categories"));
+app.use("/api/images", require("./routes/images"));
+
+// POS-Only Routes (Strictly for Staff/Admin)
 app.use(
   "/api/product-transformations",
+  [auth, requireStaff],
   require("./routes/productTransformations"),
 );
-app.use("/api/customers", require("./routes/customers"));
-app.use("/api/accounting", require("./routes/accounting"));
-app.use("/api/customer-transactions", require("./routes/customerTransactions"));
-app.use("/api/customer-merges", require("./routes/customerMerges"));
-app.use("/api/reconciliation", require("./routes/reconciliation"));
-// accounting-periods route removed (file no longer exists)
-app.use("/api/disputes", require("./routes/disputes"));
-app.use("/api/customer-analytics", require("./routes/customerAnalytics"));
-app.use("/api/anomaly-detection", require("./routes/anomalyDetection"));
-app.use("/api/suppliers", require("./routes/suppliers"));
-app.use("/api/cities", require("./routes/cities"));
-app.use("/api/purchase-orders", require("./routes/purchaseOrders"));
-app.use("/api/inventory-alerts", require("./routes/inventoryAlerts"));
-app.use("/api/purchase-invoices", require("./routes/purchaseInvoices"));
-app.use("/api/purchase-returns", require("./routes/purchaseReturns"));
-app.use("/api/sale-returns", require("./routes/saleReturns"));
-app.use("/api/sales-orders", require("./routes/salesOrders"));
-app.use("/api/sales", require("./routes/sales"));
-app.use("/api/notes", require("./routes/notes"));
-app.use("/api/migration", require("./routes/migration"));
-app.use("/api/inventory", require("./routes/inventory"));
-app.use("/api/recommendations", require("./routes/recommendations"));
-
-app.use("/api/pl-statements", require("./routes/plStatements")); // New P&L statements routes
-app.use("/api/reports", require("./routes/reports"));
-app.use("/api/payments", require("./routes/payments"));
-app.use("/api/returns", require("./routes/returns")); // Legacy route - kept for backward compatibility
-app.use("/api/recurring-expenses", require("./routes/recurringExpenses"));
-app.use("/api/balance-sheets", require("./routes/balanceSheets"));
-app.use("/api/chart-of-accounts", require("./routes/chartOfAccounts"));
-app.use("/api/account-ledger", require("./routes/accountLedger"));
-app.use("/api/journal-vouchers", require("./routes/journalVouchers"));
-app.use("/api/discounts", require("./routes/discounts"));
-app.use("/api/categories", require("./routes/categories"));
-app.use("/api/sales-performance", require("./routes/salesPerformance"));
-app.use("/api/inventory-reports", require("./routes/inventoryReports"));
-app.use("/api/cash-receipts", require("./routes/cashReceipts"));
-app.use("/api/cash-payments", require("./routes/cashPayments"));
-app.use("/api/bank-receipts", require("./routes/bankReceipts"));
-app.use("/api/bank-payments", require("./routes/bankPayments"));
-app.use("/api/banks", require("./routes/banks"));
-app.use("/api/settings", require("./routes/settings"));
-app.use("/api/company", require("./routes/company"));
-app.use("/api/dashboard", require("./routes/dashboard"));
-app.use("/api/images", require("./routes/images"));
-app.use("/api/backdate-report", require("./routes/backdateReport"));
-app.use("/api/stock-movements", require("./routes/stockMovements"));
-app.use("/api/stock-ledger", require("./routes/stockLedger"));
-app.use("/api/warehouses", require("./routes/warehouses"));
-app.use("/api/employees", require("./routes/employees"));
-app.use("/api/attendance", require("./routes/attendance"));
-app.use("/api/tills", require("./routes/tills"));
-app.use("/api/excel-manager", require("./routes/exportManagement"));
-app.use("/api/investors", require("./routes/investors"));
-app.use("/api/drop-shipping", require("./routes/dropShipping"));
-app.use("/api/customer-balances", require("./routes/customerBalances"));
-app.use("/api/supplier-balances", require("./routes/supplierBalances"));
-app.use("/api/presence", require("./routes/presence"));
+app.use("/api/customers", [auth, requireStaff], require("./routes/customers"));
+app.use("/api/accounting", [auth, requireStaff], require("./routes/accounting"));
+app.use("/api/customer-transactions", [auth, requireStaff], require("./routes/customerTransactions"));
+app.use("/api/customer-merges", [auth, requireStaff], require("./routes/customerMerges"));
+app.use("/api/reconciliation", [auth, requireStaff], require("./routes/reconciliation"));
+app.use("/api/disputes", [auth, requireStaff], require("./routes/disputes"));
+app.use("/api/customer-analytics", [auth, requireStaff], require("./routes/customerAnalytics"));
+app.use("/api/anomaly-detection", [auth, requireStaff], require("./routes/anomalyDetection"));
+app.use("/api/suppliers", [auth, requireStaff], require("./routes/suppliers"));
+app.use("/api/cities", [auth, requireStaff], require("./routes/cities"));
+app.use("/api/purchase-orders", [auth, requireStaff], require("./routes/purchaseOrders"));
+app.use("/api/inventory-alerts", [auth, requireStaff], require("./routes/inventoryAlerts"));
+app.use("/api/purchase-invoices", [auth, requireStaff], require("./routes/purchaseInvoices"));
+app.use("/api/purchase-returns", [auth, requireStaff], require("./routes/purchaseReturns"));
+app.use("/api/sale-returns", [auth, requireStaff], require("./routes/saleReturns"));
+app.use("/api/sales-orders", [auth, requireStaff], require("./routes/salesOrders"));
+app.use("/api/sales", [auth, requireStaff], require("./routes/sales"));
+app.use("/api/notes", [auth, requireStaff], require("./routes/notes"));
+app.use("/api/migration", [auth, requireStaff], require("./routes/migration"));
+app.use("/api/inventory", [auth, requireStaff], require("./routes/inventory"));
+app.use("/api/recommendations", [auth, requireStaff], require("./routes/recommendations"));
+app.use("/api/pl-statements", [auth, requireStaff], require("./routes/plStatements")); 
+app.use("/api/reports", [auth, requireStaff], require("./routes/reports"));
+app.use("/api/payments", [auth, requireStaff], require("./routes/payments"));
+app.use("/api/returns", [auth, requireStaff], require("./routes/returns")); 
+app.use("/api/recurring-expenses", [auth, requireStaff], require("./routes/recurringExpenses"));
+app.use("/api/balance-sheets", [auth, requireStaff], require("./routes/balanceSheets"));
+app.use("/api/chart-of-accounts", [auth, requireStaff], require("./routes/chartOfAccounts"));
+app.use("/api/account-ledger", [auth, requireStaff], require("./routes/accountLedger"));
+app.use("/api/journal-vouchers", [auth, requireStaff], require("./routes/journalVouchers"));
+app.use("/api/discounts", [auth, requireStaff], require("./routes/discounts"));
+app.use("/api/sales-performance", [auth, requireStaff], require("./routes/salesPerformance"));
+app.use("/api/inventory-reports", [auth, requireStaff], require("./routes/inventoryReports"));
+app.use("/api/cash-receipts", [auth, requireStaff], require("./routes/cashReceipts"));
+app.use("/api/cash-payments", [auth, requireStaff], require("./routes/cashPayments"));
+app.use("/api/bank-receipts", [auth, requireStaff], require("./routes/bankReceipts"));
+app.use("/api/bank-payments", [auth, requireStaff], require("./routes/bankPayments"));
+app.use("/api/banks", [auth, requireStaff], require("./routes/banks"));
+app.use("/api/settings", [auth, requireStaff], require("./routes/settings"));
+app.use("/api/company", [auth, requireStaff], require("./routes/company"));
+app.use("/api/dashboard", [auth, requireStaff], require("./routes/dashboard"));
+app.use("/api/backdate-report", [auth, requireStaff], require("./routes/backdateReport"));
+app.use("/api/stock-movements", [auth, requireStaff], require("./routes/stockMovements"));
+app.use("/api/stock-ledger", [auth, requireStaff], require("./routes/stockLedger"));
+app.use("/api/warehouses", [auth, requireStaff], require("./routes/warehouses"));
+app.use("/api/employees", [auth, requireStaff], require("./routes/employees"));
+app.use("/api/attendance", [auth, requireStaff], require("./routes/attendance"));
+app.use("/api/tills", [auth, requireStaff], require("./routes/tills"));
+app.use("/api/excel-manager", [auth, requireStaff], require("./routes/exportManagement"));
+app.use("/api/investors", [auth, requireStaff], require("./routes/investors"));
+app.use("/api/drop-shipping", [auth, requireStaff], require("./routes/dropShipping"));
+app.use("/api/customer-balances", [auth, requireStaff], require("./routes/customerBalances"));
+app.use("/api/supplier-balances", [auth, requireStaff], require("./routes/supplierBalances"));
+app.use("/api/presence", [auth, requireStaff], require("./routes/presence"));
 
 // Health check endpoint (API version) - PostgreSQL only
 app.get("/api/health", (req, res) => {

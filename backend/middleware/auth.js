@@ -6,19 +6,44 @@ const getUserId = (user) => user?.id ?? user?._id;
 
 const auth = async (req, res, next) => {
   try {
-    // Try to get token from HTTP-only cookie first, then fall back to Authorization header
-    let token = req.cookies?.token;
+    // Try to get token from HTTP-only cookies in order of priority
+    const cookieNames = ['pos_token', 'store_token', 'token'];
+    let token = null;
+    let decoded = null;
+    let tokenType = null;
+    
+    for (const name of cookieNames) {
+      const t = req.cookies?.[name];
+      if (t) {
+        try {
+          decoded = jwt.verify(t, process.env.JWT_SECRET);
+          token = t;
+          tokenType = name;
+          break; // Found a valid token
+        } catch (err) {
+          // Token invalid or expired, try the next one
+          continue;
+        }
+      }
+    }
 
     if (!token) {
       // Fallback to Authorization header for backward compatibility
-      token = req.header('Authorization')?.replace('Bearer ', '');
+      const authHeader = req.header('Authorization')?.replace('Bearer ', '');
+      if (authHeader) {
+        try {
+          decoded = jwt.verify(authHeader, process.env.JWT_SECRET);
+          token = authHeader;
+          tokenType = 'header';
+        } catch (err) {
+          token = null;
+        }
+      }
     }
 
-    if (!token) {
-      return res.status(401).json({ message: 'No token, authorization denied' });
+    if (!token || !decoded) {
+      return res.status(401).json({ message: 'No valid token, authorization denied' });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Single tenant authentication
     // Finds user in the default connected database
@@ -36,12 +61,38 @@ const auth = async (req, res, next) => {
     req.user = user;
     req.userType = 'user';
     req.role = user.role;
+    req.tokenType = tokenType; // Store which token was used for context-aware authorization
     return next();
 
   } catch (error) {
     logger.error('Authentication error:', error);
     res.status(401).json({ message: 'Token is not valid' });
   }
+};
+
+const requireStaff = (req, res, next) => {
+  const staffRoles = ['admin', 'manager', 'cashier', 'employee', 'inventory', 'viewer', 'sales_person'];
+  
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  // Strictly deny customers from POS-related APIs
+  if (req.user.role?.toLowerCase() === 'customer') {
+    return res.status(403).json({ message: 'Access denied: Customers cannot access POS system' });
+  }
+
+  // Also verify they are using a POS token if available (additional security)
+  if (req.tokenType === 'store_token' && req.user.role?.toLowerCase() !== 'admin') {
+     // Optional: allow admins to use storefront tokens for POS if needed, 
+     // but generally staff should use pos_token
+  }
+
+  if (!staffRoles.includes(req.user.role?.toLowerCase())) {
+    return res.status(403).json({ message: 'Access denied: Staff privileges required' });
+  }
+
+  next();
 };
 
 const requirePermission = (permission) => {
@@ -162,5 +213,6 @@ module.exports = {
   requirePermission,
   requireAnyPermission,
   requireRole,
+  requireStaff,
   maskSensitiveData
 };

@@ -134,6 +134,27 @@ class CustomerService {
     if (options.openingBalance != null) data.openingBalance = options.openingBalance;
     const customer = await customerRepository.create(data);
 
+    // Auto-create User account for this customer (for storefront login)
+    try {
+      const userRepository = require('../repositories/postgres/UserRepository');
+      // Check if user already exists by phone
+      const existingUser = await userRepository.findByPhone(customer.phone);
+      if (!existingUser) {
+        await userRepository.create({
+          firstName: customer.name?.split(' ')[0] || 'Customer',
+          lastName: customer.name?.split(' ').slice(1).join(' ') || (customer.business_name || 'Account'),
+          email: customer.email || `${customer.phone}@pos-customer.com`,
+          phone: customer.phone,
+          password: 'VIRTUAL_PASSWORD_MANAGED_BY_ENV', // Dummy password, will be bypassed by virtual auth logic
+          role: 'customer',
+          status: 'active'
+        });
+      }
+    } catch (userError) {
+      console.error('Failed to create User record for customer:', userError);
+      // We don't fail the customer creation if user record fails
+    }
+
     // Auto-create Chart of Accounts entry for this customer
     try {
       const accountCode = `CUST-${customer.id}`;

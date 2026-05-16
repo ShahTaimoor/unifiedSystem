@@ -3,10 +3,10 @@ import { api } from '../api';
 export const authApi = api.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation({
-      query: ({ email, password }) => ({
-        url: 'auth/login', // Use standard login endpoint
+      query: ({ phone, password }) => ({
+        url: 'auth/pos/login', // Use specialized POS login endpoint
         method: 'post',
-        data: { email, password },
+        data: { phone, password },
       }),
       invalidatesTags: [{ type: 'Auth', id: 'CURRENT_USER' }],
     }),
@@ -27,7 +27,7 @@ export const authApi = api.injectEndpoints({
       invalidatesTags: [{ type: 'Auth', id: 'CURRENT_USER' }],
     }),
     currentUser: builder.query({
-      query: () => ({ url: 'auth/me', method: 'get' }),
+      query: () => ({ url: 'auth/pos/me', method: 'get' }),
       providesTags: [{ type: 'Auth', id: 'CURRENT_USER' }],
     }),
     updateProfile: builder.mutation({
@@ -48,7 +48,7 @@ export const authApi = api.injectEndpoints({
     }),
     refreshToken: builder.mutation({
       query: () => ({
-        url: 'auth/refresh',
+        url: 'auth/pos/refresh',
         method: 'post',
       }),
     }),

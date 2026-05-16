@@ -228,10 +228,10 @@ const Navbar = () => {
             {/* Auth */}
             {user == null ? (
               <button
-                onClick={() => openDrawer('signup')}
+                onClick={() => openDrawer('login')}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
-                Sign Up
+                Sign In
               </button>
             ) : (
               <LogoutToggle user={user} />

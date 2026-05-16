@@ -98,7 +98,7 @@ axiosInstance.interceptors.response.use(
 
       try {
         // Attempt to refresh token using same instance (cookies attached)
-        const refreshResponse = await axiosInstance.post('/refresh-token', null, { withCredentials: true, timeout: 30000 });
+        const refreshResponse = await axiosInstance.post('/auth/customer/refresh', null, { withCredentials: true, timeout: 30000 });
 
         if (refreshResponse?.data?.success) {
           processQueue(null);
@@ -115,7 +115,7 @@ axiosInstance.interceptors.response.use(
         }
         
         // Attempt server logout to clear cookies
-        try { await axiosInstance.post('/logout', null, { withCredentials: true }); } catch {}
+        try { await axiosInstance.post('/auth/logout', null, { withCredentials: true }); } catch {}
 
         // Open auth drawer instead of redirecting to login
         if (typeof window !== 'undefined') {

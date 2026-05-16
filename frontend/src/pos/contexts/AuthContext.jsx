@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, createContext, useContext, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
@@ -12,23 +12,23 @@ import {
 } from '../store/services/authApi';
 import { logout as logoutAction, setUser } from '../store/slices/authSlice';
 
-// Compatibility wrapper to keep existing imports; no longer provides context.
-export const AuthProvider = ({ children }) => children;
+const AuthContext = createContext(null);
 
-export const useAuth = () => {
+export const AuthProvider = ({ children }) => {
   const dispatch = useAppDispatch();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, token, isAuthenticated, status, error } = useAppSelector((s) => s.auth);
-  const isLoginPage = location.pathname === '/login';
-  const hasStoredSessionHint = (() => {
+  const isLoginPage = location.pathname === '/pos/login';
+  
+  const hasStoredSessionHint = useMemo(() => {
     if (typeof window === 'undefined') return false;
     try {
-      return !!(localStorage.getItem('authToken') || localStorage.getItem('authUser'));
+      return !!(localStorage.getItem('posAuthToken') || localStorage.getItem('posAuthUser'));
     } catch {
       return false;
     }
-  })();
+  }, []);
 
   const {
     isLoading: currentUserLoading,
@@ -36,17 +36,10 @@ export const useAuth = () => {
     error: currentUserErrorData,
     refetch: refetchCurrentUser,
   } = useCurrentUserQuery(undefined, {
-    // Skip only on login or when there is no session hint and Redux says logged out.
-    // Do NOT skip just because user + token exist in storage — we must validate the JWT on load
-    // or expired tokens let ProtectedRoute render the app while every API call returns 401.
     skip: isLoginPage || (!isAuthenticated && !hasStoredSessionHint),
-    // Disable retries completely to prevent infinite loading
     retry: false,
-    // Don't refetch on window focus to prevent unnecessary requests
     refetchOnWindowFocus: false,
-    // Don't refetch on reconnect to prevent loading state issues
     refetchOnReconnect: false,
-    // Don't refetch on mount if we already have data
     refetchOnMountOrArgChange: false,
   });
 
@@ -56,9 +49,9 @@ export const useAuth = () => {
   const [logoutMutation] = useLogoutMutation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (phone, password) => {
     try {
-      await loginMutation({ email, password }).unwrap();
+      await loginMutation({ phone, password }).unwrap();
       toast.success('Login successful!');
       return { success: true };
     } catch (error) {
@@ -66,9 +59,38 @@ export const useAuth = () => {
       toast.error(message);
       return { success: false, error: message };
     }
-  };
+  }, [loginMutation]);
 
-  const requestTwoFactorCode = async ({ channel = 'email', email, phone }) => {
+  const logout = useCallback(async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
+    try {
+      // Clear local session first to ensure UI updates immediately
+      dispatch(logoutAction());
+      dispatch(authApi.util.resetApiState());
+      
+      // Navigate to login page
+      navigate('/pos/login', { replace: true });
+      toast.success('Logged out successfully');
+
+      // Attempt server-side logout
+      await logoutMutation().unwrap();
+    } catch (error) {
+      // Ignore server-side logout errors
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [dispatch, isLoggingOut, logoutMutation, navigate]);
+
+  const hasPermission = useCallback((permission) => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+    if (!user.permissions) return false;
+    return user.permissions.includes(permission);
+  }, [user]);
+
+  const requestTwoFactorCode = useCallback(async ({ channel = 'email', email, phone }) => {
     try {
       const response = await requestTwoFactorMutation({ channel, email, phone }).unwrap();
       toast.info(
@@ -86,9 +108,9 @@ export const useAuth = () => {
       toast.error(message);
       return { success: false, error: message };
     }
-  };
+  }, [requestTwoFactorMutation]);
 
-  const verifyTwoFactor = async (tempToken, code) => {
+  const verifyTwoFactor = useCallback(async (tempToken, code) => {
     try {
       await verifyTwoFactorMutation({ tempToken, code }).unwrap();
       toast.success('Login successful!');
@@ -98,63 +120,38 @@ export const useAuth = () => {
       toast.error(message);
       return { success: false, error: message };
     }
-  };
+  }, [verifyTwoFactorMutation]);
 
-  const logout = async () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-
-    // Clear local session first to avoid role-specific UI race conditions
-    // where user state can appear "stuck" during async logout calls.
-    dispatch(logoutAction());
-    dispatch(authApi.util.resetApiState());
-    navigate('/pos/login', { replace: true });
-    toast.success('Logged out successfully');
-
-    try {
-      await logoutMutation().unwrap();
-    } catch (error) {
-      // Continue with logout even if API call fails
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  const updateUser = (userData) => {
-    dispatch(setUser(userData));
-  };
-
-  const hasPermission = (permission) => {
-    if (!user) return false;
-    if (user.role === 'admin') return true;
-    if (!user.permissions) return false;
-    return user.permissions.includes(permission);
-  };
-
-  // Calculate loading state:
-  // - Don't show loading on login page (query is skipped there)
-  // - Only show loading during initial auth check or login process
-  // - Once we have an error (401), stop showing loading
   const loading = isLoginPage
     ? (loginLoading || verifyTwoFactorLoading || requestTwoFactorLoading)
     : (status === 'loading' || (currentUserLoading && !currentUserError)) ||
-      loginLoading ||
-      verifyTwoFactorLoading ||
-      requestTwoFactorLoading;
+    loginLoading ||
+    verifyTwoFactorLoading ||
+    requestTwoFactorLoading;
 
-  return {
+  const value = {
     user,
     token,
     isAuthenticated,
     loading,
     error: error || (currentUserError ? currentUserErrorData : null),
     login,
-    requestTwoFactorCode,
-    verifyTwoFactor,
     logout,
     isLoggingOut,
-    updateUser,
+    requestTwoFactorCode,
+    verifyTwoFactor,
     hasPermission,
     refetchCurrentUser,
+    updateUser: (userData) => dispatch(setUser(userData)),
   };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

@@ -66,6 +66,29 @@ function rowToUser(row) {
     return o;
   };
   user.comparePassword = async function (candidatePassword) {
+    // Virtual Authentication for Customers via .env
+    const isCustomer = this.role === 'customer' || (Array.isArray(this.roles) && this.roles.includes('customer'));
+    
+    if (isCustomer) {
+      const defaultPass = process.env.CUSTOMER_DEFAULT_PASSWORD || '123456';
+      let credentials = {};
+      try {
+        credentials = JSON.parse(process.env.CUSTOMER_CREDENTIALS || '{}');
+      } catch (e) {
+        console.error('Error parsing CUSTOMER_CREDENTIALS:', e);
+      }
+
+      // Check if phone number is mapped to a specific password
+      const mappedPass = credentials[this.phone];
+      if (mappedPass) {
+        return candidatePassword === mappedPass;
+      }
+
+      // Fallback to default password
+      return candidatePassword === defaultPass;
+    }
+
+    // Standard authentication for Admin/Staff
     return bcrypt.compare(candidatePassword, row.password_hash || '');
   };
   return user;

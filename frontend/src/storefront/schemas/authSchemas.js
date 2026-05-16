@@ -2,12 +2,14 @@ import { z } from 'zod';
 
 // Login schema (minimal fields)
 export const loginSchema = z.object({
-  shopName: z
+  phone: z
     .string()
-    .min(1, 'Shop name is required')
-    .min(2, 'Shop name must be at least 2 characters')
-    .max(100, 'Shop name must be less than 100 characters')
-    .trim(),
+    .min(1, 'Phone number is required')
+    .refine((val) => {
+      if (!val || val.trim() === '') return false;
+      const digitsOnly = val.replace(/\D/g, '');
+      return digitsOnly.length >= 10;
+    }, 'Invalid phone number'),
   password: z
     .string()
     .min(1, 'Password is required')

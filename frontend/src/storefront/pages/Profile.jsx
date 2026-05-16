@@ -54,13 +54,13 @@ const Profile = () => {
     // Validate with Zod
     const { profileSchema } = await import('@/storefront/schemas/profileSchemas');
     const result = profileSchema.safeParse(formData);
-    
+
     if (!result.success) {
       const firstError = result.error.issues?.[0] || result.error.errors?.[0];
       toast.error(firstError?.message || 'Please check your information and try again.');
       return;
     }
-    
+
     dispatch(updateProfile(formData))
       .unwrap()
       .then(() => {
@@ -239,34 +239,34 @@ const Profile = () => {
           )}
         </CardContent>
 
-       <CardFooter className="flex justify-end items-center space-x-3 pt-4">
-  {!showForm ? (
-    <Button onClick={() => setShowForm(true)} variant="outline">
-      Edit Profile
-    </Button>
-  ) : (
-    <>
-      <Button
-        onClick={() => setShowForm(false)}
-        variant="outline"
-        disabled={status === 'loading'}
-      >
-        Cancel
-      </Button>
-      <Button
-        onClick={handleSubmit}
-        disabled={status === 'loading'}
-        className="flex items-center gap-2"
-      >
-        {status === 'loading' ? (
-          <OneLoader size="small" text="Saving..." showText={false} />
-        ) : (
-          'Save Changes'
-        )}
-      </Button>
-    </>
-  )}
-</CardFooter>
+        <CardFooter className="flex justify-end items-center space-x-3 pt-4">
+          {!showForm ? (
+            <Button onClick={() => setShowForm(true)} variant="outline">
+              Edit Profile
+            </Button>
+          ) : (
+            <>
+              <Button
+                onClick={() => setShowForm(false)}
+                variant="outline"
+                disabled={status === 'loading'}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={status === 'loading'}
+                className="flex items-center gap-2"
+              >
+                {status === 'loading' ? (
+                  <OneLoader size="small" text="Saving..." showText={false} />
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </>
+          )}
+        </CardFooter>
 
       </Card>
     </div>

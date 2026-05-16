@@ -2,7 +2,7 @@
 import axiosInstance from "./axiosInstance";
 
 const loginUser = async (userData) => {
-  const response = await axiosInstance.post("/login", userData, {
+  const response = await axiosInstance.post("/auth/customer/login", userData, {
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
@@ -30,14 +30,14 @@ const updateUsername = async (usernameData) => {
 };
 
 const signupOrLogin = async (userData) => {
-  const response = await axiosInstance.post("/auth/signup-or-login", userData, {
+  const response = await axiosInstance.post("/auth/customer/login", userData, {
     headers: { "Content-Type": "application/json" },
   });
   return response.data;
 };
 
 const getCurrentUser = async () => {
-  const response = await axiosInstance.get("/get-current-user", {
+  const response = await axiosInstance.get("/auth/me", {
     headers: { "Content-Type": "application/json" },
   });
   return response.data;

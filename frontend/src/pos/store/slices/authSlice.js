@@ -4,8 +4,8 @@ import { authApi } from '../services/authApi';
 const getStoredAuth = () => {
   if (typeof window === 'undefined') return { token: null, user: null };
   try {
-    const token = localStorage.getItem('authToken');
-    const userStr = localStorage.getItem('authUser');
+    const token = localStorage.getItem('posAuthToken');
+    const userStr = localStorage.getItem('posAuthUser');
     const user = userStr ? JSON.parse(userStr) : null;
     return { token, user };
   } catch {
@@ -36,7 +36,7 @@ const authSlice = createSlice({
       // Persist user
       if (typeof window !== 'undefined' && payload) {
         try {
-          localStorage.setItem('authUser', JSON.stringify(payload));
+          localStorage.setItem('posAuthUser', JSON.stringify(payload));
         } catch (e) {
           console.error('Failed to store auth user', e);
         }
@@ -51,8 +51,8 @@ const authSlice = createSlice({
       // Keep state and storage in sync
       if (typeof window !== 'undefined') {
         try {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('authUser');
+          localStorage.removeItem('posAuthToken');
+          localStorage.removeItem('posAuthUser');
         } catch {
           // ignore storage errors
         }
@@ -75,10 +75,10 @@ const authSlice = createSlice({
         if (typeof window !== 'undefined') {
           try {
             if (payload?.token) {
-              localStorage.setItem('authToken', payload.token);
+              localStorage.setItem('posAuthToken', payload.token);
             }
             if (state.user) {
-              localStorage.setItem('authUser', JSON.stringify(state.user));
+              localStorage.setItem('posAuthUser', JSON.stringify(state.user));
             }
           } catch {
             // ignore storage errors
@@ -103,10 +103,10 @@ const authSlice = createSlice({
         if (typeof window !== 'undefined') {
           try {
             if (payload?.token) {
-              localStorage.setItem('authToken', payload.token);
+              localStorage.setItem('posAuthToken', payload.token);
             }
             if (state.user) {
-              localStorage.setItem('authUser', JSON.stringify(state.user));
+              localStorage.setItem('posAuthUser', JSON.stringify(state.user));
             }
           } catch {
             // ignore storage errors
@@ -137,8 +137,8 @@ const authSlice = createSlice({
           state.token = null;
           if (typeof window !== 'undefined') {
             try {
-              localStorage.removeItem('authToken');
-              localStorage.removeItem('authUser');
+              localStorage.removeItem('posAuthToken');
+              localStorage.removeItem('posAuthUser');
             } catch {
               // ignore storage errors
             }
@@ -153,10 +153,10 @@ const authSlice = createSlice({
         if (typeof window !== 'undefined') {
           try {
             if (payload?.token) {
-              localStorage.setItem('authToken', payload.token);
+              localStorage.setItem('posAuthToken', payload.token);
             }
             if (payload?.user) {
-              localStorage.setItem('authUser', JSON.stringify(payload.user));
+              localStorage.setItem('posAuthUser', JSON.stringify(payload.user));
             }
           } catch {
             // ignore storage errors

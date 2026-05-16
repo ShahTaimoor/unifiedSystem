@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { auth, getUserId } = require('../middleware/auth');
+const { auth, getUserId, requireStaff } = require('../middleware/auth');
 const authService = require('../services/authService');
 
 const router = express.Router();
@@ -101,6 +101,102 @@ router.post('/login', [
       return res.status(503).json({ message: error.message });
     }
 
+    return next(error);
+  }
+});
+
+// Helper for sending tokens in cookies
+const sendTokens = (res, token, refreshToken, prefix) => {
+  res.cookie(`${prefix}_token`, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 8 * 60 * 60 * 1000, // 8 hours
+    path: '/'
+  });
+  if (refreshToken) {
+    res.cookie(`${prefix}_refresh_token`, refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+  }
+};
+
+// @route   POST /api/auth/pos/login
+// @desc    Login for POS (Staff only)
+// @access  Public
+router.post('/pos/login', [
+  body('phone').exists().withMessage('Phone number is required'),
+  body('password').exists().withMessage('Password is required')
+], async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { phone, password } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+    const userAgent = req.get('User-Agent');
+
+    const result = await authService.loginPOS(phone, password, ipAddress, userAgent);
+
+    sendTokens(res, result.token, result.refreshToken, 'pos');
+
+    res.json({
+      message: result.message,
+      token: result.token,
+      refreshToken: result.refreshToken,
+      user: result.user
+    });
+  } catch (error) {
+    if (error.message === 'Invalid credentials' || error.message.includes('Access denied')) {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error.message.includes('locked')) {
+      return res.status(423).json({ message: error.message });
+    }
+    return next(error);
+  }
+});
+
+// @route   POST /api/auth/customer/login
+// @desc    Login for Storefront (Customers)
+// @access  Public
+router.post('/customer/login', [
+  body('phone').exists().withMessage('Phone number is required'),
+  body('password').exists().withMessage('Password is required')
+], async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { phone, password } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+    const userAgent = req.get('User-Agent');
+
+    const result = await authService.loginCustomer(phone, password, ipAddress, userAgent);
+
+    sendTokens(res, result.token, result.refreshToken, 'store');
+
+    res.json({
+      message: result.message,
+      token: result.token,
+      refreshToken: result.refreshToken,
+      user: result.user
+    });
+  } catch (error) {
+    if (error.message === 'Invalid credentials' || error.message.includes('Access denied')) {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error.message.includes('locked')) {
+      return res.status(423).json({ message: error.message });
+    }
     return next(error);
   }
 });
@@ -210,9 +306,25 @@ router.post('/verify-2fa', [
 
 
 // @route   GET /api/auth/me
-// @desc    Get current user
+// @desc    Get current user (generic)
 // @access  Private
 router.get('/me', auth, async (req, res, next) => {
+  try {
+    const userId = getUserId(req.user);
+    const user = await authService.getCurrentUser(userId);
+    res.json({ user });
+  } catch (error) {
+    if (error.message === 'User not found') {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    return next(error);
+  }
+});
+
+// @route   GET /api/auth/pos/me
+// @desc    Get current user for POS (Staff only)
+// @access  Private (Staff only)
+router.get('/pos/me', [auth, requireStaff], async (req, res, next) => {
   try {
     const userId = getUserId(req.user);
     const user = await authService.getCurrentUser(userId);
@@ -333,18 +445,72 @@ router.post('/refresh', async (req, res, next) => {
   }
 });
 
+// @route   POST /api/auth/pos/refresh
+// @desc    Refresh POS access token
+// @access  Public
+router.post('/pos/refresh', async (req, res, next) => {
+  try {
+    let token = req.cookies?.pos_refresh_token;
+    if (!token) {
+      return res.status(401).json({ message: 'No refresh token provided' });
+    }
+
+    const result = await authService.refreshToken(token);
+    if (!result) {
+      return res.status(401).json({ message: 'Unable to refresh session' });
+    }
+
+    sendTokens(res, result.token, result.refreshToken, 'pos');
+
+    const safeUser = result.user.toSafeObject ? result.user.toSafeObject() : result.user;
+    res.json({ token: result.token, refreshToken: result.refreshToken, user: safeUser });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// @route   POST /api/auth/customer/refresh
+// @desc    Refresh Storefront access token
+// @access  Public
+router.post('/customer/refresh', async (req, res, next) => {
+  try {
+    let token = req.cookies?.store_refresh_token;
+    if (!token) {
+      return res.status(401).json({ message: 'No refresh token provided' });
+    }
+
+    const result = await authService.refreshToken(token);
+    if (!result) {
+      return res.status(401).json({ message: 'Unable to refresh session' });
+    }
+
+    sendTokens(res, result.token, result.refreshToken, 'store');
+
+    const safeUser = result.user.toSafeObject ? result.user.toSafeObject() : result.user;
+    res.json({ token: result.token, refreshToken: result.refreshToken, user: safeUser });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // @route   POST /api/auth/logout
-// @desc    Logout user (clear HTTP-only cookie)
+// @desc    Logout user (clear HTTP-only cookies)
 // @access  Private
 router.post('/logout', auth, async (req, res, next) => {
   try {
-    // Clear the HTTP-only cookie
-    res.clearCookie('token', {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/'
-    });
+    };
+
+    // Clear legacy and specific cookies
+    res.clearCookie('token', cookieOptions);
+    res.clearCookie('pos_token', cookieOptions);
+    res.clearCookie('pos_refresh_token', cookieOptions);
+    res.clearCookie('store_token', cookieOptions);
+    res.clearCookie('store_refresh_token', cookieOptions);
 
     res.json({ message: 'Logout successful' });
   } catch (error) {

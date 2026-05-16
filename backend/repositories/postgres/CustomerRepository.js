@@ -319,6 +319,24 @@ class CustomerRepository {
     return (r.rows.length > 0);
   }
 
+  async findByPhone(phone) {
+    if (!phone || !String(phone).trim()) return null;
+    const result = await query(
+      'SELECT * FROM customers WHERE TRIM(phone) = TRIM($1) AND is_deleted = FALSE LIMIT 1',
+      [String(phone).trim()]
+    );
+    return result.rows[0] || null;
+  }
+
+  async findByEmail(email) {
+    if (!email || !String(email).trim()) return null;
+    const result = await query(
+      'SELECT * FROM customers WHERE LOWER(TRIM(email)) = LOWER(TRIM($1)) AND is_deleted = FALSE LIMIT 1',
+      [String(email).trim()]
+    );
+    return result.rows[0] || null;
+  }
+
   async phoneExists(phone, excludeId = null) {
     if (!phone || !String(phone).trim()) return false;
     let sql = 'SELECT 1 FROM customers WHERE TRIM(phone) = TRIM($1) AND is_deleted = FALSE';
