@@ -1,12 +1,15 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import BaseModal from './BaseModal';
-import { Camera, Image as ImageIcon, X } from 'lucide-react';
+import { Camera, Image as ImageIcon, X, Plus } from 'lucide-react';
 import { LoadingButton } from './LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useUploadProductImageMutation } from '../store/services/productsApi';
+import { useTab } from '../contexts/TabContext';
+import { getComponentInfo } from '../utils/componentUtils';
 
 export const ProductModal = ({ product, isOpen, onClose, onSave, isSubmitting, allProducts = [], onEditExisting, categories = [], showCostPrice = true }) => {
+  const { openTab } = useTab();
   const showImages = localStorage.getItem('showProductImagesUI') !== 'false';
   const [showHsCodeField, setShowHsCodeField] = useState(
     () => localStorage.getItem('showProductHsCodeColumn') !== 'false'
@@ -528,23 +531,46 @@ export const ProductModal = ({ product, isOpen, onClose, onSave, isSubmitting, a
                   <label htmlFor="category" className="block text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
                     Category
                   </label>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category || ''}
-                    onChange={handleChange}
-                    className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-h-[2rem] sm:min-h-0"
-                  >
-                    <option value="">Select a category</option>
-                    {categories?.map((category) => {
-                      const catId = category.id || category._id;
-                      return (
-                        <option key={catId} value={catId}>
-                          {category.name}
-                        </option>
-                      );
-                    })}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      id="category"
+                      name="category"
+                      value={formData.category || ''}
+                      onChange={handleChange}
+                      className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-h-[2rem] sm:min-h-0"
+                    >
+                      <option value="">Select a category</option>
+                      {categories?.map((category) => {
+                        const catId = category.id || category._id;
+                        return (
+                          <option key={catId} value={catId}>
+                            {category.name}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const info = getComponentInfo('/pos/categories');
+                        if (info) {
+                          openTab({
+                            title: 'Add Category',
+                            path: '/pos/categories?action=add',
+                            component: info.component,
+                            icon: info.icon,
+                            allowMultiple: true,
+                            props: { action: 'add' }
+                          });
+                          onClose();
+                        }
+                      }}
+                      className="flex-shrink-0 p-1.5 sm:p-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 border border-indigo-200"
+                      title="Add New Category"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
                   <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-gray-500">Optional category</p>
                 </div>
                 <div className="w-full sm:flex-[1] min-w-0">

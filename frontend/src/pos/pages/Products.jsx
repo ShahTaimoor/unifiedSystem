@@ -378,7 +378,7 @@ export const Products = () => {
               <DropdownMenuItem
                 onSelect={(e) => {
                   e.preventDefault();
-                  const componentInfo = getComponentInfo('/categories');
+                  const componentInfo = getComponentInfo('/pos/categories');
                   if (componentInfo) {
                     openTab({
                       title: 'Add Product Category',
@@ -642,6 +642,7 @@ export const Products = () => {
 
       {showLabelPrinter && (
         <BarcodeLabelPrinter
+          isOpen={showLabelPrinter}
           products={products || []}
           onClose={() => setShowLabelPrinter(false)}
         />
