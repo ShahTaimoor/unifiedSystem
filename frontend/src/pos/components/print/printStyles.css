@@ -21,34 +21,34 @@
     margin: 10mm;
   }
 
-  /* ── Hide UI elements ───────────────────────────────────────────────── */
-  .no-print,
-  .print\:hidden,
-  nav,
-  header:not(.print-header),
-  aside,
-  .sidebar,
-  .navbar,
-  button:not(.print\:block),
-  .btn,
-  .filters,
-  .search,
-  [role="banner"],
-  [role="button"],
-  [type="button"],
-  [type="submit"],
-  .print-toolbar,
-  .print-preview-wrapper .no-print,
-  [data-print-hide="true"] {
+  /* ── Hide UI elements (Scoped to exclude Storefront) ─────────────────── */
+  body:not(.storefront-app) .no-print,
+  body:not(.storefront-app) .print\:hidden,
+  body:not(.storefront-app) nav,
+  body:not(.storefront-app) header:not(.print-header),
+  body:not(.storefront-app) aside,
+  body:not(.storefront-app) .sidebar,
+  body:not(.storefront-app) .navbar,
+  body:not(.storefront-app) button:not(.print\:block),
+  body:not(.storefront-app) .btn,
+  body:not(.storefront-app) .filters,
+  body:not(.storefront-app) .search,
+  body:not(.storefront-app) [role="banner"],
+  body:not(.storefront-app) [role="button"],
+  body:not(.storefront-app) [type="button"],
+  body:not(.storefront-app) [type="submit"],
+  body:not(.storefront-app) .print-toolbar,
+  body:not(.storefront-app) .print-preview-wrapper .no-print,
+  body:not(.storefront-app) [data-print-hide="true"] {
     display: none !important;
   }
 
-  .print-only {
+  body:not(.storefront-app) .print-only {
     display: block !important;
   }
 
-  /* ── Base body reset ────────────────────────────────────────────────── */
-  body {
+  /* ── Base body reset (Scoped to exclude Storefront) ─────────────────── */
+  body:not(.storefront-app) {
     margin: 0 !important;
     padding: 0 !important;
     font-family: 'Inter', Arial, Helvetica, sans-serif !important;
@@ -60,19 +60,19 @@
   }
 
   /* ── Print preview transforms ───────────────────────────────────────── */
-  .print-preview-scale {
+  body:not(.storefront-app) .print-preview-scale {
     transform: none !important;
   }
 
-  .print-wrapper,
-  .print-preview-scale,
-  .print-modal-preview {
+  body:not(.storefront-app) .print-wrapper,
+  body:not(.storefront-app) .print-preview-scale,
+  body:not(.storefront-app) .print-modal-preview {
     box-shadow: none !important;
     border: none !important;
   }
 
   /* ── .print-document reset (A4 / standard / layout2) ────────────────── */
-  .print-document {
+  body:not(.storefront-app) .print-document {
     width: 100% !important;
     max-width: 100% !important;
     box-shadow: none !important;
@@ -82,7 +82,7 @@
     border-radius: 0 !important;
   }
 
-  .print-document--compact {
+  body:not(.storefront-app) .print-document--compact {
     width: 100% !important;
     max-width: 100% !important;
     padding: 0 !important;
@@ -92,26 +92,26 @@
   }
 
   /* ── Logo ────────────────────────────────────────────────────────────── */
-  .print-document__logo-placeholder {
+  body:not(.storefront-app) .print-document__logo-placeholder {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
   /* ── Tables (universal) ─────────────────────────────────────────────── */
-  table,
-  .print-document__table,
-  .account-ledger-table {
+  body:not(.storefront-app) table,
+  body:not(.storefront-app) .print-document__table,
+  body:not(.storefront-app) .account-ledger-table {
     width: 100% !important;
     border-collapse: collapse !important;
     font-size: 11px !important;
     table-layout: auto !important;
   }
 
-  th, td,
-  .print-document__table th,
-  .print-document__table td,
-  .account-ledger-table th,
-  .account-ledger-table td {
+  body:not(.storefront-app) th, body:not(.storefront-app) td,
+  body:not(.storefront-app) .print-document__table th,
+  body:not(.storefront-app) .print-document__table td,
+  body:not(.storefront-app) .account-ledger-table th,
+  body:not(.storefront-app) .account-ledger-table td {
     border: 1px solid #000 !important;
     padding: 4px 6px !important;
     font-size: 11px !important;
@@ -119,9 +119,9 @@
     line-height: 1.2 !important;
   }
 
-  th,
-  .print-document__table th,
-  .account-ledger-table th {
+  body:not(.storefront-app) th,
+  body:not(.storefront-app) .print-document__table th,
+  body:not(.storefront-app) .account-ledger-table th {
     background-color: #f3f4f6 !important;
     font-weight: 700 !important;
     -webkit-print-color-adjust: exact !important;
@@ -129,88 +129,88 @@
   }
 
   /* ── Page breaks ────────────────────────────────────────────────────── */
-  .print-document,
-  .print-layout-a4 .print-document,
-  .receipt-voucher {
+  body:not(.storefront-app) .print-document,
+  body:not(.storefront-app) .print-layout-a4 .print-document,
+  body:not(.storefront-app) .receipt-voucher {
     page-break-inside: avoid;
   }
 
-  .print-break-inside-auto tr,
-  .print-break-inside-auto .print-row {
+  body:not(.storefront-app) .print-break-inside-auto tr,
+  body:not(.storefront-app) .print-break-inside-auto .print-row {
     page-break-inside: auto;
   }
 
-  tr {
+  body:not(.storefront-app) tr {
     page-break-inside: avoid !important;
   }
 
-  thead {
+  body:not(.storefront-app) thead {
     display: table-header-group !important;
   }
 
   /* ── A4 Invoice layout helpers ──────────────────────────────────────── */
-  .print-layout-a4 {
+  body:not(.storefront-app) .print-layout-a4 {
     font-size: 11px;
     max-width: 100%;
   }
 
-  .print-layout-a4 .print-document__company-name {
+  body:not(.storefront-app) .print-layout-a4 .print-document__company-name {
     font-size: 24px;
     font-weight: 700;
   }
 
-  .print-layout-a4 .print-document__logo-img {
+  body:not(.storefront-app) .print-layout-a4 .print-document__logo-img {
     max-height: 60px;
     max-width: 200px;
   }
 
-  .print-layout-a4 .layout2-table th,
-  .print-layout-a4 .layout2-table td {
+  body:not(.storefront-app) .print-layout-a4 .layout2-table th,
+  body:not(.storefront-app) .print-layout-a4 .layout2-table td {
     border: 1px solid #000 !important;
     padding: 4px;
   }
 
   /* ── 80mm Thermal layout helpers ────────────────────────────────────── */
-  .print-layout-thermal {
+  body:not(.storefront-app) .print-layout-thermal {
     width: 80mm !important;
     max-width: 80mm !important;
     font-size: 10px !important;
     padding: 2mm !important;
   }
 
-  .print-layout-thermal .receipt-voucher {
+  body:not(.storefront-app) .print-layout-thermal .receipt-voucher {
     max-width: 76mm;
   }
 
-  .print-layout-thermal .receipt-voucher__company-name {
+  body:not(.storefront-app) .print-layout-thermal .receipt-voucher__company-name {
     font-size: 14px;
   }
 
-  .print-layout-thermal .receipt-voucher__title h2 {
+  body:not(.storefront-app) .print-layout-thermal .receipt-voucher__title h2 {
     font-size: 12px;
   }
 
-  .print-layout-thermal table th,
-  .print-layout-thermal table td {
+  body:not(.storefront-app) .print-layout-thermal table th,
+  body:not(.storefront-app) .print-layout-thermal table td {
     font-size: 9px;
     padding: 2px 3px;
   }
 
   /* ── Ledger / Summary print header & footer ─────────────────────────── */
-  .print-header {
+  body:not(.storefront-app) .print-header {
     text-align: center;
     margin-bottom: 10px;
     border-bottom: 1px solid #000;
   }
 
-  .print-header h1 {
+  body:not(.storefront-app) .print-header h1 {
     font-size: 16px;
     font-weight: 700;
     margin: 0;
     text-transform: uppercase;
   }
 
-  .print-footer {
+  body:not(.storefront-app) .print-footer {
     margin-top: 10px;
     text-align: right;
     font-size: 8px;
@@ -219,29 +219,29 @@
   }
 
   /* ── Account Ledger Summary colors ──────────────────────────────────── */
-  .account-ledger-print {
+  body:not(.storefront-app) .account-ledger-print {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
   /* Customer = emerald */
-  .account-ledger-print--customer .account-ledger-print-thead th {
+  body:not(.storefront-app) .account-ledger-print--customer .account-ledger-print-thead th {
     background-color: #059669 !important;
     color: #fff !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--customer .account-ledger-print-opening td {
+  body:not(.storefront-app) .account-ledger-print--customer .account-ledger-print-opening td {
     background-color: #ecfdf5 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--customer .account-ledger-print-subtotal td {
+  body:not(.storefront-app) .account-ledger-print--customer .account-ledger-print-subtotal td {
     background-color: #d1fae5 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--customer .account-ledger-print-total td {
+  body:not(.storefront-app) .account-ledger-print--customer .account-ledger-print-total td {
     background-color: #a7f3d0 !important;
     font-weight: bold;
     -webkit-print-color-adjust: exact;
@@ -249,23 +249,23 @@
   }
 
   /* Supplier = blue */
-  .account-ledger-print--supplier .account-ledger-print-thead th {
+  body:not(.storefront-app) .account-ledger-print--supplier .account-ledger-print-thead th {
     background-color: #2563eb !important;
     color: #fff !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--supplier .account-ledger-print-opening td {
+  body:not(.storefront-app) .account-ledger-print--supplier .account-ledger-print-opening td {
     background-color: #eff6ff !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--supplier .account-ledger-print-subtotal td {
+  body:not(.storefront-app) .account-ledger-print--supplier .account-ledger-print-subtotal td {
     background-color: #dbeafe !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--supplier .account-ledger-print-total td {
+  body:not(.storefront-app) .account-ledger-print--supplier .account-ledger-print-total td {
     background-color: #bfdbfe !important;
     font-weight: bold;
     -webkit-print-color-adjust: exact;
@@ -273,23 +273,23 @@
   }
 
   /* Expense = amber */
-  .account-ledger-print--expense .account-ledger-print-thead th {
+  body:not(.storefront-app) .account-ledger-print--expense .account-ledger-print-thead th {
     background-color: #d97706 !important;
     color: #fff !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--expense .account-ledger-print-opening td {
+  body:not(.storefront-app) .account-ledger-print--expense .account-ledger-print-opening td {
     background-color: #fffbeb !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--expense .account-ledger-print-subtotal td {
+  body:not(.storefront-app) .account-ledger-print--expense .account-ledger-print-subtotal td {
     background-color: #fef3c7 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  .account-ledger-print--expense .account-ledger-print-total td {
+  body:not(.storefront-app) .account-ledger-print--expense .account-ledger-print-total td {
     background-color: #fde68a !important;
     font-weight: bold;
     -webkit-print-color-adjust: exact;
@@ -297,55 +297,162 @@
   }
 
   /* ── Sale invoice = emerald ─────────────────────────────────────────── */
-  .print-document--sale .print-document__table th,
-  .print-document--sale .layout2-table th {
+  body:not(.storefront-app) .print-document--sale .print-document__table th,
+  body:not(.storefront-app) .print-document--sale .layout2-table th {
     background-color: #059669 !important;
     color: #fff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  .print-document--sale .print-document__section-label {
+  body:not(.storefront-app) .print-document--sale .print-document__section-label {
     color: #047857 !important;
     border-bottom-color: #10b981 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  .print-document--sale .print-document__summary-row--total {
+  body:not(.storefront-app) .print-document--sale .print-document__summary-row--total {
     background-color: #d1fae5 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  .print-document--sale .print-document__summary-table {
+  body:not(.storefront-app) .print-document--sale .print-document__summary-table {
     border-color: #10b981 !important;
   }
 
   /* ── Purchase invoice = blue ────────────────────────────────────────── */
-  .print-document--purchase .print-document__table th,
-  .print-document--purchase .layout2-table th {
+  body:not(.storefront-app) .print-document--purchase .print-document__table th,
+  body:not(.storefront-app) .print-document--purchase .layout2-table th {
     background-color: #2563eb !important;
     color: #fff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  .print-document--purchase .print-document__section-label {
+  body:not(.storefront-app) .print-document--purchase .print-document__section-label {
     color: #1d4ed8 !important;
     border-bottom-color: #3b82f6 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  .print-document--purchase .print-document__summary-row--total {
+  body:not(.storefront-app) .print-document--purchase .print-document__summary-row--total {
     background-color: #dbeafe !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  .print-document--purchase .print-document__summary-table {
+  body:not(.storefront-app) .print-document--purchase .print-document__summary-table {
     border-color: #3b82f6 !important;
   }
 
   /* ── Utility classes ────────────────────────────────────────────────── */
-  .text-right { text-align: right !important; }
-  .text-left { text-align: left !important; }
-  .text-center { text-align: center !important; }
-  .font-bold { font-weight: 700 !important; }
-  .print-amount { font-size: 9px !important; }
+  body:not(.storefront-app) .text-right { text-align: right !important; }
+  body:not(.storefront-app) .text-left { text-align: left !important; }
+  body:not(.storefront-app) .text-center { text-align: center !important; }
+  body:not(.storefront-app) .font-bold { font-weight: 700 !important; }
+  body:not(.storefront-app) .print-amount { font-size: 9px !important; }
+
+  /* ── Fix: Restore flex/grid layout classes scoped inside .pos-app ───── */
+  /*
+   * These classes are defined inside `.pos-app {}` in index.css.
+   * During actual browser printing the .pos-app scope can be lost, causing
+   * display:flex/grid to fall back to block — which makes labels and values
+   * run together (e.g. "Subtotal600", "Invoice #:SO-GEN-...").
+   * Explicitly restoring display here fixes the print output.
+   */
+
+  /* Info grid (3-column header section: Bill To / Invoice Details / Payment) */
+  body:not(.storefront-app) .print-document__info-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Each info line row (label + value side by side) */
+  body:not(.storefront-app) .print-document__info-line {
+    display: flex !important;
+    gap: 6px !important;
+    font-size: 11px !important;
+    margin-bottom: 3px !important;
+    color: #000 !important;
+  }
+
+  body:not(.storefront-app) .print-document__info-label {
+    font-weight: 700 !important;
+    min-width: 60px !important;
+    color: #000 !important;
+  }
+
+  body:not(.storefront-app) .print-document__info-value {
+    text-align: left !important;
+    color: #000 !important;
+  }
+
+  /* Summary section (Subtotal / Total / Previous Balance / Ledger Balance) */
+  body:not(.storefront-app) .print-document__summary {
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin-top: 12px !important;
+  }
+
+  body:not(.storefront-app) .print-document__summary-table {
+    width: 240px !important;
+  }
+
+  body:not(.storefront-app) .print-document__summary-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 11px !important;
+    margin-bottom: 4px !important;
+    color: #000 !important;
+  }
+
+  body:not(.storefront-app) .print-document__summary-row--total {
+    border-top: 1px solid #000 !important;
+    padding-top: 6px !important;
+    margin-top: 4px !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+  }
+
+  /* Company header row (logo left + name/subtitle right) */
+  body:not(.storefront-app) .print-document__company {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 20px !important;
+  }
+
+  body:not(.storefront-app) .print-document__company-details {
+    text-align: right !important;
+    flex: 1 !important;
+  }
+
+  body:not(.storefront-app) .print-document__company-name {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    margin-bottom: 2px !important;
+    color: #000 !important;
+  }
+
+  body:not(.storefront-app) .print-document__company-subtitle {
+    font-size: 13px !important;
+    color: #444 !important;
+  }
+
+  /* Footer + summary side-by-side wrapper */
+  body:not(.storefront-app) .print-document__footer {
+    font-size: 10px !important;
+    color: #333 !important;
+    margin-top: 0 !important;
+  }
+
+  /* Section label (ITEMS:, NOTES:, etc.) */
+  body:not(.storefront-app) .print-document__section-label {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #555 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    margin-bottom: 4px !important;
+  }
 }
+

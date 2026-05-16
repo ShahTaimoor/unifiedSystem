@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import './index.css';
+import './components/print/printStyles.css';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorProvider } from './contexts/ErrorContext';
 import { AuthProvider } from './contexts/AuthContext';

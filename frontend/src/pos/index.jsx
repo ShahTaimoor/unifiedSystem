@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { Provider } from 'react-redux';
 import './index.css';
-import './components/print/printStyles.css';
 import App from './App';
 import { store } from './store/store';
 import { registerServiceWorker } from './registerSW';
