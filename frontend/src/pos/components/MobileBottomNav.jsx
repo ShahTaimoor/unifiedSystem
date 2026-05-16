@@ -109,7 +109,7 @@ const MobileBottomNav = () => {
   if (visibleItems.length === 0) return null;
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 border-t border-gray-200 backdrop-blur-md pb-safe">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white border-t border-gray-200 shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.1)] backdrop-blur-md pb-safe">
       <div className="flex items-center justify-around px-2 py-2 max-w-screen-sm mx-auto h-16">
         {visibleItems.map((item) => {
           const IconComponent = LUCIDE_ICON_MAP[item.icon] || LUCIDE_ICON_MAP.Circle;
@@ -123,10 +123,10 @@ const MobileBottomNav = () => {
           let inactiveClasses = 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100';
 
           if (isEmerald) {
-            activeClasses = 'bg-emerald-100 text-emerald-700 border-emerald-200 ring-2 ring-emerald-400/60';
+            activeClasses = 'bg-emerald-100 text-emerald-700 border-emerald-200 ring-2 ring-emerald-400/60 shadow-inner';
             inactiveClasses = 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
           } else if (isBlue) {
-            activeClasses = 'bg-blue-100 text-blue-700 border-blue-200 ring-2 ring-blue-400/60';
+            activeClasses = 'bg-blue-100 text-blue-700 border-blue-200 ring-2 ring-blue-400/60 shadow-inner';
             inactiveClasses = 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100';
           }
 
@@ -134,12 +134,12 @@ const MobileBottomNav = () => {
             <button
               key={item.href}
               onClick={() => handleNavigationClick(item)}
-              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-0.5 mx-1 rounded-xl transition-all duration-200 active:scale-95 border ${
+              className={`flex-1 flex flex-col items-center justify-center py-2 px-0.5 mx-1 rounded-xl transition-all duration-300 active:scale-90 border shadow-sm ${
                 isActive ? activeClasses : inactiveClasses
               }`}
             >
-              <IconComponent className={`h-5 w-5 ${isActive ? 'mb-0.5' : 'mb-0.5 opacity-80'}`} />
-              <span className="text-[10px] font-bold leading-tight w-full text-center break-words">
+              <IconComponent className={`h-5 w-5 ${isActive ? 'mb-0.5 scale-110' : 'mb-0.5 opacity-80'}`} />
+              <span className="text-[10px] font-black leading-tight w-full text-center break-words px-1">
                 {item.name.replace('Receipts', 'Receipt').replace('Payments', 'Payment')}
               </span>
             </button>

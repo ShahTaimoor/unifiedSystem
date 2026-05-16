@@ -54,7 +54,11 @@ export const ROUTE_ACCESS = {
   '/help': { permission: 'view_help' },
 };
 
-export const getRouteAccess = (path) => ROUTE_ACCESS[path] || null;
+export const getRouteAccess = (path) => {
+  if (!path) return null;
+  const normalizedPath = path.replace('/pos', '');
+  return ROUTE_ACCESS[normalizedPath] || ROUTE_ACCESS[path] || null;
+};
 
 export const canAccessRoute = (path, user, hasPermission) => {
   const access = getRouteAccess(path);

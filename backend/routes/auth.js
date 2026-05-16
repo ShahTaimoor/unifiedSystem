@@ -358,6 +358,14 @@ router.put('/profile', [
 
     // Call service to update profile
     const userId = getUserId(req.user);
+    const userRole = req.user.role?.toLowerCase();
+
+    // Strictly forbid customers from updating profile fields (name, phone, address, etc.)
+    // They should only be allowed to change their password via /change-password
+    if (userRole === 'customer') {
+      return res.status(403).json({ message: 'Access denied: Customers cannot update profile information. Only password changes are allowed.' });
+    }
+
     const result = await authService.updateProfile(userId, updateData);
 
     res.json(result);

@@ -909,7 +909,7 @@ export const MultiTabLayout = ({ children }) => {
         <TabBar />
 
         {/* Page content */}
-        <main className={`${isMobile ? 'py-2 pb-20' : 'py-4'} overflow-x-hidden max-w-full`}>
+        <main className={`${(isMobile || isTablet) ? 'py-2 pb-24' : 'py-4'} overflow-x-hidden max-w-full`}>
           <div className={`mx-auto max-w-full w-full overflow-x-hidden ${isMobile ? 'px-2' : 'px-2 sm:px-4 lg:px-6'}`}>
             <ErrorBoundary>
               {(() => {
