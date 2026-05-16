@@ -1653,7 +1653,7 @@ export const Settings2 = () => {
     handleResetPassword(targetUser._id, newPassword);
   };
 
-  const handleChangeMyPassword = async () => {
+  const handleMyPasswordChange = async () => {
     if (!currentPassword.trim()) {
       toast.error('Current password is required');
       return;
