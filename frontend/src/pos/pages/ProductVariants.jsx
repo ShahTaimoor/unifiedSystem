@@ -7,7 +7,8 @@ import {
   Package,
   Tag,
   X,
-  AlertCircle
+  AlertCircle,
+  TrendingUp
 } from 'lucide-react';
 import {
   useGetVariantsQuery,
@@ -18,13 +19,15 @@ import {
 import { useGetProductsQuery } from '../store/services/productsApi';
 import { ProductSearchableSelect } from '../components/ProductSearchableSelect';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
-import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
+import { LoadingSpinner, LoadingButton, LoadingInline } from '../components/LoadingSpinner';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 import ValidatedInput, { ValidatedSelect } from '../components/ValidatedInput';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useFormValidation } from '../hooks/useFormValidation';
+import BaseModal from '../components/BaseModal';
 
 const ProductVariants = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -333,40 +336,29 @@ const VariantModal = ({ variant, products, productsLoading, isOpen, onClose, onS
     }
   }, [variant, isOpen]);
 
-  // Auto-generate variant name from variantValue when creating new variant (backup for initial load)
+  // Auto-generate variant name from variantValue when creating new variant
   React.useEffect(() => {
     if (formData.variantValue && !variant) {
       const trimmedValue = formData.variantValue.trim();
       const trimmedName = formData.variantName?.trim() || '';
       if (trimmedValue && (!trimmedName || trimmedName === '')) {
-        setFormData(prev => ({
-          ...prev,
-          variantName: trimmedValue
-        }));
+        setFormData(prev => ({ ...prev, variantName: trimmedValue }));
       }
     }
   }, [formData.variantValue, variant]);
 
   React.useEffect(() => {
     if (formData.baseProduct && formData.variantValue) {
-      const baseProduct = products.find(
-        (p) => String(p._id ?? p.id) === String(formData.baseProduct)
-      );
+      const baseProduct = products.find(p => String(p._id ?? p.id) === String(formData.baseProduct));
       if (baseProduct && !variant) {
-        setFormData(prev => ({
-          ...prev,
-          displayName: `${baseProduct.name} - ${formData.variantValue}`
-        }));
+        setFormData(prev => ({ ...prev, displayName: `${baseProduct.name} - ${formData.variantValue}` }));
       }
     }
   }, [formData.baseProduct, formData.variantValue, products, variant]);
 
-  // Auto-calculate pricing based on base product
   React.useEffect(() => {
     if (formData.baseProduct && !variant) {
-      const baseProduct = products.find(
-        (p) => String(p._id ?? p.id) === String(formData.baseProduct)
-      );
+      const baseProduct = products.find(p => String(p._id ?? p.id) === String(formData.baseProduct));
       if (baseProduct) {
         setFormData(prev => ({
           ...prev,
@@ -388,31 +380,13 @@ const VariantModal = ({ variant, products, productsLoading, isOpen, onClose, onS
         showErrorToast('Please select a base product.');
         return;
       }
-      // Ensure variantName is set (fallback to variantValue if empty)
-      const trimmedVariantName = (formData.variantName || '').trim();
-      const trimmedVariantValue = (formData.variantValue || '').trim();
-      const finalVariantName = (trimmedVariantName && trimmedVariantName.length > 0) 
-        ? trimmedVariantName 
-        : (trimmedVariantValue && trimmedVariantValue.length > 0 ? trimmedVariantValue : '');
-      
-      if (!finalVariantName || finalVariantName.length === 0) {
-        showErrorToast('Variant name is required. Please fill in Variant Value or Variant Name.');
+      const finalVariantName = (formData.variantName || '').trim() || (formData.variantValue || '').trim();
+      if (!finalVariantName) {
+        showErrorToast('Variant name is required.');
         return;
       }
 
-      // Create submitData with explicit variantName to ensure it's not empty
-      const submitData = {
-        baseProduct: formData.baseProduct,
-        variantType: formData.variantType,
-        variantValue: formData.variantValue,
-        variantName: finalVariantName, // Explicitly set to ensure it's not empty
-        displayName: formData.displayName,
-        description: formData.description,
-        pricing: formData.pricing,
-        transformationCost: formData.transformationCost,
-        sku: formData.sku,
-        status: formData.status
-      };
+      const submitData = { ...formData, variantName: finalVariantName };
 
       if (variant) {
         await updateVariant({ id: variant._id, ...submitData }).unwrap();
@@ -430,158 +404,153 @@ const VariantModal = ({ variant, products, productsLoading, isOpen, onClose, onS
 
   const isSubmitting = isCreating || isUpdating;
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-            {variant ? 'Edit Variant' : 'Create Variant'}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X className="h-5 w-5 sm:h-6 sm:w-6" />
-          </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={variant ? 'Refine Variant' : 'Engineer New Variant'}
+      maxWidth="2xl"
+    >
+      <form onSubmit={handleSubmit} className="p-6 space-y-8">
+        <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6 space-y-6">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="h-2 w-6 bg-primary-600 rounded-full" />
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Base Integration</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <ProductSearchableSelect
+              label="Parent Product Catalog"
+              placeholder="Select base identity..."
+              products={products}
+              value={formData.baseProduct}
+              onValueChange={(id) => setFormData({ ...formData, baseProduct: id })}
+              loading={productsLoading}
+              disabled={!!variant}
+              className="w-full"
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <ValidatedSelect
+                label="Variant Schema"
+                value={formData.variantType}
+                onChange={(e) => setFormData({ ...formData, variantType: e.target.value })}
+                options={[
+                  { value: 'color', label: 'Color' },
+                  { value: 'warranty', label: 'Warranty' },
+                  { value: 'size', label: 'Size' },
+                  { value: 'finish', label: 'Finish' },
+                  { value: 'custom', label: 'Custom' }
+                ]}
+                required
+                disabled={!!variant}
+              />
+              <ValidatedInput
+                label="Attribute Value"
+                type="text"
+                value={formData.variantValue}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setFormData(prev => {
+                    const shouldUpdateName = !prev.variantName || prev.variantName === prev.variantValue;
+                    return { ...prev, variantValue: newValue, variantName: shouldUpdateName ? newValue : prev.variantName };
+                  });
+                }}
+                placeholder="e.g. Matte Black"
+                required
+                disabled={!!variant}
+              />
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
-          <ProductSearchableSelect
-            label="Base Product"
-            placeholder="Search base product…"
-            products={products}
-            value={formData.baseProduct}
-            onValueChange={(id) => setFormData({ ...formData, baseProduct: id })}
-            loading={productsLoading}
-            disabled={!!variant}
-            className="w-full"
-          />
-
-          <ValidatedSelect
-            label="Variant Type"
-            value={formData.variantType}
-            onChange={(e) => setFormData({ ...formData, variantType: e.target.value })}
-            options={[
-              { value: 'color', label: 'Color' },
-              { value: 'warranty', label: 'Warranty' },
-              { value: 'size', label: 'Size' },
-              { value: 'finish', label: 'Finish' },
-              { value: 'custom', label: 'Custom' }
-            ]}
-            required
-            disabled={!!variant}
-          />
-
-          <ValidatedInput
-            label="Variant Value"
-            type="text"
-            value={formData.variantValue}
-            onChange={(e) => {
-              const newValue = e.target.value;
-              setFormData(prev => {
-                // Auto-update variantName if it's empty, whitespace, or matches old variantValue
-                const prevVariantName = prev.variantName?.trim() || '';
-                const prevVariantValue = prev.variantValue?.trim() || '';
-                const shouldUpdateName = !prevVariantName || prevVariantName === prevVariantValue;
-                const newVariantName = shouldUpdateName ? newValue : prev.variantName;
-                return {
-                  ...prev,
-                  variantValue: newValue,
-                  variantName: newVariantName
-                };
-              });
-            }}
-            placeholder="e.g., Red, With Warranty, Large"
-            required
-            disabled={!!variant}
-          />
-
-          <ValidatedInput
-            label="Variant Name"
-            type="text"
-            value={formData.variantName}
-            onChange={(e) => setFormData({ ...formData, variantName: e.target.value })}
-            placeholder="e.g., Red, With Warranty, Large"
-            required
-          />
-
-          <ValidatedInput
-            label="Display Name"
-            type="text"
-            value={formData.displayName}
-            onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-            placeholder="e.g., Spoiler - Red"
-            required
-          />
-
-          <ValidatedInput
-            label="Transformation Cost (per unit)"
-            type="number"
-            value={formData.transformationCost}
-            onChange={(e) => setFormData({ ...formData, transformationCost: parseFloat(e.target.value) || 0 })}
-            min="0"
-            step="0.01"
-            required
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="h-2 w-6 bg-gray-400 rounded-full" />
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Naming & Identity</h3>
+          </div>
+          
+          <div className="space-y-4">
             <ValidatedInput
-              label="Retail Price"
-              type="number"
-              value={formData.pricing.retail}
-              onChange={(e) => setFormData({
-                ...formData,
-                pricing: { ...formData.pricing, retail: parseFloat(e.target.value) || 0 }
-              })}
-              min="0"
-              step="0.01"
+              label="System Name"
+              type="text"
+              value={formData.variantName}
+              onChange={(e) => setFormData({ ...formData, variantName: e.target.value })}
+              placeholder="Internal reference name"
               required
             />
             <ValidatedInput
-              label="Wholesale Price"
-              type="number"
-              value={formData.pricing.wholesale}
-              onChange={(e) => setFormData({
-                ...formData,
-                pricing: { ...formData.pricing, wholesale: parseFloat(e.target.value) || 0 }
-              })}
-              min="0"
-              step="0.01"
+              label="Customer Display Label"
+              type="text"
+              value={formData.displayName}
+              onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+              placeholder="What customers see on receipt/portal"
               required
             />
+            <ValidatedInput
+              label="Asset SKU (Global Identifier)"
+              type="text"
+              value={formData.sku}
+              onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+              placeholder="Leave blank for auto-generation"
+              className="font-mono"
+            />
+          </div>
+        </div>
+
+        <div className="bg-gray-900 rounded-3xl p-6 text-white space-y-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-600/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+          
+          <div className="grid grid-cols-2 gap-6 relative z-10">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Retail Valuation</label>
+              <Input
+                type="number"
+                value={formData.pricing.retail}
+                onChange={(e) => setFormData({ ...formData, pricing: { ...formData.pricing, retail: parseFloat(e.target.value) || 0 }})}
+                className="rounded-xl h-12 bg-white/10 border-white/20 text-white font-mono font-bold"
+                step="0.01"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Wholesale Valuation</label>
+              <Input
+                type="number"
+                value={formData.pricing.wholesale}
+                onChange={(e) => setFormData({ ...formData, pricing: { ...formData.pricing, wholesale: parseFloat(e.target.value) || 0 }})}
+                className="rounded-xl h-12 bg-white/10 border-white/20 text-white font-mono font-bold"
+                step="0.01"
+                required
+              />
+            </div>
           </div>
 
-          <ValidatedInput
-            label="SKU (optional)"
-            type="text"
-            value={formData.sku}
-            onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-            placeholder="Auto-generated if left empty"
-          />
-
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="secondary"
-              size="default"
-              className="w-full sm:w-auto"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <LoadingButton
-              type="submit"
-              isLoading={isSubmitting}
-              variant="default"
-              size="default"
-              className="w-full sm:w-auto"
-            >
-              {variant ? 'Update' : 'Create'}
-            </LoadingButton>
+          <div className="relative z-10">
+            <label className="block text-[10px] font-bold text-primary-400 uppercase tracking-widest mb-2 px-1">Transformation Overhead (Per Unit)</label>
+            <div className="relative">
+              <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-400" />
+              <Input
+                type="number"
+                value={formData.transformationCost}
+                onChange={(e) => setFormData({ ...formData, transformationCost: parseFloat(e.target.value) || 0 })}
+                className="pl-11 rounded-xl h-14 bg-primary-600/20 border-primary-500/30 text-white font-mono font-bold text-lg"
+                step="0.01"
+                required
+              />
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2 italic px-1">Added to base cost to calculate final valuation.</p>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <div className="flex space-x-3 pt-4">
+          <Button type="button" onClick={onClose} variant="outline" className="flex-1 h-14 rounded-2xl border-gray-200 font-bold text-gray-600" disabled={isSubmitting}>Discard</Button>
+          <Button type="submit" className="flex-[2] h-14 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white shadow-xl shadow-primary-500/20 font-bold" disabled={isSubmitting}>
+            {isSubmitting ? <LoadingInline className="text-white" /> : (variant ? 'Commit Updates' : 'Initialize Variant')}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 

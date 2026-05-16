@@ -1,14 +1,14 @@
-import React, { useEffect, useRef } from 'react';
-import { 
-  AlertTriangle, 
-  Trash2, 
-  X, 
-  Info, 
-  CheckCircle, 
+import React from 'react';
+import {
+  AlertTriangle,
+  Trash2,
+  Info,
+  CheckCircle,
   XCircle,
   Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import BaseModal from './BaseModal';
 
 const ConfirmationDialog = ({
   isOpen,
@@ -22,24 +22,10 @@ const ConfirmationDialog = ({
   isLoading = false,
   confirmButtonProps = {},
   cancelButtonProps = {},
-  children
+  children,
+  maxWidth = 'md',
+  zIndex = 1200 // Higher than standard modals (1100)
 }) => {
-  // Handle Escape key to close modal
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && !isLoading) {
-        onClose();
-      }
-    };
-    
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, isLoading, onClose]);
-
   if (!isOpen) return null;
 
   const getIcon = () => {
@@ -72,116 +58,87 @@ const ConfirmationDialog = ({
     }
   };
 
-  const getConfirmButtonColor = () => {
+  const getConfirmButtonStyles = () => {
     switch (type) {
       case 'danger':
-        return 'border-red-300 bg-white text-red-700 hover:bg-red-50 focus:ring-red-500 active:bg-red-100';
+        return 'bg-red-600 hover:bg-red-700 text-white shadow-red-100';
       case 'warning':
-        return 'border-yellow-300 bg-white text-yellow-700 hover:bg-yellow-50 focus:ring-yellow-500 active:bg-yellow-100';
+        return 'bg-yellow-600 hover:bg-yellow-700 text-white shadow-yellow-100';
       case 'info':
-        return 'border-blue-300 bg-white text-blue-700 hover:bg-blue-50 focus:ring-blue-500 active:bg-blue-100';
+        return 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-100';
       case 'success':
-        return 'border-green-300 bg-white text-green-700 hover:bg-green-50 focus:ring-green-500 active:bg-green-100';
+        return 'bg-green-600 hover:bg-green-700 text-white shadow-green-100';
       default:
-        return 'border-primary-300 bg-white text-primary-700 hover:bg-primary-50 focus:ring-primary-500 active:bg-primary-100';
+        return 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-100';
     }
   };
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget && !isLoading) {
-      onClose();
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape' && !isLoading) {
-      onClose();
-    }
-  };
+  const footer = (
+    <div className="flex flex-col sm:flex-row-reverse gap-3 w-full">
+      <Button
+        type="button"
+        onClick={onConfirm}
+        disabled={isLoading}
+        className={`flex-1 sm:flex-none sm:min-w-[120px] h-12 rounded-xl font-bold transition-all ${getConfirmButtonStyles()}`}
+        {...confirmButtonProps}
+      >
+        {isLoading ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+            Processing
+          </>
+        ) : (
+          confirmText
+        )}
+      </Button>
+      <Button
+        type="button"
+        onClick={onClose}
+        disabled={isLoading}
+        variant="outline"
+        className="flex-1 sm:flex-none sm:min-w-[100px] h-12 rounded-xl font-bold border-gray-200 text-gray-600 hover:bg-gray-50"
+        {...cancelButtonProps}
+      >
+        {cancelText}
+      </Button>
+    </div>
+  );
 
   return (
-    <div 
-      className="fixed inset-0 z-50 overflow-y-auto"
-      onKeyDown={handleKeyDown}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth={maxWidth}
+      zIndex={zIndex}
+      variant="centered"
+      showCloseButton={!isLoading}
+      footer={footer}
+      className="overflow-hidden"
     >
-      <div className="flex items-center justify-center min-h-[100dvh] pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Backdrop */}
-        <div 
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          onClick={handleBackdropClick}
-        />
-
-        {/* Dialog */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="sm:flex sm:items-start">
-              {/* Icon */}
-              <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${getIconBgColor()} sm:mx-0 sm:h-10 sm:w-10`}>
-                {getIcon()}
-              </div>
-              
-              {/* Content */}
-              <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  {title}
-                </h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500">
-                    {message}
-                  </p>
-                  {children && (
-                    <div className="mt-3">
-                      {children}
-                    </div>
-                  )}
+      <div className="p-6">
+        <div className="sm:flex sm:items-start">
+          <div className={`mx-auto flex-shrink-0 flex items-center justify-center h-14 w-14 rounded-2xl ${getIconBgColor()} sm:mx-0 sm:h-12 sm:w-12 transition-transform duration-500 hover:scale-110`}>
+            {getIcon()}
+          </div>
+          
+          <div className="mt-4 text-center sm:mt-0 sm:ml-5 sm:text-left flex-1">
+            <h3 className="text-xl font-bold text-gray-900 leading-tight">
+              {title}
+            </h3>
+            <div className="mt-3">
+              <p className="text-sm text-gray-500 leading-relaxed font-medium">
+                {message}
+              </p>
+              {children && (
+                <div className="mt-5">
+                  {children}
                 </div>
-              </div>
-
-              {/* Close button */}
-              {!isLoading && (
-                <button
-                  onClick={onClose}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
               )}
             </div>
           </div>
-
-          {/* Actions */}
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse sm:gap-3">
-            <Button
-              type="button"
-              onClick={onConfirm}
-              disabled={isLoading}
-              variant="outline"
-              className={`w-full sm:w-auto sm:text-sm ${getConfirmButtonColor()}`}
-              {...confirmButtonProps}
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
-                  Processing...
-                </>
-              ) : (
-                confirmText
-              )}
-            </Button>
-            <Button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              variant="outline"
-              className="mt-3 sm:mt-0 w-full sm:w-auto"
-              {...cancelButtonProps}
-            >
-              {cancelText}
-            </Button>
-          </div>
         </div>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 
@@ -191,9 +148,9 @@ export const DeleteConfirmationDialog = ({ isOpen, onClose, onConfirm, itemName,
     isOpen={isOpen}
     onClose={onClose}
     onConfirm={onConfirm}
-    title={`Delete ${itemType}`}
-    message={`Are you sure you want to delete "${itemName}"? This action cannot be undone.`}
-    confirmText="Delete"
+    title={`Terminate ${itemType}`}
+    message={`Are you sure you want to permanently delete "${itemName}"? This action is irreversible and will be logged in the audit trail.`}
+    confirmText="Confirm Delete"
     type="danger"
     isLoading={isLoading}
   />
@@ -204,14 +161,11 @@ export const CancelConfirmationDialog = ({ isOpen, onClose, onConfirm, itemName,
     isOpen={isOpen}
     onClose={onClose}
     onConfirm={onConfirm}
-    title={`Cancel ${itemType}`}
-    message={`Are you sure you want to cancel "${itemName}"? This action cannot be undone.`}
-    confirmText="Cancel Order"
+    title={`Abort ${itemType}`}
+    message={`Are you sure you want to cancel "${itemName}"? All unsaved progress for this transaction will be lost.`}
+    confirmText="Abort Action"
     type="warning"
     isLoading={isLoading}
-    confirmButtonProps={{
-      className: "bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
-    }}
   />
 );
 
@@ -220,19 +174,17 @@ export const ClearConfirmationDialog = ({ isOpen, onClose, onConfirm, itemCount 
     isOpen={isOpen}
     onClose={onClose}
     onConfirm={onConfirm}
-    title="Clear All Items"
-    message={`Are you sure you want to clear all ${itemCount} ${itemType}? This action cannot be undone.`}
-    confirmText="Clear All"
+    title="Wipe Session Data"
+    message={`Are you sure you want to clear all ${itemCount} ${itemType}? This will reset the current workspace state.`}
+    confirmText="Wipe All"
     type="warning"
     isLoading={isLoading}
   >
-    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-3">
-      <div className="flex">
-        <Shield className="h-5 w-5 text-yellow-400 mr-2" />
-        <div className="text-sm">
-          <p className="text-yellow-800 font-medium">Warning</p>
-          <p className="text-yellow-700">All items will be removed from the current session.</p>
-        </div>
+    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 mt-4 flex items-start space-x-3">
+      <Shield className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+      <div className="text-xs">
+        <p className="text-amber-900 font-bold uppercase tracking-widest mb-1">Session Protocol</p>
+        <p className="text-amber-700 leading-relaxed font-medium">All items will be purged from the active buffer. This cannot be undone.</p>
       </div>
     </div>
   </ConfirmationDialog>
@@ -243,22 +195,21 @@ export const BulkDeleteConfirmationDialog = ({ isOpen, onClose, onConfirm, itemC
     isOpen={isOpen}
     onClose={onClose}
     onConfirm={onConfirm}
-    title="Bulk Delete"
-    message={`Are you sure you want to delete ${itemCount} ${itemType}? This action cannot be undone.`}
-    confirmText={`Delete ${itemCount} Items`}
+    title="Mass Termination"
+    message={`You are about to delete ${itemCount} ${itemType}. This is a bulk operation that affects multiple records.`}
+    confirmText={`Delete ${itemCount} Assets`}
     type="danger"
     isLoading={isLoading}
   >
-    <div className="bg-red-50 border border-red-200 rounded-md p-3 mt-3">
-      <div className="flex">
-        <XCircle className="h-5 w-5 text-red-400 mr-2" />
-        <div className="text-sm">
-          <p className="text-red-800 font-medium">This action is permanent</p>
-          <p className="text-red-700">All selected items will be permanently deleted.</p>
-        </div>
+    <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mt-4 flex items-start space-x-3">
+      <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+      <div className="text-xs">
+        <p className="text-red-900 font-bold uppercase tracking-widest mb-1">Critical Warning</p>
+        <p className="text-red-700 leading-relaxed font-medium">Bulk deletion is permanent. Ensure you have verified the selection set before proceeding.</p>
       </div>
     </div>
   </ConfirmationDialog>
 );
 
 export default ConfirmationDialog;
+

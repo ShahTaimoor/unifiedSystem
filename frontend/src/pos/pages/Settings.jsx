@@ -77,6 +77,7 @@ import { LUCIDE_ICON_MAP } from '../utils/lucideIconMap';
 import { getVisibilityFlag } from '../utils/fieldVisibility';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
+import BaseModal from '../components/BaseModal';
 
 export const Settings2 = () => {
   const { user, hasPermission } = useAuth();
@@ -3815,384 +3816,351 @@ export const Settings2 = () => {
         })()}
 
         {/* User Activity Modal */}
-        {showActivityModal && selectedUserActivity && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
+        <BaseModal
+          isOpen={showActivityModal}
+          onClose={() => {
+            setShowActivityModal(false);
+            setSelectedUserActivity(null);
+          }}
+          title="User Activity Dashboard"
+          maxWidth="4xl"
+          variant="centered"
+        >
+          {selectedUserActivity && (
+            <div className="p-8">
+              <div className="mb-8 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold">User Activity Dashboard</h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedUserActivity.name} ({selectedUserActivity.email})
-                  </p>
+                  <h3 className="text-xl font-bold text-gray-900 tracking-tight">{selectedUserActivity.name}</h3>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{selectedUserActivity.email}</p>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowActivityModal(false);
-                    setSelectedUserActivity(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className={`px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${
+                  selectedUserActivity.activity?.isOnline 
+                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                  : 'bg-gray-50 text-gray-400 border-gray-100'
+                }`}>
+                  {selectedUserActivity.activity?.isOnline ? 'Active Now' : 'Currently Offline'}
+                </div>
               </div>
 
               {activityLoading ? (
-                <div className="flex justify-center py-8">
-                  <LoadingSpinner />
+                <div className="flex flex-col items-center justify-center py-20">
+                  <LoadingSpinner size="lg" />
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-4">Retrieving logs...</p>
                 </div>
               ) : selectedUserActivity.activity ? (
-                <div className="space-y-6">
-                  {/* Activity Summary */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <Clock className="h-8 w-8 text-blue-600 mr-3" />
-                        <div>
-                          <p className="text-sm font-medium text-blue-800">Last Login</p>
-                          <p className="text-lg font-semibold text-blue-900">
-                            {selectedUserActivity.activity.lastLogin
-                              ? new Date(selectedUserActivity.activity.lastLogin).toLocaleString()
-                              : 'Never'
-                            }
-                          </p>
-                        </div>
+                <div className="space-y-8">
+                  {/* Activity Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-primary-50/50 border border-primary-100 p-6 rounded-[2rem] flex items-center space-x-4">
+                      <div className="bg-white p-3 rounded-2xl shadow-sm border border-primary-100">
+                        <Clock className="h-6 w-6 text-primary-600" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest">Last Login Access</p>
+                        <p className="text-sm font-bold text-slate-900">
+                          {selectedUserActivity.activity.lastLogin
+                            ? new Date(selectedUserActivity.activity.lastLogin).toLocaleString()
+                            : 'No record found'
+                          }
+                        </p>
                       </div>
                     </div>
 
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <TrendingUp className="h-8 w-8 text-green-600 mr-3" />
-                        <div>
-                          <p className="text-sm font-medium text-green-800">Total Logins</p>
-                          <p className="text-lg font-semibold text-green-900">
-                            {selectedUserActivity.activity.loginCount || 0}
-                          </p>
-                        </div>
+                    <div className="bg-slate-900 p-6 rounded-[2rem] flex items-center space-x-4">
+                      <div className="bg-white/10 p-3 rounded-2xl border border-white/10">
+                        <TrendingUp className="h-6 w-6 text-white" />
                       </div>
-                    </div>
-
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <div className={`h-8 w-8 rounded-full mr-3 flex items-center justify-center ${selectedUserActivity.activity.isOnline ? 'bg-green-500' : 'bg-gray-400'
-                          }`}>
-                          <div className="h-3 w-3 bg-white rounded-full"></div>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-purple-800">Status</p>
-                          <p className="text-lg font-semibold text-purple-900">
-                            {selectedUserActivity.activity.isOnline ? 'Online' : 'Offline'}
-                          </p>
-                        </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Lifecycle Logins</p>
+                        <p className="text-lg font-black text-white">
+                          {selectedUserActivity.activity.loginCount || 0}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Login History */}
-                  <div className="bg-white border border-gray-200 rounded-lg">
-                    <div className="p-4 border-b border-gray-200">
-                      <h4 className="text-md font-semibold flex items-center">
-                        <Clock className="h-5 w-5 mr-2" />
-                        Recent Login History
-                      </h4>
-                    </div>
-                    <div className="p-4">
+                  <div>
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                      <Clock className="h-3 w-3 mr-2" /> Recent Access Logs
+                    </h4>
+                    <div className="border border-gray-100 rounded-[2rem] overflow-hidden bg-white shadow-sm">
                       {selectedUserActivity.activity.loginHistory && selectedUserActivity.activity.loginHistory.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="divide-y divide-gray-50">
                           {selectedUserActivity.activity.loginHistory.map((login, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div>
-                                <p className="text-sm font-medium">
-                                  {new Date(login.loginTime).toLocaleString()}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  IP: {login.ipAddress}
-                                </p>
+                            <div key={index} className="flex items-center justify-between p-5 hover:bg-gray-50/50 transition-colors">
+                              <div className="flex items-center space-x-4">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <div>
+                                  <p className="text-sm font-bold text-gray-900">
+                                    {new Date(login.loginTime).toLocaleString()}
+                                  </p>
+                                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                    Network IP: {login.ipAddress}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {login.userAgent?.split(' ')[0] || 'Unknown'}
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                                {login.userAgent?.split(' ')[0] || 'Browser'}
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-gray-500 text-center py-4">No login history available</p>
+                        <div className="p-12 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">No access history available</div>
                       )}
                     </div>
                   </div>
 
                   {/* Permission History */}
-                  <div className="bg-white border border-gray-200 rounded-lg">
-                    <div className="p-4 border-b border-gray-200">
-                      <h4 className="text-md font-semibold flex items-center">
-                        <Shield className="h-5 w-5 mr-2" />
-                        Permission Change History
-                      </h4>
-                    </div>
-                    <div className="p-4">
+                  <div>
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                      <Shield className="h-3 w-3 mr-2" /> Security & Permission Audit
+                    </h4>
+                    <div className="space-y-3">
                       {selectedUserActivity.activity.permissionHistory && selectedUserActivity.activity.permissionHistory.length > 0 ? (
-                        <div className="space-y-3">
-                          {selectedUserActivity.activity.permissionHistory.map((change, index) => (
-                            <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${change.changeType === 'created' ? 'bg-green-100 text-green-800' :
-                                  change.changeType === 'role_changed' ? 'bg-blue-100 text-blue-800' :
-                                    change.changeType === 'permissions_modified' ? 'bg-yellow-100 text-yellow-800' :
-                                      'bg-gray-100 text-gray-800'
-                                  }`}>
-                                  {change.changeType.replace('_', ' ').toUpperCase()}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(change.changedAt).toLocaleString()}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-700 mb-1">
-                                Changed by: {change.changedBy ?
-                                  `${change.changedBy.firstName} ${change.changedBy.lastName}` :
-                                  'System'
-                                }
-                              </p>
-                              {change.notes && (
-                                <p className="text-xs text-gray-600">{change.notes}</p>
-                              )}
+                        selectedUserActivity.activity.permissionHistory.map((change, index) => (
+                          <div key={index} className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-primary-200 transition-all">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                change.changeType === 'created' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                change.changeType === 'role_changed' ? 'bg-primary-50 text-primary-600 border-primary-100' :
+                                change.changeType === 'permissions_modified' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                'bg-gray-50 text-gray-500 border-gray-100'
+                              }`}>
+                                {change.changeType.replace('_', ' ')}
+                              </span>
+                              <span className="text-[10px] font-bold text-gray-400">
+                                {new Date(change.changedAt).toLocaleString()}
+                              </span>
                             </div>
-                          ))}
-                        </div>
+                            <p className="text-sm font-bold text-gray-900 mb-1">
+                              Action by: <span className="text-primary-600">
+                                {change.changedBy ? `${change.changedBy.firstName} ${change.changedBy.lastName}` : 'System Engine'}
+                              </span>
+                            </p>
+                            {change.notes && (
+                              <p className="text-xs font-medium text-gray-500 italic mt-2">&ldquo;{change.notes}&rdquo;</p>
+                            )}
+                          </div>
+                        ))
                       ) : (
-                        <p className="text-gray-500 text-center py-4">No permission changes recorded</p>
+                        <div className="p-12 text-center border-2 border-dashed border-gray-100 rounded-2xl text-gray-400 text-xs font-bold uppercase tracking-widest">
+                          No administrative changes recorded
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Failed to load activity data</p>
+                <div className="text-center py-20">
+                  <AlertCircle className="h-10 w-10 text-gray-200 mx-auto mb-4" />
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Analytics payload empty</p>
                 </div>
               )}
+              
+              <div className="mt-10 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowActivityModal(false);
+                    setSelectedUserActivity(null);
+                  }}
+                  className="px-8 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-slate-200 active:scale-95"
+                >
+                  Close Analytics
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </BaseModal>
 
         {/* Password Change Modal */}
-        {showPasswordModal && (passwordResetUser || editingUser) && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Reset Password</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {(passwordResetUser || editingUser)?.email && `Resetting password for: ${(passwordResetUser || editingUser).email}`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setPasswordResetUser(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+        <BaseModal
+          isOpen={showPasswordModal && !!(passwordResetUser || editingUser)}
+          onClose={() => {
+            setShowPasswordModal(false);
+            setPasswordResetUser(null);
+          }}
+          title="Administrative Password Reset"
+          maxWidth="md"
+          variant="centered"
+        >
+          <div className="p-8">
+            <div className="mb-8 flex items-center space-x-4 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+              <div className="bg-white p-2.5 rounded-xl shadow-sm">
+                <Lock className="h-5 w-5 text-amber-500" />
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    New Password *
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="pr-10"
-                      placeholder="Enter new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirm Password *
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pr-10"
-                      placeholder="Confirm new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setPasswordResetUser(null);
-                  }}
-                  variant="secondary"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePasswordReset}
-                  disabled={isResettingPassword || !(passwordResetUser || editingUser)}
-                  variant="default"
-                >
-                  {isResettingPassword ? 'Resetting...' : 'Reset Password'}
-                </button>
+              <div>
+                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Security Action Required</p>
+                <p className="text-xs font-bold text-slate-900 mt-0.5 truncate max-w-[200px]">
+                  Target: {(passwordResetUser || editingUser)?.email}
+                </p>
               </div>
             </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">New Security Credential</label>
+                <div className="relative group">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pr-12 h-12 rounded-2xl border-gray-200 focus:ring-primary-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Verify Credential</label>
+                <div className="relative group">
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pr-12 h-12 rounded-2xl border-gray-200 focus:ring-primary-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-600 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10 flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPasswordResetUser(null);
+                }}
+                className="flex-1 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all"
+              >
+                Discard
+              </button>
+              <button
+                onClick={handlePasswordReset}
+                disabled={isResettingPassword || !(passwordResetUser || editingUser)}
+                className="flex-[2] py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-slate-200 disabled:opacity-50 active:scale-95"
+              >
+                {isResettingPassword ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
           </div>
-        )}
+        </BaseModal>
 
         {/* Change My Password Modal */}
-        {showMyPasswordModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Change My Password</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {user?.email && `Changing password for: ${user.email}`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowMyPasswordModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+        <BaseModal
+          isOpen={showMyPasswordModal}
+          onClose={() => setShowMyPasswordModal(false)}
+          title="Update Account Security"
+          maxWidth="md"
+          variant="centered"
+        >
+          <div className="p-8">
+            <div className="mb-8 flex items-center space-x-4 bg-primary-50/50 p-4 rounded-2xl border border-primary-100">
+              <div className="bg-white p-2.5 rounded-xl shadow-sm">
+                <UserCheck className="h-5 w-5 text-primary-600" />
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Current Password *
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showCurrentPassword ? 'text' : 'password'}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="pr-10"
-                      placeholder="Enter current password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      {showCurrentPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    New Password *
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="pr-10"
-                      placeholder="Enter new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirm New Password *
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pr-10"
-                      placeholder="Confirm new password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                  <p className="text-xs text-blue-800">
-                    <strong>Note:</strong> You must enter your current password to change it to a new one.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  onClick={() => setShowMyPasswordModal(false)}
-                  variant="secondary"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleChangeMyPassword}
-                  disabled={isChangingMyPassword}
-                  variant="default"
-                >
-                  {isChangingMyPassword ? 'Changing...' : 'Change Password'}
-                </Button>
+              <div>
+                <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest">Personal Account</p>
+                <p className="text-xs font-bold text-slate-900 mt-0.5 truncate max-w-[200px]">
+                  Current User: {user?.email}
+                </p>
               </div>
             </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Current Credential</label>
+                <div className="relative group">
+                  <Input
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="pr-12 h-12 rounded-2xl border-gray-200 focus:ring-primary-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-600 transition-colors"
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">New Credential</label>
+                <div className="relative group">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pr-12 h-12 rounded-2xl border-gray-200 focus:ring-primary-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Verify New Credential</label>
+                <div className="relative group">
+                  <Input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pr-12 h-12 rounded-2xl border-gray-200 focus:ring-primary-500"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary-600 transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10 flex space-x-3">
+              <button
+                onClick={() => setShowMyPasswordModal(false)}
+                className="flex-1 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all"
+              >
+                Discard
+              </button>
+              <button
+                onClick={handleMyPasswordChange}
+                disabled={isChangingMyPassword}
+                className="flex-[2] py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-slate-200 disabled:opacity-50 active:scale-95"
+              >
+                {isChangingMyPassword ? 'Validating...' : 'Update Security'}
+              </button>
+            </div>
           </div>
-        )}
+        </BaseModal>
       </div>
 
       <DeleteConfirmationDialog

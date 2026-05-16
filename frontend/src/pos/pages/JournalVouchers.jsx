@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan } from '../utils/dateUtils';
+import BaseModal from '../components/BaseModal';
 
 const todayISO = () => getCurrentDatePakistan();
 
@@ -53,76 +54,109 @@ const getAccountDisplayLabel = (account) => {
 const ViewModal = ({ voucher, onClose }) => {
   if (!voucher) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">{voucher.voucherNumber}</h2>
-            <p className="text-sm text-gray-500">
-              {new Date(voucher.voucherDate).toLocaleDateString()}
-            </p>
+    <BaseModal
+      isOpen={!!voucher}
+      onClose={onClose}
+      title={voucher.voucherNumber}
+      maxWidth="3xl"
+      variant="centered"
+    >
+      <div className="p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="bg-primary-50 p-2 rounded-xl">
+              <Calendar className="h-5 w-5 text-primary-600" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transaction Date</p>
+              <p className="text-sm font-bold text-gray-900">{new Date(voucher.voucherDate).toLocaleDateString()}</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
-            <X className="h-5 w-5" />
-          </button>
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Entry Status</p>
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-emerald-100">
+              Posted to Ledger
+            </span>
+          </div>
         </div>
 
         {voucher.description && (
-          <div className="px-6 py-3 bg-gray-50 border-b text-sm text-gray-700">
-            <span className="font-medium">Description: </span>{voucher.description}
+          <div className="mb-8 p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Primary Description</p>
+            <p className="text-sm font-semibold text-gray-700">{voucher.description}</p>
           </div>
         )}
 
-        <div className="overflow-auto p-6">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left font-medium text-gray-500 uppercase text-xs">Account</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-500 uppercase text-xs">Particulars</th>
-                <th className="px-4 py-2 text-right font-medium text-gray-500 uppercase text-xs">Debit</th>
-                <th className="px-4 py-2 text-right font-medium text-gray-500 uppercase text-xs">Credit</th>
+        <div className="overflow-hidden border border-gray-100 rounded-2xl bg-white shadow-sm mb-6">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Account & Code</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Narration</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Debit</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Credit</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-50">
               {(voucher.entries || []).map((e, i) => (
-                <tr key={i}>
-                  <td className="px-4 py-2 font-mono text-gray-900 border-b">
-                    <div className="font-bold">{e.accountCode}</div>
+                <tr key={i} className="hover:bg-gray-50/30 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-bold text-gray-900">{e.accountCode}</div>
                     {(e.customerName || e.supplierName) && (
-                      <div className="text-xs text-blue-600 font-sans mt-0.5">
+                      <div className="text-[10px] font-bold text-primary-600 uppercase tracking-tighter mt-0.5 flex items-center">
+                        <Users className="h-3 w-3 mr-1" />
                         Party: {e.customerName || e.supplierName}
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-2 text-gray-600 border-b">{e.particulars || e.description || '—'}</td>
-                  <td className="px-4 py-2 text-right text-gray-900">
-                    {parseFloat(e.debitAmount) > 0 ? parseFloat(e.debitAmount).toFixed(2) : '—'}
+                  <td className="px-6 py-4">
+                    <div className="text-xs font-semibold text-gray-600 italic">
+                      {e.particulars || e.description || '—'}
+                    </div>
                   </td>
-                  <td className="px-4 py-2 text-right text-gray-900">
-                    {parseFloat(e.creditAmount) > 0 ? parseFloat(e.creditAmount).toFixed(2) : '—'}
+                  <td className="px-6 py-4 text-right">
+                    <span className="text-sm font-black text-gray-900">
+                      {parseFloat(e.debitAmount) > 0 ? parseFloat(e.debitAmount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '—'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="text-sm font-black text-gray-900">
+                      {parseFloat(e.creditAmount) > 0 ? parseFloat(e.creditAmount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '—'}
+                    </span>
                   </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-gray-50 font-semibold">
+            <tfoot className="bg-gray-50/80 border-t border-gray-100">
               <tr>
-                <td colSpan="2" className="px-4 py-2 text-right text-gray-700">Totals</td>
-                <td className="px-4 py-2 text-right text-gray-900">{(voucher.totalDebit || 0).toFixed(2)}</td>
-                <td className="px-4 py-2 text-right text-gray-900">{(voucher.totalCredit || 0).toFixed(2)}</td>
+                <td colSpan="2" className="px-6 py-4 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Batch Totals</td>
+                <td className="px-6 py-4 text-right font-black text-slate-900">{(voucher.totalDebit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td className="px-6 py-4 text-right font-black text-slate-900">{(voucher.totalCredit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
               </tr>
             </tfoot>
           </table>
-
-          {voucher.notes && (
-            <p className="mt-4 text-sm text-gray-500 italic">Notes: {voucher.notes}</p>
-          )}
         </div>
 
-        <div className="px-6 py-4 border-t flex justify-end">
-          <Button variant="secondary" onClick={onClose}>Close</Button>
+        {voucher.notes && (
+          <div className="mt-6 flex items-start space-x-3 p-4 rounded-2xl bg-amber-50/30 border border-amber-100/50">
+            <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+            <div>
+              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Additional Internal Notes</p>
+              <p className="text-xs font-medium text-amber-700 mt-1 leading-relaxed">{voucher.notes}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-8 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-10 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-slate-200 active:scale-95"
+          >
+            Acknowledge & Close
+          </button>
         </div>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 

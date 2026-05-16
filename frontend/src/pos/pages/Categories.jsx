@@ -28,6 +28,8 @@ import { flattenCategoryApiTree } from '../utils/categoryTree';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import PageShell from '../components/PageShell';
 
+import BaseModal from '../components/BaseModal';
+
 const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, categories = [], categoryType = 'parent' }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -67,7 +69,6 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
@@ -75,16 +76,8 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
 
   const validateForm = () => {
     const newErrors = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = 'Category name is required';
-    }
-    
-    // For child categories, parent category is required
-    if (!category && categoryType === 'child' && !formData.parentCategory) {
-      newErrors.parentCategory = 'Parent category is required for child categories';
-    }
-    
+    if (!formData.name.trim()) newErrors.name = 'Category name is required';
+    if (!category && categoryType === 'child' && !formData.parentCategory) newErrors.parentCategory = 'Parent category is required for child categories';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -93,201 +86,117 @@ const CategoryModal = ({ category, isOpen, onClose, onSave, isSubmitting, catego
     e.preventDefault();
     if (validateForm()) {
       onSave(formData);
-      onClose();
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <PageShell contentClassName="flex items-start sm:items-center justify-center pt-4 px-4 pb-6 sm:pb-20 text-center">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={category ? 'Edit Category' : (categoryType === 'parent' ? 'Add New Parent Category' : 'Add New Child Category')}
+      maxWidth="md"
+      variant="centered"
+    >
+      <form onSubmit={handleSubmit} className="p-6">
+        <div className="space-y-6">
+          {/* Primary Details */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase px-1">Category Name *</label>
+              <div className="relative">
+                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter category name"
+                  className={`pl-11 py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all ${errors.name ? 'ring-2 ring-red-500' : ''}`}
+                />
+              </div>
+              {errors.name && <p className="text-[10px] font-bold text-red-500 px-1 uppercase tracking-tighter">{errors.name}</p>}
+            </div>
 
-        <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg sm:my-8 max-h-[90vh] flex flex-col">
-          <form onSubmit={handleSubmit} className="flex flex-col h-full">
-            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 overflow-y-auto flex-1">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {category ? 'Edit Category' : 
-                 categoryType === 'parent' ? 'Add New Parent Category' : 'Add New Child Category'}
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Category Name
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={formData.name}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase px-1">Description</label>
+              <Textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Brief description..."
+                className="bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all resize-none p-4 h-24"
+              />
+            </div>
+
+            {/* Parent Selection Logic */}
+            {(!category && categoryType === 'child') || category ? (
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Parent Category {categoryType === 'child' && '*'}</label>
+                <div className="relative">
+                  <Folder className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <select
+                    name="parentCategory"
+                    value={formData.parentCategory}
                     onChange={handleChange}
-                    placeholder="Enter category name"
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                      errors.name ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    autoComplete="off"
-                  />
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-                  )}
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all appearance-none"
+                  >
+                    <option value="">{category ? 'No parent (Top level)' : 'Select a parent category'}</option>
+                    {categories
+                      .filter(cat => !category || cat._id !== category._id)
+                      .map((cat) => (
+                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                      ))}
+                  </select>
                 </div>
-                
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Enter category description"
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                  <p className="mt-1 text-sm text-gray-500">
-                    Optional description of the category
-                  </p>
-                </div>
+                {errors.parentCategory && <p className="text-[10px] font-bold text-red-500 px-1 uppercase tracking-tighter">{errors.parentCategory}</p>}
+              </div>
+            ) : null}
 
-                {!category && categoryType === 'child' && (
-                  <div>
-                    <label htmlFor="parentCategory" className="block text-sm font-medium text-gray-700 mb-1">
-                      Parent Category <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="parentCategory"
-                      name="parentCategory"
-                      value={formData.parentCategory}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">Select a parent category</option>
-                      {categories
-                        .filter(cat => !cat.parentCategory) // Only show parent categories
-                        .map((cat) => (
-                          <option key={cat._id} value={cat._id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                    </select>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Select the parent category for this subcategory
-                    </p>
-                    {errors.parentCategory && (
-                      <p className="mt-1 text-sm text-red-600">{errors.parentCategory}</p>
-                    )}
-                  </div>
-                )}
-
-                {!category && categoryType === 'parent' && (
-                  <div>
-                    <label htmlFor="parentCategory" className="block text-sm font-medium text-gray-700 mb-1">
-                      Parent Category
-                    </label>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Sort Order</label>
+                <Input
+                  name="sortOrder"
+                  type="number"
+                  value={formData.sortOrder}
+                  onChange={handleChange}
+                  className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-bold text-center"
+                />
+              </div>
+              <div className="flex items-center justify-center">
+                <div className="flex items-center group cursor-pointer">
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                    formData.isActive ? 'bg-primary-600 border-primary-600' : 'border-gray-200 bg-white group-hover:border-primary-400'
+                  }`}>
                     <input
-                      type="text"
-                      value="No parent (Top level category)"
-                      disabled
-                      className="w-full px-3 py-2 border border-gray-200 rounded-md shadow-sm bg-gray-50 text-gray-500"
-                    />
-                    <p className="mt-1 text-sm text-gray-500">
-                      This will be a top-level parent category
-                    </p>
-                  </div>
-                )}
-
-                {category && (
-                  <div>
-                    <label htmlFor="parentCategory" className="block text-sm font-medium text-gray-700 mb-1">
-                      Parent Category
-                    </label>
-                    <select
-                      id="parentCategory"
-                      name="parentCategory"
-                      value={formData.parentCategory}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      <option value="">No parent category (Top level)</option>
-                      {categories
-                        .filter(cat => !category || cat._id !== category._id) // Don't allow self as parent
-                        .map((cat) => (
-                          <option key={cat._id} value={cat._id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                    </select>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Optional parent category for hierarchical organization
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-1">
-                      Sort Order
-                    </label>
-                    <input
-                      id="sortOrder"
-                      name="sortOrder"
-                      type="number"
-                      min="0"
-                      value={formData.sortOrder}
-                      onChange={handleChange}
-                      placeholder="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                    <p className="mt-1 text-sm text-gray-500">Display order (lower numbers first)</p>
-                  </div>
-                  
-                  <div className="flex items-center">
-                    <input
-                      id="isActive"
-                      name="isActive"
                       type="checkbox"
+                      name="isActive"
                       checked={formData.isActive}
                       onChange={handleChange}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      className="hidden"
+                      id="isActive"
                     />
-                    <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-                      Active
-                    </label>
+                    {formData.isActive && <FolderOpen className="h-4 w-4 text-white" />}
                   </div>
+                  <label htmlFor="isActive" className="ml-3 cursor-pointer">
+                    <p className="text-sm font-bold text-gray-700">Active</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Visibility Status</p>
+                  </label>
                 </div>
               </div>
             </div>
-            
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse flex-shrink-0">
-              <LoadingButton
-                type="submit"
-                isLoading={isSubmitting}
-                disabled={!formData.name || isSubmitting}
-                variant="default"
-                size="default"
-                className="w-full sm:w-auto sm:ml-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {category ? 'Update Category' : 'Create Category'}
-              </LoadingButton>
-              <Button
-                type="button"
-                onClick={onClose}
-                disabled={isSubmitting}
-                variant="secondary"
-                size="default"
-                className="w-full sm:w-auto mt-3 sm:mt-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
+          </div>
         </div>
-      </PageShell>
-    </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-end space-x-4">
+          <button type="button" variant="ghost" className="px-8 font-bold text-gray-400 hover:text-gray-600" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </button>
+          <Button type="submit" variant="default" className="px-10 rounded-2xl font-bold shadow-lg shadow-primary-600/20 active:scale-95 transition-all" disabled={isSubmitting}>
+            {isSubmitting ? <LoadingSpinner size="sm" /> : (category ? 'Update Category' : 'Create Category')}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 

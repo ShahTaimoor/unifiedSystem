@@ -639,15 +639,15 @@ export const MultiTabLayout = ({ children }) => {
   }, [userMenuOpen]);
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50">
+    <div className="pos-app min-h-[100dvh] bg-gray-50">
       {user ? <PresenceHeartbeat /> : null}
       {/* Mobile Navigation */}
       <MobileNavigation user={user} onLogout={handleLogout} isLoggingOut={isLoggingOut} />
 
       {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-[60] lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gray-100 shadow-xl">
+      <div className={`fixed inset-0 z-[1000] lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
+        <div className="pos-app fixed inset-0 bg-black bg-opacity-50 z-[1000] lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gray-100 shadow-xl z-[1001]">
           <div className="flex h-14 items-center justify-between px-4 bg-gray-100">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white">Z</div>

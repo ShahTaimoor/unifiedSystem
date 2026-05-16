@@ -1,240 +1,188 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Camera, X, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { Camera, X, Keyboard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import BaseModal from './BaseModal';
 
 /**
  * Barcode Scanner Component
- * Uses camera API to scan barcodes and QR codes
+ * Supports both camera scanning and manual barcode entry
  */
-export const BarcodeScanner = ({ 
-  onScan, 
+const BarcodeScanner = ({ 
+  isOpen, 
   onClose, 
-  isOpen = false,
-  scanMode = 'both' // 'barcode', 'qr', or 'both'
+  onScan, 
+  title = "Scan Barcode",
+  scanMode = "camera" // "camera", "manual", or "both"
 }) => {
-  const [scanning, setScanning] = useState(false);
-  const [error, setError] = useState(null);
-  const [lastScanned, setLastScanned] = useState(null);
-  const scannerRef = useRef(null);
+  const [manualBarcode, setManualBarcode] = useState('');
+  const [activeTab, setActiveTab] = useState(scanMode === 'manual' ? 'manual' : 'camera');
   const html5QrCodeRef = useRef(null);
+  const scannerId = "barcode-scanner-viewport";
 
-  // Function to play a beep sound using Web Audio API
-  const playBeep = () => {
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
-      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.01);
-      gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
-
-      oscillator.start(audioCtx.currentTime);
-      oscillator.stop(audioCtx.currentTime + 0.15);
-      
-      // Close context after it's done
-      setTimeout(() => audioCtx.close(), 200);
-    } catch (e) {
-      console.warn('Audio beep failed:', e);
+  const stopScanner = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        if (html5QrCodeRef.current.isScanning) {
+          await html5QrCodeRef.current.stop();
+        }
+      } catch (err) {
+        console.error("Error stopping scanner:", err);
+      } finally {
+        html5QrCodeRef.current = null;
+      }
     }
   };
 
   useEffect(() => {
-    if (isOpen && !html5QrCodeRef.current) {
-      try {
-        html5QrCodeRef.current = new Html5Qrcode('barcode-scanner');
-      } catch (err) {
-        console.warn('BarcodeScanner init:', err);
-      }
-    }
-
-    return () => {
-      const scanner = html5QrCodeRef.current;
-      if (scanner) {
+    if (isOpen && activeTab === 'camera' && !html5QrCodeRef.current) {
+      const timer = setTimeout(() => {
         try {
-          scanner.stop().catch(() => {});
-        } catch (e) {
-          // Ignore - stop() can throw when scanner wasn't started or DOM was removed
+          html5QrCodeRef.current = new Html5Qrcode(scannerId);
+          html5QrCodeRef.current.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0
+            },
+            (decodedText) => {
+              onScan(decodedText);
+              handleClose();
+            },
+            (errorMessage) => {
+              // Ignore constant scanning errors
+            }
+          ).catch(err => {
+            console.error("Scanner start error:", err);
+          });
+        } catch (error) {
+          console.error("Scanner init error:", error);
         }
-        html5QrCodeRef.current = null;
-      }
-    };
-  }, [isOpen]);
-
-  const startScanning = async () => {
-    if (!html5QrCodeRef.current) return;
-
-    try {
-      setError(null);
-      setScanning(true);
-
-      // Start scanning
-      // html5-qrcode automatically supports multiple formats including barcodes and QR codes
-      await html5QrCodeRef.current.start(
-        {
-          facingMode: 'environment' // Use back camera on mobile
-        },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          // Bias toward 1D barcode reliability while keeping broad scanner compatibility.
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
-            Html5QrcodeSupportedFormats.EAN_13,
-            Html5QrcodeSupportedFormats.EAN_8,
-            Html5QrcodeSupportedFormats.UPC_A,
-            Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.QR_CODE,
-          ]
-        },
-        (decodedText, decodedResult) => {
-          // Success callback
-          playBeep();
-          setLastScanned(decodedText);
-          if (onScan) {
-            onScan(decodedText, decodedResult);
-          }
-          // Continue scanning for multiple items
-        },
-        (errorMessage) => {
-          // Error callback - ignore if it's just "not found" errors
-          if (errorMessage && !errorMessage.includes('NotFoundException')) {
-            // Only show actual errors
-          }
-        }
-      );
-    } catch (err) {
-      setError(err.message || 'Failed to start camera. Please check permissions.');
-      setScanning(false);
+      }, 300);
+      return () => clearTimeout(timer);
     }
+
+    if ((!isOpen || activeTab !== 'camera') && html5QrCodeRef.current) {
+      stopScanner();
+    }
+  }, [isOpen, activeTab]);
+
+  const handleClose = () => {
+    stopScanner();
+    onClose();
   };
 
-  const stopScanning = async () => {
-    setScanning(false);
-    const scanner = html5QrCodeRef.current;
-    if (scanner) {
-      try {
-        await scanner.stop();
-      } catch (err) {
-        // stop() throws when scanner wasn't started, or DOM was removed on cancel - ignore
-      }
+  const handleManualSubmit = (e) => {
+    e.preventDefault();
+    if (manualBarcode.trim()) {
+      onScan(manualBarcode.trim());
+      setManualBarcode('');
+      handleClose();
     }
   };
-
-  const handleClose = async () => {
-    try {
-      await stopScanning();
-    } catch (err) {
-      // Prevent any error from propagating to ErrorBoundary
-    }
-    if (onClose) {
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-75 flex items-center justify-center">
-      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full m-4">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center space-x-2">
-            <Camera className="h-5 w-5 text-primary-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Barcode Scanner</h2>
-          </div>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Scanner Area */}
-        <div className="p-4">
-          <div className="relative">
-            <div
-              id="barcode-scanner"
-              className="w-full rounded-lg overflow-hidden bg-gray-100"
-              style={{ minHeight: '300px' }}
-            />
-            
-            {!scanning && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
-                <div className="text-center text-white">
-                  <Camera className="h-12 w-12 mx-auto mb-4" />
-                  <p className="text-lg font-medium mb-2">Camera Ready</p>
-                  <p className="text-sm text-gray-300">Click Start to begin scanning</p>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="absolute top-4 left-4 right-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-red-800">Error</p>
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              </div>
-            )}
-
-            {lastScanned && (
-              <div className="absolute bottom-4 left-4 right-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-start space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-green-800">Scanned</p>
-                  <p className="text-sm text-green-600 font-mono">{lastScanned}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Instructions */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Instructions:</strong> Position the barcode/QR code within the frame. 
-              The scanner will automatically detect and decode it.
-            </p>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-end space-x-3 p-4 border-t bg-gray-50">
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            Close
-          </button>
-          {!scanning ? (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={title}
+      maxWidth="lg"
+      variant="centered"
+    >
+      <div className="flex flex-col">
+        {scanMode === 'both' && (
+          <div className="flex p-1 bg-gray-100/50 m-6 rounded-2xl border border-gray-100">
             <button
-              onClick={startScanning}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 transition-colors flex items-center space-x-2"
+              onClick={() => setActiveTab('camera')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                activeTab === 'camera' 
+                  ? 'bg-white text-primary-600 shadow-sm' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
             >
-              <Camera className="h-4 w-4" />
-              <span>Start Scanning</span>
+              <Camera className={`h-4 w-4 ${activeTab === 'camera' ? 'text-primary-600' : 'text-gray-400'}`} />
+              <span>Camera</span>
             </button>
+            <button
+              onClick={() => setActiveTab('manual')}
+              className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-sm font-bold transition-all ${
+                activeTab === 'manual' 
+                  ? 'bg-white text-primary-600 shadow-sm' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              <Keyboard className={`h-4 w-4 ${activeTab === 'manual' ? 'text-primary-600' : 'text-gray-400'}`} />
+              <span>Manual Entry</span>
+            </button>
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="px-6 pb-8 flex-1">
+          {activeTab === 'camera' ? (
+            <div className="space-y-6">
+              <div className="relative aspect-square rounded-3xl overflow-hidden bg-black border-8 border-gray-50 shadow-2xl">
+                <div id={scannerId} className="w-full h-full" />
+                
+                {/* Scanner Overlay UI */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-48 h-48 border-2 border-primary-500/50 rounded-2xl relative">
+                    <div className="absolute top-0 left-0 w-full h-0.5 bg-primary-500 shadow-[0_0_15px_rgba(59,130,246,0.8)] animate-scan-line"></div>
+                    <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-primary-500 rounded-tl-lg"></div>
+                    <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-primary-500 rounded-tr-lg"></div>
+                    <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-primary-500 rounded-bl-lg"></div>
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-primary-500 rounded-br-lg"></div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest bg-gray-50/50 py-4 rounded-2xl border border-gray-100">
+                Align barcode within the target box
+              </p>
+            </div>
           ) : (
-            <button
-              onClick={stopScanning}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
-            >
-              Stop Scanning
-            </button>
+            <form onSubmit={handleManualSubmit} className="space-y-8 py-4">
+              <div className="space-y-3">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
+                  Barcode Number / SKU
+                </label>
+                <div className="relative">
+                  <Keyboard className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300" />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={manualBarcode}
+                    onChange={(e) => setManualBarcode(e.target.value)}
+                    className="w-full pl-14 pr-6 py-5 text-2xl font-mono text-center border-none rounded-3xl focus:ring-2 focus:ring-primary-500 transition-all bg-gray-50 font-bold"
+                    placeholder="e.g. 1234567890"
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={!manualBarcode.trim()}
+                className="w-full py-7 text-lg font-bold rounded-3xl shadow-xl shadow-primary-600/20 bg-primary-600 hover:bg-primary-700 active:scale-[0.98] transition-all"
+              >
+                Add Item to Cart
+              </Button>
+            </form>
           )}
         </div>
+
+        {/* Footer */}
+        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+          <Button
+            variant="ghost"
+            onClick={handleClose}
+            className="px-8 py-2.5 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-all"
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 
 export default BarcodeScanner;
-

@@ -37,8 +37,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
+import { useAuth } from '../contexts/AuthContext';
 import { useTab } from '../contexts/TabContext';
 import { PageHeader } from '../components/layout/PageHeader';
+import BaseModal from '../components/BaseModal';
 
 /** Amount display without a currency prefix (e.g. no leading $). */
 function formatAmount(value) {
@@ -161,227 +163,161 @@ const InvestorFormModal = ({ investor, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {investor ? 'Edit Investor' : 'Add New Investor'}
-            </h2>
-            <button
-              onClick={onCancel}
-              className="p-2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-5 w-5" />
-            </button>
+    <BaseModal
+      isOpen={true}
+      onClose={onCancel}
+      title={investor ? 'Edit Investor' : 'Add New Investor'}
+      maxWidth="2xl"
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-8">
+        {/* Basic Information */}
+        <div className="bg-gray-50/50 rounded-2xl border border-gray-100 p-6 space-y-6">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="h-2 w-6 bg-primary-600 rounded-full" />
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Personal Details</h3>
+          </div>
+          
+          <div className="space-y-5">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-1">Investor Name *</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  {...register('name', { required: 'Investor name is required' })}
+                  className="pl-11 rounded-xl h-12 font-bold"
+                  placeholder="e.g. John Doe"
+                />
+              </div>
+              {errors.name && <p className="text-red-500 text-[10px] font-bold mt-1.5 px-1 uppercase">{errors.name.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-1">Email Address *</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    {...register('email', { 
+                      required: 'Email is required',
+                      pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email' }
+                    })}
+                    type="email"
+                    className="pl-11 rounded-xl h-12 font-bold"
+                    placeholder="john@example.com"
+                  />
+                </div>
+                {errors.email && <p className="text-red-500 text-[10px] font-bold mt-1.5 px-1 uppercase">{errors.email.message}</p>}
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-1">Phone Number</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    {...register('phone')}
+                    className="pl-11 rounded-xl h-12 font-bold"
+                    placeholder="+92 XXX XXXXXXX"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Address Information */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="h-2 w-6 bg-gray-400 rounded-full" />
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Location Audit</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-1">Street Address</label>
+              <div className="relative">
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  {...register('address.street')}
+                  className="pl-11 rounded-xl h-12 font-bold"
+                  placeholder="Building/Street info"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input {...register('address.city')} placeholder="City" className="rounded-xl h-12 font-bold" />
+              <Input {...register('address.state')} placeholder="State/Province" className="rounded-xl h-12 font-bold" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input {...register('address.zipCode')} placeholder="Zip Code" className="rounded-xl h-12 font-bold" />
+              <Input {...register('address.country')} placeholder="Country" className="rounded-xl h-12 font-bold" />
+            </div>
+          </div>
+        </div>
+
+        {/* Financial & Status */}
+        <div className="bg-gray-900 rounded-3xl p-6 text-white space-y-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-600/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+          
+          <div className="grid grid-cols-2 gap-6 relative z-10">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Total Capital</label>
+              <div className="relative">
+                <TrendingUp className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-400" />
+                <Input
+                  {...register('totalInvestment', { valueAsNumber: true, min: { value: 0, message: 'Must be positive' }})}
+                  type="number"
+                  step="0.01"
+                  className="pl-11 rounded-xl h-14 bg-white/10 border-white/20 text-white font-mono font-bold text-lg focus:ring-primary-500"
+                  placeholder="0.00"
+                />
+              </div>
+              {errors.totalInvestment && <p className="text-primary-400 text-[10px] font-bold mt-1.5 px-1 uppercase">{errors.totalInvestment.message}</p>}
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Engagement Status</label>
+              <select 
+                {...register('status')} 
+                className="w-full h-14 bg-white/10 border border-white/20 rounded-xl px-4 font-bold text-white focus:ring-2 focus:ring-primary-500 outline-none appearance-none"
+              >
+                <option value="active" className="text-gray-900">Active Entity</option>
+                <option value="inactive" className="text-gray-900">Inactive Entity</option>
+                <option value="suspended" className="text-gray-900">Suspended</option>
+              </select>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Basic Information */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Investor Name *
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      {...register('name', { required: 'Investor name is required' })}
-                      className="pl-10"
-                      placeholder="Enter investor name"
-                    />
-                  </div>
-                  {errors.name && (
-                    <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email *
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        {...register('email', { 
-                          required: 'Email is required',
-                          pattern: {
-                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                            message: 'Invalid email address'
-                          }
-                        })}
-                        type="email"
-                        className="pl-10"
-                        placeholder="Enter email address"
-                      />
-                    </div>
-                    {errors.email && (
-                      <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        {...register('phone')}
-                        type="tel"
-                        className="pl-10"
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Address Information */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Address Information</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Street Address
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      {...register('address.street')}
-                      className="pl-10"
-                      placeholder="Enter street address"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      City
-                    </label>
-                    <Input
-                      {...register('address.city')}
-                      placeholder="Enter city"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      State/Province
-                    </label>
-                    <Input
-                      {...register('address.state')}
-                      placeholder="Enter state"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Zip Code
-                    </label>
-                    <Input
-                      {...register('address.zipCode')}
-                      placeholder="Enter zip code"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Country
-                    </label>
-                    <Input
-                      {...register('address.country')}
-                      placeholder="Enter country"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Investment Information */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Investment Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Total Investment
-                  </label>
-                  <div className="relative">
-                    <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      {...register('totalInvestment', { 
-                        valueAsNumber: true,
-                        min: { value: 0, message: 'Investment must be positive' }
-                      })}
-                      type="number"
-                      step="0.01"
-                      className="pl-10"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  {errors.totalInvestment && (
-                    <p className="text-red-500 text-sm mt-1">{errors.totalInvestment.message}</p>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
-                  </label>
-                  <select {...register('status')} className="input">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="suspended">Suspended</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notes
-              </label>
-              <Textarea
-                {...register('notes')}
-                rows={3}
-                placeholder="Enter any additional notes"
-              />
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 border-t border-gray-200">
-              <Button
-                type="button"
-                onClick={onCancel}
-                variant="secondary"
-                size="default"
-                className="w-full sm:w-auto"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="default"
-                size="default"
-                className="w-full sm:w-auto"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Saving...' : (investor ? 'Update Investor' : 'Add Investor')}
-              </Button>
-            </div>
-          </form>
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Internal Notes</label>
+            <Textarea
+              {...register('notes')}
+              className="rounded-xl bg-white/5 border-white/10 text-white placeholder:text-gray-500 min-h-[100px] font-medium"
+              placeholder="Record any specific investor mandates or background info..."
+            />
+          </div>
         </div>
-      </div>
-    </div>
+
+        {/* Actions */}
+        <div className="flex space-x-3 pt-4">
+          <Button
+            type="button"
+            onClick={onCancel}
+            variant="outline"
+            className="flex-1 h-14 rounded-2xl border-gray-200 font-bold text-gray-600 hover:bg-gray-50"
+            disabled={isSubmitting}
+          >
+            Discard
+          </Button>
+          <Button
+            type="submit"
+            className="flex-[2] h-14 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white shadow-xl shadow-primary-500/20 font-bold"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? <LoadingInline className="text-white" /> : (investor ? 'Commit Changes' : 'Initialize Investor')}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -844,127 +780,128 @@ const InvestorProductsModal = ({ investor, onClose }) => {
   }, [data]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={`Product Portfolio — ${investor.name}`}
+      maxWidth="4xl"
+    >
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="h-10 w-10 rounded-2xl bg-primary-50 flex items-center justify-center">
+              <Package className="h-5 w-5 text-primary-600" />
+            </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Linked Products - {investor.name}
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Products this investor is linked to with profit sharing
-              </p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Investment Focus</p>
+              <h3 className="text-xl font-bold text-gray-900 mt-1">Linked Assets</h3>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
+          <div className="bg-blue-50/50 border border-blue-100 rounded-2xl px-5 py-3 text-right">
+            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none">Total Linked</p>
+            <p className="text-2xl font-bold text-blue-700 mt-1">{products.length}</p>
+          </div>
+        </div>
 
-          {isLoading ? (
-            <LoadingSpinner />
-          ) : products.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">No products linked</p>
-              <p className="text-sm text-gray-500">
-                This investor is not linked to any products yet. Link them from the Products page.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                {products.map((product) => (
-                  <div
-                    key={product._id}
-                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Package className="h-5 w-5 text-gray-400" />
-                          <h3 className="text-lg font-medium text-gray-900">
-                            {product.name}
-                          </h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            product.status === 'active' ? 'bg-green-100 text-green-800' :
-                            product.status === 'inactive' ? 'bg-gray-100 text-gray-800' :
-                            'bg-red-100 text-red-800'
+        {isLoading ? (
+          <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-20 bg-gray-50/50 rounded-3xl border border-gray-100">
+            <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-gray-900">Portfolio Empty</h3>
+            <p className="text-gray-500 text-sm mt-1 max-w-sm mx-auto font-medium">
+              Link products to this investor from the Products catalog to track split-profit earnings.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {products.map((product) => (
+              <div
+                key={product._id}
+                className="group relative bg-white border border-gray-100 rounded-3xl p-6 hover:shadow-2xl hover:shadow-gray-200/50 transition-all duration-500"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="h-12 w-12 rounded-2xl bg-gray-50 flex items-center justify-center group-hover:bg-primary-50 transition-colors duration-500">
+                        <Package className="h-6 w-6 text-gray-400 group-hover:text-primary-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-primary-700 transition-colors">
+                          {product.name}
+                        </h3>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-widest border ${
+                            product.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' :
+                            product.status === 'inactive' ? 'bg-gray-50 text-gray-700 border-gray-100' :
+                            'bg-red-50 text-red-700 border-red-100'
                           }`}>
                             {product.status}
                           </span>
-                        </div>
-                        {product.description && (
-                          <p className="text-sm text-gray-600 mb-3">
-                            {product.description}
-                          </p>
-                        )}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <span className="text-gray-500">Category:</span>
-                            <span className="ml-2 font-medium text-gray-900">
-                              {product.category?.name || 'N/A'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Stock:</span>
-                            <span className={`ml-2 font-medium ${
-                              (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
-                                ? 'text-red-600'
-                                : 'text-gray-900'
-                            }`}>
-                              {product.inventory?.currentStock || 0}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Cost:</span>
-                            <span className="ml-2 font-medium text-gray-900">
-                              {formatAmount(product.pricing?.cost)}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Retail:</span>
-                            <span className="ml-2 font-medium text-gray-900">
-                              {formatAmount(product.pricing?.retail)}
-                            </span>
-                          </div>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            {product.category?.name || 'Uncategorized'}
+                          </span>
                         </div>
                       </div>
-                      <div className="ml-4 text-right">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
-                          <div className="text-xs text-blue-600 mb-1">Profit Share</div>
-                          <div className="text-lg font-bold text-blue-700">
-                            {product.sharePercentage}%
-                          </div>
-                        </div>
-                        {product.linkedAt && (
-                          <div className="text-xs text-gray-500 mt-2">
-                            Linked: {new Date(product.linkedAt).toLocaleDateString()}
-                          </div>
-                        )}
-                        <button
-                          onClick={() => {
-                            window.open(`/products`, '_blank');
-                          }}
-                          className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                          title="View Product"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          <span>View Products</span>
-                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-4 p-4 rounded-2xl bg-gray-50/50 border border-gray-50">
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Available</p>
+                        <p className={`text-sm font-mono font-bold ${
+                          (product.inventory?.currentStock || 0) <= (product.inventory?.reorderPoint || 0)
+                            ? 'text-red-600'
+                            : 'text-gray-900'
+                        }`}>
+                          {product.inventory?.currentStock || 0} Units
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Costing</p>
+                        <p className="text-sm font-mono font-bold text-gray-900">
+                          {formatAmount(product.pricing?.cost)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Retail</p>
+                        <p className="text-sm font-mono font-bold text-gray-900">
+                          {formatAmount(product.pricing?.retail)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Split Yield</p>
+                        <p className="text-sm font-mono font-bold text-primary-600 bg-primary-50 px-2 rounded-lg inline-block">
+                          {product.sharePercentage}%
+                        </p>
                       </div>
                     </div>
                   </div>
-                ))}
+
+                  <div className="ml-6 text-right space-y-4">
+                    <div className="flex flex-col items-end">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Link Date</p>
+                      <p className="text-xs font-bold text-gray-900 mt-1">
+                        {product.linkedAt ? new Date(product.linkedAt).toLocaleDateString() : '—'}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        window.open(`/products`, '_blank');
+                      }}
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-xl h-10 px-4 font-bold text-[10px] uppercase tracking-widest"
+                    >
+                      Audit Product
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </BaseModal>
   );
 };
 
@@ -1050,120 +987,82 @@ const ProfitSharesModal = ({ investorId, investorName, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Profit Shares{investorName ? ` — ${investorName}` : ''}
-            </h2>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={printProfitShares}
-                disabled={isLoading || isError || profitShares.length === 0}
-              >
-                <Printer className="h-4 w-4" />
-                Print
-              </Button>
-              <button
-                onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={`Profit Streams — ${investorName || 'Entity'}`}
+      maxWidth="4xl"
+    >
+      <div className="p-6">
+        <div className="flex justify-end mb-6">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl border-gray-200 font-bold px-5 h-10 hover:bg-gray-50"
+            onClick={printProfitShares}
+            disabled={isLoading || isError || profitShares.length === 0}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Export Statement
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+        ) : isError ? (
+          <div className="text-center py-20 bg-red-50 rounded-2xl border border-red-100">
+            <AlertCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
+            <p className="text-red-900 font-bold uppercase tracking-widest text-xs">Sync Failure</p>
+            <p className="text-red-600 text-sm mt-1">{profitSharesErrorMessage}</p>
+          </div>
+        ) : profitShares.length === 0 ? (
+          <div className="text-center py-20 bg-gray-50/50 rounded-3xl border border-gray-100">
+            <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-gray-900">No Earnings Recorded</h3>
+            <p className="text-gray-500 text-sm mt-1 max-w-sm mx-auto font-medium">
+              Profit distributions are triggered automatically upon successful settlement of linked product orders.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+            <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-100 grid grid-cols-[140px_100px_minmax(0,1fr)_100px_100px_80px_100px] gap-4">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Settlement Date</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Order Ref</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product Asset</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Volume</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Profit</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Split</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Credit</span>
+            </div>
+            <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
+              {profitShares.map((share) => {
+                const shareInvestorId = share.investor_id ?? share.investor?._id ?? share.investor ?? null;
+                const isThisInvestor = shareInvestorId && (shareInvestorId.toString() === investorId.toString());
+                const investorShare = isThisInvestor ? Number(share.investor_share ?? share.investorShare ?? 0) : share.investors?.find(inv => (inv.investor?._id || inv.investor)?.toString() === investorId.toString())?.shareAmount || 0;
+                const sharePercentage = isThisInvestor ? Number(share.investor_share_percentage ?? share.investorSharePercentage ?? 0) : share.investors?.find(inv => (inv.investor?._id || inv.investor)?.toString() === investorId.toString())?.sharePercentage || 0;
+                const lineDate = share.order_date ?? share.orderDate ?? share.created_at ?? share.createdAt;
+                
+                return (
+                  <div key={share.id || share._id} className="px-6 py-4 grid grid-cols-[140px_100px_minmax(0,1fr)_100px_100px_80px_100px] gap-4 items-center hover:bg-gray-50/50 transition-colors group">
+                    <div className="text-[11px] font-medium text-gray-500 font-mono">
+                      {lineDate ? new Date(lineDate).toLocaleDateString() : '—'}
+                      <span className="block text-[9px] text-gray-400 uppercase">{lineDate ? new Date(lineDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
+                    </div>
+                    <div className="text-xs font-bold text-primary-600">#{share.order_number ?? share.orderNumber ?? share.order?.orderNumber}</div>
+                    <div className="text-xs font-bold text-gray-900 truncate">{share.product_name ?? share.productName ?? share.product?.name ?? 'N/A'}</div>
+                    <div className="text-xs font-mono text-gray-600 text-right">{formatAmount(share.sale_amount ?? share.saleAmount)}</div>
+                    <div className="text-xs font-mono text-gray-600 text-right">{formatAmount(share.total_profit ?? share.totalProfit)}</div>
+                    <div className="text-[11px] font-bold text-blue-600 text-right bg-blue-50 py-0.5 rounded px-1.5">{sharePercentage}%</div>
+                    <div className="text-sm font-mono font-bold text-green-600 text-right">{formatAmount(investorShare)}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
-
-          {isLoading ? (
-            <LoadingSpinner />
-          ) : isError ? (
-            <div className="text-center py-12 px-4">
-              <p className="text-red-600 font-medium mb-2">Failed to load profit shares</p>
-              <p className="text-gray-600 text-sm">{profitSharesErrorMessage}</p>
-            </div>
-          ) : profitShares.length === 0 ? (
-            <div className="text-center py-12">
-              <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No profit shares found</p>
-              <p className="text-gray-500 text-sm mt-2 max-w-md mx-auto">
-                Rows appear after a <strong>paid</strong> sale of a product linked to this investor, when profit is distributed.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date (sale)</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Sale Amount</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total Profit</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Share %</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Your Share</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {profitShares.map((share) => {
-                    // Handle Postgres snake_case, camelCase, and legacy schema (investors array)
-                    const shareInvestorId = share.investor_id ?? share.investor?._id ?? share.investor ?? null;
-                    const isThisInvestor = shareInvestorId && (
-                      shareInvestorId.toString() === investorId.toString()
-                    );
-                    
-                    const investorShare = isThisInvestor
-                      ? Number(share.investor_share ?? share.investorShare ?? 0)
-                      : share.investors?.find(inv => {
-                          const invId = inv.investor?._id || inv.investor;
-                          return invId && invId.toString() === investorId.toString();
-                        })?.shareAmount || 0;
-                        
-                    const sharePercentage = isThisInvestor
-                      ? Number(share.investor_share_percentage ?? share.investorSharePercentage ?? 0)
-                      : share.investors?.find(inv => {
-                          const invId = inv.investor?._id || inv.investor;
-                          return invId && invId.toString() === investorId.toString();
-                        })?.sharePercentage || 0;
-
-                    const lineDate = share.order_date ?? share.orderDate ?? share.created_at ?? share.createdAt;
-                    
-                    return (
-                      <tr key={share.id || share._id}>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {lineDate
-                            ? new Date(lineDate).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-                            : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{share.order_number ?? share.orderNumber ?? share.order?.orderNumber}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {share.product_name ?? share.productName ?? share.product?.name ?? 'N/A'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                          {formatAmount(share.sale_amount ?? share.saleAmount)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                          {formatAmount(share.total_profit ?? share.totalProfit)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-blue-600 text-right">
-                          {sharePercentage}%
-                        </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-green-600 text-right">
-                          {formatAmount(investorShare)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        )}
       </div>
-    </div>
+    </BaseModal>
   );
 };
 
@@ -1183,135 +1082,95 @@ const PayoutHistoryModal = ({ investorId, investorName, onClose }) => {
     return Array.isArray(raw) ? raw : [];
   }, [data]);
 
-  const errMsg =
-    isError && error?.data != null
-      ? String(
-          typeof error.data === 'object' && error.data?.message != null
-            ? error.data.message
-            : error.data
-        )
-      : isError
-        ? 'Could not load payout history.'
-        : null;
+  const errMsg = isError && error?.data != null ? String(typeof error.data === 'object' && error.data?.message != null ? error.data.message : error.data) : isError ? 'Could not load payout history.' : null;
 
   const printPayouts = () => {
     if (payouts.length === 0) {
       toast.error('Nothing to print');
       return;
     }
-    const rows = payouts
-      .map((p) => {
-        const when = formatPayoutDate(p.paidAt ?? p.paid_at);
-        const amt = p.amount;
-        const method = payoutMethodLabel(p.paymentMethod ?? p.payment_method);
-        const dr = p.debitAccountCode ?? p.debit_account_code ?? '—';
-        const cr = p.creditAccountCode ?? p.credit_account_code ?? (p.paymentMethod === 'bank' || p.payment_method === 'bank' ? '1001' : '1000');
-        return `<tr>
-          <td>${escapeHtml(when || '—')}</td>
-          <td class="num">${escapeHtml(formatAmount(amt))}</td>
-          <td>${escapeHtml(method)}</td>
-          <td>${escapeHtml(String(dr))}</td>
-          <td>${escapeHtml(String(cr))}</td>
-        </tr>`;
-      })
-      .join('');
+    const rows = payouts.map((p) => {
+      const when = formatPayoutDate(p.paidAt ?? p.paid_at);
+      const amt = p.amount;
+      const method = payoutMethodLabel(p.paymentMethod ?? p.payment_method);
+      const dr = p.debitAccountCode ?? p.debit_account_code ?? '—';
+      const cr = p.creditAccountCode ?? p.credit_account_code ?? (p.paymentMethod === 'bank' || p.payment_method === 'bank' ? '1001' : '1000');
+      return `<tr><td>${escapeHtml(when || '—')}</td><td class="num">${escapeHtml(formatAmount(amt))}</td><td>${escapeHtml(method)}</td><td>${escapeHtml(String(dr))}</td><td>${escapeHtml(String(cr))}</td></tr>`;
+    }).join('');
     const title = investorName ? `Payout history — ${investorName}` : 'Payout history';
-    openPrintDocument(
-      title,
-      `<p style="margin:0 0 16px;font-size:14px;color:#374151">Each row is one payout posted to the general ledger (Dr equity/liability, Cr cash or bank).</p>
-      <table>
-        <thead><tr><th>Date paid out</th><th class="num">Amount</th><th>Method</th><th>Debit acct</th><th>Credit acct</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`
-    );
+    openPrintDocument(title, `<p style="margin:0 0 16px;font-size:14px;color:#374151">Each row is one payout posted to the general ledger (Dr equity/liability, Cr cash or bank).</p><table><thead><tr><th>Date paid out</th><th class="num">Amount</th><th>Method</th><th>Debit acct</th><th>Credit acct</th></tr></thead><tbody>${rows}</tbody></table>`);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Payout history{investorName ? ` — ${investorName}` : ''}
-            </h2>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={printPayouts}
-                disabled={isLoading || isError || payouts.length === 0}
-              >
-                <Printer className="h-4 w-4" />
-                Print
-              </Button>
-              <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600">
-                <X className="h-5 w-5" />
-              </button>
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      title={`Payout Registry — ${investorName || 'Entity'}`}
+      maxWidth="lg"
+    >
+      <div className="p-6">
+        <div className="flex justify-end mb-6">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-xl border-gray-200 font-bold px-5 h-10 hover:bg-gray-50"
+            onClick={printPayouts}
+            disabled={isLoading || isError || payouts.length === 0}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Export History
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+        ) : isError ? (
+          <div className="text-center py-20 bg-red-50 rounded-2xl border border-red-100">
+            <AlertCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
+            <p className="text-red-900 font-bold uppercase tracking-widest text-xs">Registry Error</p>
+            <p className="text-red-600 text-sm mt-1">{errMsg}</p>
+          </div>
+        ) : payouts.length === 0 ? (
+          <div className="text-center py-20 bg-gray-50/50 rounded-3xl border border-gray-100">
+            <Receipt className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-gray-900">No Payout Records</h3>
+            <p className="text-gray-500 text-sm mt-1 max-w-sm mx-auto font-medium">
+              Recorded cash and bank distributions will be archived here for financial auditing.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+            <div className="bg-gray-50/80 px-6 py-4 border-b border-gray-100 grid grid-cols-[140px_100px_100px_minmax(0,1fr)] gap-4">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transaction Date</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Debit</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Protocol</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">General Ledger Path</span>
+            </div>
+            <div className="divide-y divide-gray-50 max-h-[400px] overflow-y-auto">
+              {payouts.map((p) => (
+                <div key={p.id} className="px-6 py-5 grid grid-cols-[140px_100px_100px_minmax(0,1fr)] gap-4 items-center hover:bg-gray-50/50 transition-colors">
+                  <div className="text-xs font-bold text-gray-900 font-mono">{formatPayoutDate(p.paidAt ?? p.paid_at) || '—'}</div>
+                  <div className="text-sm font-mono font-bold text-red-600 text-right">{formatAmount(p.amount)}</div>
+                  <div className="text-center">
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full ${p.paymentMethod === 'bank' || p.payment_method === 'bank' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}`}>
+                      {payoutMethodLabel(p.paymentMethod ?? p.payment_method)}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-gray-500 space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono font-bold text-gray-900 bg-gray-100 px-1.5 rounded">Dr {p.debitAccountCode ?? p.debit_account_code ?? '—'}</span>
+                      <span className="font-mono font-bold text-gray-900 bg-gray-100 px-1.5 rounded">Cr {p.creditAccountCode ?? p.credit_account_code ?? (p.paymentMethod === 'bank' || p.payment_method === 'bank' ? '1001' : '1000')}</span>
+                    </div>
+                    {p.ledgerTransactionId || p.ledger_transaction_id ? <div className="font-mono text-gray-400 truncate">Ref: {p.ledgerTransactionId ?? p.ledger_transaction_id}</div> : null}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          {isLoading ? (
-            <LoadingSpinner />
-          ) : isError ? (
-            <div className="text-center py-12 px-4">
-              <p className="text-red-600 font-medium mb-2">Failed to load payout history</p>
-              <p className="text-gray-600 text-sm">{errMsg}</p>
-            </div>
-          ) : payouts.length === 0 ? (
-            <div className="text-center py-12">
-              <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No payout records yet</p>
-              <p className="text-gray-500 text-sm mt-2 max-w-md mx-auto">
-                New payouts are posted to the general ledger. Older rows may show “—” for accounts if they pre-date ledger integration.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date paid out</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Paid via</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ledger</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {payouts.map((p) => (
-                    <tr key={p.id}>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {formatPayoutDate(p.paidAt ?? p.paid_at) || '—'}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
-                        {formatAmount(p.amount)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
-                        {payoutMethodLabel(p.paymentMethod ?? p.payment_method)}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">
-                        Dr {p.debitAccountCode ?? p.debit_account_code ?? '—'} / Cr{' '}
-                        {p.creditAccountCode ??
-                          p.credit_account_code ??
-                          (p.paymentMethod === 'bank' || p.payment_method === 'bank'
-                            ? '1001'
-                            : '1000')}
-                        {p.ledgerTransactionId || p.ledger_transaction_id ? (
-                          <span className="block text-gray-400 mt-0.5">
-                            {p.ledgerTransactionId ?? p.ledger_transaction_id}
-                          </span>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        )}
       </div>
-    </div>
+    </BaseModal>
   );
 };
 
@@ -1332,108 +1191,57 @@ const PayoutModal = ({ investor, onSave, onCancel, isSubmitting }) => {
       toast.error(`Payout amount cannot exceed current balance of ${formatAmount(currentBalance)}`);
       return;
     }
-    const trimmedDebit = debitAccountCode.trim();
-    onSave(payoutAmount, {
-      paymentMethod,
-      debitAccountCode: trimmedDebit || undefined,
-    });
+    onSave(payoutAmount, { paymentMethod, debitAccountCode: debitAccountCode.trim() || undefined });
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Record Payout</h2>
-            <button
-              onClick={onCancel}
-              className="p-2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            handleFormSubmit();
-          }} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Investor
-              </label>
-              <Input
-                type="text"
-                value={investor.name}
-                disabled
-                className="bg-gray-50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Balance
-              </label>
-              <Input
-                type="text"
-                value={formatAmount(currentBalance)}
-                disabled
-                className="bg-gray-50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pay from *
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="invPayMethod"
-                    checked={paymentMethod === 'cash'}
-                    onChange={() => setPaymentMethod('cash')}
-                    className="rounded-full border-gray-300"
-                  />
-                  Cash (credits account 1000)
-                </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="invPayMethod"
-                    checked={paymentMethod === 'bank'}
-                    onChange={() => setPaymentMethod('bank')}
-                    className="rounded-full border-gray-300"
-                  />
-                  Bank (credits account 1001)
-                </label>
+    <BaseModal
+      isOpen={true}
+      onClose={onCancel}
+      title="Record Distribution"
+      maxWidth="md"
+    >
+      <form onSubmit={(e) => { e.preventDefault(); handleFormSubmit(); }} className="p-6 space-y-8">
+        <div className="bg-gray-900 rounded-3xl p-8 text-white relative overflow-hidden group shadow-2xl">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary-600/20 transition-all duration-700" />
+          <div className="relative z-10 space-y-6">
+            <div className="flex justify-between items-center border-b border-white/10 pb-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary-400">Target Entity</p>
+                <p className="text-xl font-bold text-white">{investor.name}</p>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Posted to the general ledger: Dr equity/liability, Cr cash or bank (same transaction as investor balance update).
-              </p>
+              <div className="text-right">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Available Liquid</p>
+                <p className="text-xl font-mono font-bold text-white">PKR {formatAmount(currentBalance)}</p>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Debit account (optional)
-              </label>
-              <Input
-                type="text"
-                value={debitAccountCode}
-                onChange={(e) => setDebitAccountCode(e.target.value)}
-                placeholder="3100 (default: Retained Earnings) or 2350 Due to Investors"
-                className="font-mono text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Leave blank to use server default (usually 3100). Must be an equity or liability code from your chart of accounts.
-              </p>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">Withdrawal Protocol</label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('cash')}
+                  className={`py-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold ${paymentMethod === 'cash' ? 'bg-primary-600/20 border-primary-500 text-white shadow-lg shadow-primary-500/10' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                >
+                  <TrendingUp className="h-5 w-5" />
+                  <span className="text-[10px] uppercase">Physical Cash</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('bank')}
+                  className={`py-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold ${paymentMethod === 'bank' ? 'bg-primary-600/20 border-primary-500 text-white shadow-lg shadow-primary-500/10' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                >
+                  <Building className="h-5 w-5" />
+                  <span className="text-[10px] uppercase">Bank Transfer</span>
+                </button>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payout Amount *
-              </label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">Disbursement Amount</label>
               <div className="relative">
-                <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">PKR</div>
                 <Input
                   type="number"
                   step="0.01"
@@ -1441,43 +1249,42 @@ const PayoutModal = ({ investor, onSave, onCancel, isSubmitting }) => {
                   max={currentBalance}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="pl-10"
+                  className="pl-20 h-16 rounded-2xl bg-white/10 border-white/20 text-white font-mono font-bold text-2xl focus:ring-primary-500"
                   placeholder="0.00"
                   required
                 />
               </div>
-              {parseFloat(amount) > currentBalance && (
-                <p className="text-red-500 text-sm mt-1">
-                  Amount exceeds current balance
-                </p>
-              )}
             </div>
-
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
-              <Button
-                type="button"
-                onClick={onCancel}
-                variant="secondary"
-                size="default"
-                className="w-full sm:w-auto"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="default"
-                size="default"
-                className="w-full sm:w-auto"
-                disabled={isSubmitting || parseFloat(amount) <= 0 || parseFloat(amount) > currentBalance}
-              >
-                {isSubmitting ? 'Recording...' : 'Record Payout'}
-              </Button>
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div className="space-y-4 px-1">
+          <div>
+            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Override Ledger Code (Optional)</label>
+            <Input
+              type="text"
+              value={debitAccountCode}
+              onChange={(e) => setDebitAccountCode(e.target.value)}
+              placeholder="e.g. 3100 (Retained Earnings)"
+              className="rounded-xl h-12 font-mono font-bold bg-gray-50"
+            />
+          </div>
+          <div className="p-4 rounded-xl bg-primary-50 border border-primary-100 flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 text-primary-600 shrink-0" />
+            <p className="text-[11px] text-primary-800 leading-relaxed font-medium">
+              Recorded distributions will automatically debit your selected equity account and credit the designated cash/bank liquidity account in the General Ledger.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex space-x-3">
+          <Button type="button" onClick={onCancel} variant="outline" className="flex-1 h-14 rounded-2xl border-gray-200 font-bold" disabled={isSubmitting}>Discard</Button>
+          <Button type="submit" className="flex-[2] h-14 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white shadow-xl shadow-primary-500/20 font-bold" disabled={isSubmitting || parseFloat(amount) <= 0 || parseFloat(amount) > currentBalance}>
+            {isSubmitting ? <LoadingInline className="text-white" /> : 'Confirm Disbursement'}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -1497,107 +1304,67 @@ const InvestmentModal = ({ investor, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Record Investment</h2>
-            <button
-              onClick={onCancel}
-              className="p-2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            handleFormSubmit();
-          }} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Investor
-              </label>
-              <Input
-                type="text"
-                value={investor.name}
-                disabled
-                className="bg-gray-50"
-              />
+    <BaseModal
+      isOpen={true}
+      onClose={onCancel}
+      title="Capital Injection"
+      maxWidth="md"
+    >
+      <form onSubmit={(e) => { e.preventDefault(); handleFormSubmit(); }} className="p-6 space-y-8">
+        <div className="bg-primary-900 rounded-3xl p-8 text-white relative overflow-hidden group shadow-2xl">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-400/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary-400/20 transition-all duration-700" />
+          <div className="relative z-10 space-y-6">
+            <div className="flex justify-between items-center border-b border-white/10 pb-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary-400">Target Entity</p>
+                <p className="text-xl font-bold text-white">{investor.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Total Capitalized</p>
+                <p className="text-xl font-mono font-bold text-white">PKR {formatAmount(totalInvestmentVal)}</p>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Current Total Investment
-              </label>
-              <Input
-                type="text"
-                value={formatAmount(totalInvestmentVal)}
-                disabled
-                className="bg-gray-50"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Investment Amount *
-              </label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">Investment Amount</label>
               <div className="relative">
-                <TrendingUp className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-gray-500">PKR</div>
                 <Input
                   type="number"
                   step="0.01"
                   min="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="pl-10"
+                  className="pl-20 h-16 rounded-2xl bg-white/10 border-white/20 text-white font-mono font-bold text-2xl focus:ring-primary-500"
                   placeholder="0.00"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                This will be added to the investor's total investment
-              </p>
+              <p className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mt-3 px-1">This injection will increase the entity's equity stake.</p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notes (Optional)
-              </label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                placeholder="Add any notes about this investment..."
-                maxLength={500}
-              />
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
-              <Button
-                type="button"
-                onClick={onCancel}
-                variant="secondary"
-                size="default"
-                className="w-full sm:w-auto"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="default"
-                size="default"
-                className="w-full sm:w-auto"
-                disabled={isSubmitting || parseFloat(amount) <= 0}
-              >
-                {isSubmitting ? 'Recording...' : 'Record Investment'}
-              </Button>
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Audit Particulars</label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={4}
+            placeholder="Record the source or purpose of this investment..."
+            className="rounded-2xl border-gray-100 bg-gray-50/50 p-4 font-medium"
+            maxLength={500}
+          />
+        </div>
+
+        <div className="flex space-x-3">
+          <Button type="button" onClick={onCancel} variant="outline" className="flex-1 h-14 rounded-2xl border-gray-200 font-bold" disabled={isSubmitting}>Discard</Button>
+          <Button type="submit" className="flex-[2] h-14 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white shadow-xl shadow-primary-500/20 font-bold" disabled={isSubmitting || parseFloat(amount) <= 0}>
+            {isSubmitting ? <LoadingInline className="text-white" /> : 'Confirm Investment'}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 

@@ -32,6 +32,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
+import BaseModal from '../components/BaseModal';
 import { handleApiError } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import DateFilter from '../components/DateFilter';
@@ -706,208 +707,201 @@ export const StockMovements = () => {
       </div>
 
       {/* Stock Adjustment Modal */}
-      {showAdjustmentModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Stock Adjustment</h3>
-              <form onSubmit={handleAdjustmentSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Product *
-                  </label>
-                  <AsyncSelect
-                    cacheOptions
-                    defaultOptions={defaultProductOptions}
-                    loadOptions={loadProductOptions}
-                    value={getProductOptionById(adjustmentData.productId)}
-                    onChange={(option) => setAdjustmentData(prev => ({ ...prev, productId: option ? option.value : '' }))}
-                    isClearable
-                    isLoading={productsLoading}
-                    placeholder="Select product"
-                    styles={{
-                      control: (provided) => ({
-                        ...provided,
-                        minHeight: '2.5rem'
-                      }),
-                      menu: (provided) => ({
-                        ...provided,
-                        zIndex: 30
-                      })
-                    }}
-                    required
-                  />
-                </div>
+      <BaseModal
+        isOpen={showAdjustmentModal}
+        onClose={() => setShowAdjustmentModal(false)}
+        title="Stock Adjustment"
+        maxWidth="md"
+        variant="centered"
+      >
+        <form onSubmit={handleAdjustmentSubmit} className="space-y-4 p-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product *
+            </label>
+            <AsyncSelect
+              cacheOptions
+              defaultOptions={defaultProductOptions}
+              loadOptions={loadProductOptions}
+              value={getProductOptionById(adjustmentData.productId)}
+              onChange={(option) => setAdjustmentData(prev => ({ ...prev, productId: option ? option.value : '' }))}
+              isClearable
+              isLoading={productsLoading}
+              placeholder="Select product"
+              styles={{
+                control: (provided) => ({
+                  ...provided,
+                  minHeight: '2.5rem'
+                }),
+                menu: (provided) => ({
+                  ...provided,
+                  zIndex: 30
+                })
+              }}
+              required
+            />
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Adjustment Type *
-                  </label>
-                  <select
-                    value={adjustmentData.movementType}
-                    onChange={(e) => setAdjustmentData(prev => ({ ...prev, movementType: e.target.value }))}
-                    className="input"
-                    required
-                  >
-                    <option value="adjustment_in">Stock Increase (+)</option>
-                    <option value="adjustment_out">Stock Decrease (-)</option>
-                  </select>
-                </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Adjustment Type *
+            </label>
+            <select
+              value={adjustmentData.movementType}
+              onChange={(e) => setAdjustmentData(prev => ({ ...prev, movementType: e.target.value }))}
+              className="input"
+              required
+            >
+              <option value="adjustment_in">Stock Increase (+)</option>
+              <option value="adjustment_out">Stock Decrease (-)</option>
+            </select>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Quantity *
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0.01}
-                      value={adjustmentData.quantity}
-                      onChange={(e) => setAdjustmentData(prev => ({ ...prev, quantity: e.target.value }))}
-                      required
-                    />
-                  </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Quantity *
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                min={0.01}
+                value={adjustmentData.quantity}
+                onChange={(e) => setAdjustmentData(prev => ({ ...prev, quantity: e.target.value }))}
+                required
+              />
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Unit Cost *
-                    </label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      value={adjustmentData.unitCost}
-                      onChange={(e) => setAdjustmentData(prev => ({ ...prev, unitCost: e.target.value }))}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reason
-                  </label>
-                  <Input
-                    type="text"
-                    value={adjustmentData.reason}
-                    onChange={(e) => setAdjustmentData(prev => ({ ...prev, reason: e.target.value }))}
-                    placeholder="Reason for adjustment"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notes
-                  </label>
-                  <Textarea
-                    value={adjustmentData.notes}
-                    onChange={(e) => setAdjustmentData(prev => ({ ...prev, notes: e.target.value }))}
-                    rows={3}
-                    placeholder="Additional notes"
-                  />
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <Button
-                    type="button"
-                    onClick={() => setShowAdjustmentModal(false)}
-                    variant="secondary"
-                  >
-                    Cancel
-                  </Button>
-                  <LoadingButton
-                    type="submit"
-                    isLoading={creatingAdjustment}
-                    variant="default"
-                  >
-                    Create Adjustment
-                  </LoadingButton>
-                </div>
-              </form>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Unit Cost *
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                min={0}
+                value={adjustmentData.unitCost}
+                onChange={(e) => setAdjustmentData(prev => ({ ...prev, unitCost: e.target.value }))}
+                required
+              />
             </div>
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Reason
+            </label>
+            <Input
+              type="text"
+              value={adjustmentData.reason}
+              onChange={(e) => setAdjustmentData(prev => ({ ...prev, reason: e.target.value }))}
+              placeholder="Reason for adjustment"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Notes
+            </label>
+            <Textarea
+              value={adjustmentData.notes}
+              onChange={(e) => setAdjustmentData(prev => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              placeholder="Additional notes"
+            />
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button
+              type="button"
+              onClick={() => setShowAdjustmentModal(false)}
+              variant="secondary"
+            >
+              Cancel
+            </Button>
+            <LoadingButton
+              type="submit"
+              isLoading={creatingAdjustment}
+              variant="default"
+            >
+              Create Adjustment
+            </LoadingButton>
+          </div>
+        </form>
+      </BaseModal>
 
       {/* Movement Detail Modal */}
-      {selectedMovement && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Movement Details</h3>
-                <button
-                  onClick={() => setSelectedMovement(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="h-5 w-5" />
-                </button>
+      <BaseModal
+        isOpen={!!selectedMovement}
+        onClose={() => setSelectedMovement(null)}
+        title="Movement Details"
+        maxWidth="md"
+        variant="centered"
+      >
+        {selectedMovement && (
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Product</label>
+                <p className="text-sm font-semibold text-gray-900">{selectedMovement.productName}</p>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Product</label>
-                  <p className="text-sm text-gray-900">{selectedMovement.productName}</p>
-                </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Movement Type</label>
+                <p className="text-sm font-semibold text-gray-900">
+                  {movementTypes[selectedMovement.movementType]?.label || selectedMovement.movementType}
+                </p>
+              </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Movement Type</label>
-                  <p className="text-sm text-gray-900">
-                    {movementTypes[selectedMovement.movementType]?.label || selectedMovement.movementType}
-                  </p>
-                </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Quantity</label>
+                <p className="text-sm font-semibold text-gray-900">{selectedMovement.quantity}</p>
+              </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Quantity</label>
-                  <p className="text-sm text-gray-900">{selectedMovement.quantity}</p>
-                </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Value</label>
+                <p className="text-sm font-semibold text-gray-900">{formatCurrency(selectedMovement.totalValue)}</p>
+              </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Total Value</label>
-                  <p className="text-sm text-gray-900">{formatCurrency(selectedMovement.totalValue)}</p>
-                </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Stock Change</label>
+                <p className="text-sm font-semibold text-gray-900">
+                  {selectedMovement.previousStock} → {selectedMovement.newStock}
+                </p>
+              </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Stock Change</label>
-                  <p className="text-sm text-gray-900">
-                    {selectedMovement.previousStock} → {selectedMovement.newStock}
-                  </p>
-                </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Reference</label>
+                <p className="text-sm font-semibold text-gray-900">{selectedMovement.referenceNumber}</p>
+              </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Reference</label>
-                  <p className="text-sm text-gray-900">{selectedMovement.referenceNumber}</p>
-                </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">User</label>
+                <p className="text-sm font-semibold text-gray-900">{selectedMovement.userName}</p>
+              </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-500">User</label>
-                  <p className="text-sm text-gray-900">{selectedMovement.userName}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Date</label>
-                  <p className="text-sm text-gray-900">{formatDate(selectedMovement.createdAt)}</p>
-                </div>
-
-                {selectedMovement.reason && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Reason</label>
-                    <p className="text-sm text-gray-900">{selectedMovement.reason}</p>
-                  </div>
-                )}
-
-                ||                {selectedMovement.notes && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Notes</label>
-                    <p className="text-sm text-gray-900">{selectedMovement.notes}</p>
-                  </div>
-                )}
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Date</label>
+                <p className="text-sm font-semibold text-gray-900">{formatDate(selectedMovement.createdAt)}</p>
               </div>
             </div>
+
+            {selectedMovement.reason && (
+              <div className="pt-2 border-t border-gray-100">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Reason</label>
+                <p className="text-sm text-gray-700 leading-relaxed mt-1">{selectedMovement.reason}</p>
+              </div>
+            )}
+
+            {selectedMovement.notes && (
+              <div className="pt-2 border-t border-gray-100">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Notes</label>
+                <p className="text-sm text-gray-700 leading-relaxed mt-1">{selectedMovement.notes}</p>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </BaseModal>
     </div>
   );
 };

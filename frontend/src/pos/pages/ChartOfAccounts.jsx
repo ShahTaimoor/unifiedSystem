@@ -35,6 +35,7 @@ import {
 import { useGetBanksQuery } from '../store/services/banksApi';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
 import { handleApiError } from '../utils/errorHandler';
+import BaseModal from '../components/BaseModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -214,17 +215,14 @@ const AccountForm = ({ account, onSave, onCancel, isOpen, existingAccounts, pres
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">
-            {account ? 'Edit Account' : 'Create New Account'}
-          </h3>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title={account ? 'Update Account' : 'Create New Account'}
+      maxWidth="xl"
+      variant="centered"
+    >
+      <div className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -451,7 +449,7 @@ const AccountForm = ({ account, onSave, onCancel, isOpen, existingAccounts, pres
           </div>
         </form>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 
@@ -615,170 +613,162 @@ const CategoryManagement = ({ categories, onCategoryCreated, onCategoryUpdated, 
         ))}
       </div>
 
-      {/* Category Form Modal */}
-      {isFormOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                {selectedCategory ? 'Edit Category' : 'Create New Category'}
-              </h3>
-              <button onClick={() => setIsFormOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="h-6 w-6" />
-              </button>
+      <BaseModal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        title={selectedCategory ? 'Edit Category' : 'Create New Category'}
+        maxWidth="xl"
+        variant="centered"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category Name *
+              </label>
+              <Input
+                type="text"
+                value={formData.name}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  const newFormData = { ...formData, name: newName };
+                  
+                  // Auto-generate code if enabled
+                  if (autoGenerateCode && !selectedCategory) {
+                    newFormData.code = generateCategoryCode(newName);
+                  }
+                  
+                  setFormData(newFormData);
+                }}
+                placeholder="e.g., Current Assets"
+                required
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category Name *
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => {
-                      const newName = e.target.value;
-                      const newFormData = { ...formData, name: newName };
-                      
-                      // Auto-generate code if enabled
-                      if (autoGenerateCode && !selectedCategory) {
-                        newFormData.code = generateCategoryCode(newName);
-                      }
-                      
-                      setFormData(newFormData);
-                    }}
-                    placeholder="e.g., Current Assets"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category Code *
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      type="text"
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                      className="flex-1"
-                      placeholder="e.g., CUR_ASSETS"
-                      required
-                    />
-                    {!selectedCategory && (
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, code: generateCategoryCode(formData.name) })}
-                        className="px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-                        title="Regenerate code from name"
-                      >
-                        Regenerate
-                      </button>
-                    )}
-                  </div>
-                  {!selectedCategory && (
-                    <div className="mt-2 flex items-center">
-                      <input
-                        type="checkbox"
-                        id="autoGenerateCode"
-                        checked={autoGenerateCode}
-                        onChange={(e) => setAutoGenerateCode(e.target.checked)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <label htmlFor="autoGenerateCode" className="ml-2 text-sm text-gray-600">
-                        Auto-generate from name
-                      </label>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Account Type *
-                  </label>
-                  <select
-                    value={formData.accountType}
-                    onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
-                    className="input"
-                    required
-                  >
-                    <option value="asset">Asset</option>
-                    <option value="liability">Liability</option>
-                    <option value="equity">Equity</option>
-                    <option value="revenue">Revenue</option>
-                    <option value="expense">Expense</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Display Order
-                  </label>
-                  <Input
-                    type="number"
-                    value={formData.displayOrder}
-                    onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                    min="0"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  placeholder="Category description..."
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category Code *
+              </label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="text"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                  className="flex-1"
+                  placeholder="e.g., CUR_ASSETS"
+                  required
                 />
+                {!selectedCategory && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, code: generateCategoryCode(formData.name) })}
+                    className="px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                    title="Regenerate code from name"
+                  >
+                    Regenerate
+                  </button>
+                )}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Color
-                </label>
-                <div className="flex items-center space-x-3">
+              {!selectedCategory && (
+                <div className="mt-2 flex items-center">
                   <input
-                    type="color"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                    type="checkbox"
+                    id="autoGenerateCode"
+                    checked={autoGenerateCode}
+                    onChange={(e) => setAutoGenerateCode(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
-                  <Input
-                    type="text"
-                    value={formData.color}
-                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                    className="flex-1"
-                    placeholder="#6B7280"
-                  />
+                  <label htmlFor="autoGenerateCode" className="ml-2 text-sm text-gray-600">
+                    Auto-generate from name
+                  </label>
                 </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t">
-                <Button
-                  type="button"
-                  onClick={() => setIsFormOpen(false)}
-                  variant="secondary"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="default"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {selectedCategory ? 'Update Category' : 'Create Category'}
-                </Button>
-              </div>
-            </form>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Account Type *
+              </label>
+              <select
+                value={formData.accountType}
+                onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
+                className="input"
+                required
+              >
+                <option value="asset">Asset</option>
+                <option value="liability">Liability</option>
+                <option value="equity">Equity</option>
+                <option value="revenue">Revenue</option>
+                <option value="expense">Expense</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Display Order
+              </label>
+              <Input
+                type="number"
+                value={formData.displayOrder}
+                onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+              placeholder="Category description..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Color
+            </label>
+            <div className="flex items-center space-x-3">
+              <input
+                type="color"
+                value={formData.color}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+              />
+              <Input
+                type="text"
+                value={formData.color}
+                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                className="flex-1"
+                placeholder="#6B7280"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4 border-t">
+            <Button
+              type="button"
+              onClick={() => setIsFormOpen(false)}
+              variant="secondary"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="default"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {selectedCategory ? 'Update Category' : 'Create Category'}
+            </Button>
+          </div>
+        </form>
+      </BaseModal>
 
       <DeleteConfirmationDialog
         isOpen={deleteConfirmation.isOpen}

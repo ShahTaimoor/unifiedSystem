@@ -4,8 +4,9 @@
  */
 
 import React, { useState } from 'react';
-import { X, Save, AlertTriangle } from 'lucide-react';
+import { Save, AlertTriangle } from 'lucide-react';
 import { LoadingButton } from './LoadingSpinner';
+import BaseModal from './BaseModal';
 
 export const BulkUpdateModal = ({
   isOpen,
@@ -20,8 +21,6 @@ export const BulkUpdateModal = ({
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
-
-  if (!isOpen) return null;
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -276,59 +275,47 @@ export const BulkUpdateModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-[100dvh] pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
-
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                {getTitle()}
-              </h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={getTitle()}
+      maxWidth="md"
+      variant="centered"
+    >
+      <div className="p-6">
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              This action will update <strong className="font-bold text-blue-900">{selectedCount}</strong> {selectedCount === 1 ? 'item' : 'items'}. Please review your changes carefully.
             </div>
-
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <div className="flex items-start">
-                <AlertTriangle className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  This will update <strong>{selectedCount}</strong> {selectedCount === 1 ? 'item' : 'items'}.
-                </div>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              {renderForm()}
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isLoading}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <LoadingButton
-                  type="submit"
-                  isLoading={isLoading}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Update {selectedCount} {selectedCount === 1 ? 'Item' : 'Items'}
-                </LoadingButton>
-              </div>
-            </form>
           </div>
         </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {renderForm()}
+
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="px-6 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <LoadingButton
+              type="submit"
+              isLoading={isLoading}
+              className="px-6 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 shadow-lg shadow-primary-600/20 transition-all active:scale-[0.98]"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Update {selectedCount} {selectedCount === 1 ? 'Item' : 'Items'}
+            </LoadingButton>
+          </div>
+        </form>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 

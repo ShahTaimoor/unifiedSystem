@@ -103,7 +103,7 @@ export const AdvancedSearch = ({
 
       {/* Suggestions Dropdown */}
       {displaySuggestions && (
-        <div className="absolute z-50 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+        <div className="pos-app absolute z-[1000] mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
           {/* Search Suggestions */}
           {searchSuggestions.length > 0 && (
             <div>

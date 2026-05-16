@@ -26,7 +26,7 @@ const PrintModal = ({
   emptyMessage = 'No data to print.',
   hasData = true,
   autoPrint = false,
-  zIndex = 50,
+  zIndex = 1100,
   getPdfData,
   onAfterPrint,
   pageStyle = PRINT_PAGE_STYLE

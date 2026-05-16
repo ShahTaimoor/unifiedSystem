@@ -164,28 +164,11 @@ export const BarcodeGenerator = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <Barcode className="h-5 w-5 text-primary-600" />
-          <h3 className="text-lg font-semibold text-gray-900">
-            {product ? `Barcode for ${product.name}` : 'Generate Barcode'}
-          </h3>
-        </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        )}
-      </div>
-
+    <div className="space-y-6">
       <div className="space-y-4">
         {/* Barcode Value Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wider">
             Barcode Value
           </label>
           <div className="flex space-x-2">
@@ -198,12 +181,12 @@ export const BarcodeGenerator = ({
                 const normalizedValue = val.replace(/[+*]/g, '-');
                 setDisplayValue(normalizedValue);
               }}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50"
               placeholder="Enter barcode value"
             />
             <button
               onClick={generateRandomBarcode}
-              className="px-3 py-2 text-sm text-primary-600 hover:text-primary-700 border border-primary-300 rounded-md hover:bg-primary-50 transition-colors"
+              className="px-4 py-2 text-sm font-bold text-primary-600 hover:text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-all"
             >
               Generate Random
             </button>
@@ -212,21 +195,23 @@ export const BarcodeGenerator = ({
 
         {/* Format Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wider">
             Barcode Format
           </label>
-          <select
-            value="CODE128"
-            onChange={() => {}}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50"
-            disabled
-          >
-            <option value="CODE128">CODE128 (Scanner-safe default)</option>
-          </select>
+          <div className="relative">
+            <select
+              value="CODE128"
+              onChange={() => {}}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-gray-50/50 cursor-not-allowed"
+              disabled
+            >
+              <option value="CODE128">CODE128 (Scanner-safe default)</option>
+            </select>
+          </div>
         </div>
 
         {/* Barcode Display */}
-        <div className="flex justify-center p-4 bg-gray-50 rounded-lg overflow-auto">
+        <div className="flex flex-col items-center justify-center p-8 bg-white border-2 border-dashed border-gray-100 rounded-xl overflow-auto min-h-[200px]">
           <canvas
             ref={canvasRef}
             style={{
@@ -240,10 +225,10 @@ export const BarcodeGenerator = ({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end space-x-2 pt-4 border-t">
+        <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-100">
           <button
             onClick={handleCopy}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors flex items-center space-x-2"
+            className="px-6 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all flex items-center space-x-2"
           >
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             <span>{copied ? 'Copied!' : 'Copy Value'}</span>
@@ -251,10 +236,10 @@ export const BarcodeGenerator = ({
 
           <button
             onClick={handlePrint}
-            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 transition-colors flex items-center space-x-2"
+            className="px-8 py-2.5 text-sm font-bold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 flex items-center space-x-2"
           >
             <Printer className="h-4 w-4" />
-            <span>Print</span>
+            <span>Print Barcode</span>
           </button>
         </div>
       </div>

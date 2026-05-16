@@ -140,221 +140,250 @@ const ReturnDetailModal = ({
 
   return (
     <>
-      {/* View Modal - Same design as Orders/Sales Invoices view */}
-      <div className="fixed inset-0 z-[1000] overflow-y-auto pos-app">
-        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {returnInfo.origin === 'purchase' ? 'Purchase' : 'Sale'} Return Details
-              </h2>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handlePrint}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  <span>Print</span>
-                </button>
-                <button
-                  onClick={onClose}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-
-            {/* Return Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">{companyName}</h1>
-              {companyAddress && <p className="text-sm text-gray-600">{companyAddress}</p>}
-              {(companyPhone || companyEmail) && (
-                <p className="text-sm text-gray-600">
-                  {[companyPhone && `Phone: ${companyPhone}`, companyEmail && `Email: ${companyEmail}`]
-                    .filter(Boolean)
-                    .join(' | ')}
-                </p>
-              )}
-              <p className="text-lg text-gray-600">
-                {returnInfo.origin === 'purchase' ? 'Purchase' : 'Sale'} Return
+      <BaseModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={`${returnInfo.origin === 'purchase' ? 'Purchase' : 'Sale'} Return Details`}
+        maxWidth="xl"
+        headerExtra={
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={handlePrint}
+              variant="default"
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center space-x-2"
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print</span>
+            </Button>
+          </div>
+        }
+      >
+        <div className="p-1 sm:p-4">
+          {/* Return Header */}
+          <div className="text-center mb-8 bg-gray-50/50 py-6 rounded-2xl border border-gray-100">
+            <h1 className="text-3xl font-bold text-gray-900">{companyName}</h1>
+            {companyAddress && <p className="text-sm text-gray-500 mt-1">{companyAddress}</p>}
+            {(companyPhone || companyEmail) && (
+              <p className="text-sm text-gray-400 mt-1">
+                {[companyPhone && `Phone: ${companyPhone}`, companyEmail && `Email: ${companyEmail}`]
+                  .filter(Boolean)
+                  .join(' | ')}
               </p>
+            )}
+            <div className="mt-4 inline-block px-4 py-1 bg-white rounded-full border border-gray-200 text-sm font-bold text-gray-600 uppercase tracking-widest">
+              {returnInfo.origin === 'purchase' ? 'Purchase' : 'Sale'} Return
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* Bill To / Return To */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                {docLabel} Information
+              </h3>
+              <div className="space-y-1.5">
+                <p className="font-bold text-gray-900 text-lg">{partyName}</p>
+                {partyEmail && <p className="text-sm text-gray-600">{partyEmail}</p>}
+                {canViewPartyPhone && partyPhone && <p className="text-sm text-gray-600 font-mono">{partyPhone}</p>}
+                {partyAddress && <p className="text-sm text-gray-500 leading-relaxed mt-2">{partyAddress}</p>}
+              </div>
             </div>
 
-            {/* Details Grid - Same 3-column layout as Orders */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-              {/* Bill To / Return To */}
-              <div>
-                <h3 className="font-semibold text-gray-900 border-b border-gray-300 pb-2 mb-4">
-                  {docLabel}:
-                </h3>
-                <div className="space-y-1">
-                  <p className="font-medium">{partyName}</p>
-                  {partyEmail && <p className="text-gray-600">{partyEmail}</p>}
-                  {canViewPartyPhone && partyPhone && <p className="text-gray-600">{partyPhone}</p>}
-                  {partyAddress && <p className="text-gray-600">{partyAddress}</p>}
+            {/* Return Information */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                Document Details
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Return #</span>
+                  <span className="text-sm font-bold text-gray-900">{returnInfo.returnNumber || '—'}</span>
                 </div>
-              </div>
-
-              {/* Return Information */}
-              <div className="text-left md:text-center">
-                <h3 className="font-semibold text-gray-900 border-b border-gray-300 pb-2 mb-4">
-                  Return Details:
-                </h3>
-                <div className="space-y-1">
-                  <p><span className="font-medium">Return #:</span> {returnInfo.returnNumber || '—'}</p>
-                  <p><span className="font-medium">Date:</span> {formatDate(returnInfo.returnDate)}</p>
-                  <p><span className="font-medium">Original {returnInfo.origin === 'purchase' ? 'Invoice' : 'Order'}:</span> {origRef}</p>
-                  <p><span className="font-medium">Type:</span> {(returnInfo.returnType || '—').replace('_', ' ')}</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Date</span>
+                  <span className="text-sm font-bold text-gray-900">{formatDate(returnInfo.returnDate)}</span>
                 </div>
-              </div>
-
-              {/* Status & Refund */}
-              <div className="text-left md:text-right">
-                <h3 className="font-semibold text-gray-900 border-b border-gray-300 pb-2 mb-4">
-                  Status & Refund:
-                </h3>
-                <div className="space-y-1">
-                  <p>
-                    <span className="font-medium">Status:</span>{' '}
-                    <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(returnInfo.status)}`}>
-                      {(returnInfo.status || '—').replace('_', ' ')}
-                    </span>
-                  </p>
-                  <p><span className="font-medium">Priority:</span> {(returnInfo.priority || 'normal').replace('_', ' ')}</p>
-                  <p><span className="font-medium">Refund Method:</span> {(returnInfo.refundMethod || '—').replace('_', ' ')}</p>
-                  <p><span className="font-medium">Net Refund:</span> {formatCurrency(netRefund)}</p>
-                  {returnInfo?.refund_details?.refundPaidAt && (
-                    <p className="text-green-600 text-sm">
-                      Paid on {formatDate(returnInfo.refund_details.refundPaidAt)}
-                    </p>
-                  )}
-                  {canIssueRefund && (
-                    <Button
-                      onClick={() => setShowIssueRefundModal(true)}
-                      variant="default"
-                      size="sm"
-                      className="mt-2"
-                    >
-                      Issue Refund
-                    </Button>
-                  )}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Ref {returnInfo.origin === 'purchase' ? 'Invoice' : 'Order'}</span>
+                  <span className="text-sm font-bold text-primary-600">{origRef}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Type</span>
+                  <span className="text-sm font-bold text-gray-900 uppercase">{(returnInfo.returnType || '—').replace('_', ' ')}</span>
                 </div>
               </div>
             </div>
 
-            {/* Items Table - Same style as Orders */}
-            <div className="mb-8">
-              <h3 className="font-semibold text-gray-900 border-b border-gray-300 pb-2 mb-4">Items:</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-4 py-2 text-left">Product</th>
-                      <th className="border border-gray-300 px-4 py-2 text-center">Qty</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Original Price</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Reason</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Condition</th>
-                      <th className="border border-gray-300 px-4 py-2 text-right">Refund</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.length > 0 ? (
-                      items.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="border border-gray-300 px-4 py-2">
-                            {item.product?.name || item.productName || 'Unknown'}
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2 text-center">{item.quantity}</td>
-                          <td className="border border-gray-300 px-4 py-2 text-right">
-                            {formatCurrency(item.originalPrice || item.unitPrice)}
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2">
-                            {(item.returnReason || '—').replace('_', ' ')}
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2">
+            {/* Status & Refund */}
+            <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                Financial Status
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Status</span>
+                  <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getStatusColor(returnInfo.status)}`}>
+                    {(returnInfo.status || '—').replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Method</span>
+                  <span className="text-sm font-bold text-gray-900 uppercase">{(returnInfo.refundMethod || '—').replace('_', ' ')}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Net Refund</span>
+                  <span className="text-lg font-bold text-primary-600">PKR {formatCurrency(netRefund)}</span>
+                </div>
+                {returnInfo?.refund_details?.refundPaidAt && (
+                  <div className="flex justify-between items-center bg-green-50 p-2 rounded-lg border border-green-100">
+                    <span className="text-[10px] font-bold text-green-700 uppercase">Paid on</span>
+                    <span className="text-[10px] font-bold text-green-700">{formatDate(returnInfo.refund_details.refundPaidAt)}</span>
+                  </div>
+                )}
+                {canIssueRefund && (
+                  <Button
+                    onClick={() => setShowIssueRefundModal(true)}
+                    variant="default"
+                    className="w-full mt-2 shadow-lg shadow-primary-500/20"
+                  >
+                    Issue Refund
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Items Table */}
+          <div className="mb-8">
+            <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center">
+              <span className="w-1.5 h-4 bg-primary-600 rounded-full mr-2" />
+              Returned Items
+            </h3>
+            <div className="overflow-hidden border border-gray-100 rounded-2xl shadow-sm">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/80 border-b border-gray-100">
+                    <th className="px-4 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Product</th>
+                    <th className="px-4 py-4 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">Qty</th>
+                    <th className="px-4 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Original Price</th>
+                    <th className="px-4 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Reason</th>
+                    <th className="px-4 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Condition</th>
+                    <th className="px-4 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Refund</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 bg-white">
+                  {items.length > 0 ? (
+                    items.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-4 py-4">
+                          <p className="text-sm font-bold text-gray-900">{item.product?.name || item.productName || 'Unknown'}</p>
+                          <p className="text-[10px] text-gray-400 font-mono">{item.product?.sku || 'No SKU'}</p>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <span className="inline-flex items-center justify-center px-2 py-1 bg-gray-100 rounded-lg text-xs font-bold text-gray-600">
+                            {item.quantity}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-right text-sm text-gray-600 font-mono">
+                          {formatCurrency(item.originalPrice || item.unitPrice)}
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="text-xs text-gray-600">{(item.returnReason || '—').replace('_', ' ')}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                            item.condition === 'new' ? 'bg-green-50 text-green-600 border border-green-100' :
+                            item.condition === 'damaged' ? 'bg-red-50 text-red-600 border border-red-100' :
+                            'bg-gray-50 text-gray-600 border border-gray-100'
+                          }`}>
                             {(item.condition || '—').replace('_', ' ')}
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2 text-right">
-                            {formatCurrency(item.refundAmount)}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="6" className="border border-gray-300 px-4 py-2 text-center text-gray-500">
-                          No items
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-right text-sm font-bold text-primary-600 font-mono">
+                          {formatCurrency(item.refundAmount)}
                         </td>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Totals - Same style as Orders */}
-            <div className="flex justify-end">
-              <div className="w-80">
-                <table className="w-full">
-                  <tbody>
+                    ))
+                  ) : (
                     <tr>
-                      <td className="px-4 py-2">Subtotal Refund:</td>
-                      <td className="px-4 py-2 text-right">{formatCurrency(returnInfo.totalRefundAmount || netRefund)}</td>
+                      <td colSpan="6" className="px-4 py-12 text-center text-gray-400 italic">
+                        No items returned
+                      </td>
                     </tr>
-                    {Number(returnInfo.totalRestockingFee) > 0 && (
-                      <tr>
-                        <td className="px-4 py-2">Restock Fee:</td>
-                        <td className="px-4 py-2 text-right">-{formatCurrency(returnInfo.totalRestockingFee)}</td>
-                      </tr>
-                    )}
-                    <tr className="border-t border-gray-300">
-                      <td className="px-4 py-2 font-semibold">Net Refund:</td>
-                      <td className="px-4 py-2 text-right font-semibold">{formatCurrency(netRefund)}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Totals */}
+          <div className="flex justify-end">
+            <div className="w-full max-w-xs space-y-3 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>Subtotal Refund</span>
+                <span className="font-mono">{formatCurrency(returnInfo.totalRefundAmount || netRefund)}</span>
+              </div>
+              {Number(returnInfo.totalRestockingFee) > 0 && (
+                <div className="flex justify-between items-center text-sm text-red-500 font-medium">
+                  <span>Restocking Fee</span>
+                  <span className="font-mono">-{formatCurrency(returnInfo.totalRestockingFee)}</span>
+                </div>
+              )}
+              <div className="pt-3 border-t border-gray-200 flex justify-between items-center">
+                <span className="text-base font-bold text-gray-900">Net Refund</span>
+                <span className="text-2xl font-bold text-primary-600 font-mono">
+                  {formatCurrency(netRefund)}
+                </span>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </BaseModal>
 
-      {/* Issue Refund Modal */}
-      {showIssueRefundModal && (
-        <div className="fixed inset-0 z-[1001] overflow-y-auto pos-app">
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50" onClick={() => setShowIssueRefundModal(false)}></div>
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h4 className="text-lg font-medium text-gray-900 mb-4">Issue Refund</h4>
-            <p className="text-sm text-gray-600 mb-4">
-              Record payment for Return {returnInfo?.returnNumber}. Amount: {formatCurrency(returnInfo?.netRefundAmount)}
+      <BaseModal
+        isOpen={showIssueRefundModal}
+        onClose={() => setShowIssueRefundModal(false)}
+        title="Issue Refund"
+        maxWidth="md"
+      >
+        <div className="p-6">
+          <div className="bg-primary-50 p-4 rounded-xl border border-primary-100 mb-6">
+            <p className="text-sm text-primary-900 leading-relaxed">
+              Recording a refund payment for Return <span className="font-bold">{returnInfo?.returnNumber}</span>.
+              The total amount to be paid is <span className="font-bold">PKR {formatCurrency(returnInfo?.netRefundAmount)}</span>.
             </p>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Payment Method</label>
               <select
                 value={issueRefundMethod}
                 onChange={(e) => setIssueRefundMethod(e.target.value)}
-                className="input w-full"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:outline-none font-bold text-gray-700"
               >
-                <option value="cash">Cash</option>
+                <option value="cash">Cash Payment</option>
                 <option value="bank_transfer">Bank Transfer</option>
-                <option value="check">Check</option>
+                <option value="check">Check Payment</option>
               </select>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => setShowIssueRefundModal(false)}>Cancel</Button>
-              <Button onClick={handleIssueRefund} disabled={isIssuingRefund}>
-                {isIssuingRefund ? <LoadingSpinner size="sm" /> : 'Issue Refund'}
-              </Button>
-            </div>
-            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+            <Button variant="outline" className="px-6 rounded-xl" onClick={() => setShowIssueRefundModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleIssueRefund} 
+              disabled={isIssuingRefund}
+              className="px-8 rounded-xl shadow-lg shadow-primary-500/20"
+            >
+              {isIssuingRefund ? <LoadingSpinner size="sm" /> : 'Confirm Refund'}
+            </Button>
           </div>
         </div>
-      )}
+      </BaseModal>
 
       {/* Print Modal */}
       {showPrintModal && (

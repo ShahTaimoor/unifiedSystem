@@ -98,7 +98,9 @@ const sanitizePayload = (payload) => {
   return sanitized;
 };
 
-const WarehouseFormModal = ({ warehouse, onSave, onCancel, isSubmitting }) => {
+import BaseModal from '../components/BaseModal';
+
+const WarehouseFormModal = ({ isOpen, warehouse, onSave, onCancel, isSubmitting }) => {
   const {
     register,
     handleSubmit,
@@ -134,213 +136,178 @@ const WarehouseFormModal = ({ warehouse, onSave, onCancel, isSubmitting }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-      <div className="w-full max-w-4xl rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b p-6">
-          <div className="flex items-center space-x-3">
-            <Warehouse className="h-6 w-6 text-primary-600" />
-            <h2 className="text-xl font-semibold text-gray-900">
-              {warehouse ? 'Edit Warehouse' : 'Add Warehouse'}
-            </h2>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title={warehouse ? 'Edit Warehouse' : 'Add Warehouse'}
+      maxWidth="4xl"
+      variant="centered"
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="p-6">
+        <div className="max-h-[70vh] overflow-y-auto px-1 space-y-8 custom-scrollbar">
+          {/* General Information */}
+          <div className="space-y-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+              <span className="w-8 h-px bg-gray-100 mr-3"></span>
+              General Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Name *</label>
+                <div className="relative">
+                  <Warehouse className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    {...register('name', { required: 'Warehouse name is required' })}
+                    placeholder="Main Warehouse"
+                    className="pl-11 py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                  />
+                </div>
+                {errors.name && <p className="text-[10px] font-bold text-red-500 px-1">{errors.name.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Code *</label>
+                <div className="relative">
+                  <Layers className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    {...register('code', {
+                      required: 'Warehouse code is required',
+                      maxLength: { value: 50, message: 'Maximum 50 characters' },
+                    })}
+                    className="pl-11 py-6 uppercase bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                    placeholder="MAIN"
+                  />
+                </div>
+                {errors.code && <p className="text-[10px] font-bold text-red-500 px-1">{errors.code.message}</p>}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase px-1">Description</label>
+              <Textarea
+                {...register('description', { maxLength: { value: 500, message: 'Max 500 characters' } })}
+                rows={2}
+                className="bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all resize-none p-4"
+                placeholder="Purposes or coverage..."
+              />
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-gray-400 transition hover:text-gray-600"
-          >
-            <X className="h-5 w-5" />
-          </button>
+
+          {/* Address Information */}
+          <div className="space-y-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+              <span className="w-8 h-px bg-gray-100 mr-3"></span>
+              Location Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Address Line 1</label>
+                <Input
+                  {...register('address.line1')}
+                  placeholder="Street, number..."
+                  className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Address Line 2</label>
+                <Input
+                  {...register('address.line2')}
+                  placeholder="Suite, building..."
+                  className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">City</label>
+                <Input {...register('address.city')} className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">State</label>
+                <Input {...register('address.state')} className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Postal</label>
+                <Input {...register('address.postalCode')} className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Country</label>
+                <Input {...register('address.country')} className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold" />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="space-y-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+              <span className="w-8 h-px bg-gray-100 mr-3"></span>
+              Contact Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Contact Person</label>
+                <Input {...register('contact.name')} placeholder="Person name" className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Phone</label>
+                <Input {...register('contact.phone')} placeholder="Phone number" className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Email</label>
+                <Input {...register('contact.email')} placeholder="Email address" className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold" />
+              </div>
+            </div>
+          </div>
+
+          {/* Configuration */}
+          <div className="space-y-6">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+              <span className="w-8 h-px bg-gray-100 mr-3"></span>
+              Configuration & Settings
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase px-1">Storage Capacity</label>
+                <Input type="number" {...register('capacity')} className="py-6 bg-gray-50 border-none rounded-2xl text-sm font-semibold" placeholder="Units..." />
+              </div>
+              <div className="flex items-center group cursor-pointer">
+                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                  register('isPrimary').value ? 'bg-primary-600 border-primary-600' : 'border-gray-200 bg-white group-hover:border-primary-400'
+                }`}>
+                  <input type="checkbox" {...register('isPrimary')} className="hidden" id="isPrimary" />
+                  {register('isPrimary').value && <CheckCircle className="h-4 w-4 text-white" />}
+                </div>
+                <label htmlFor="isPrimary" className="ml-3 cursor-pointer">
+                  <p className="text-sm font-bold text-gray-700">Primary</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Default Source</p>
+                </label>
+              </div>
+              <div className="flex items-center group cursor-pointer">
+                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                  register('isActive').value ? 'bg-green-600 border-green-600' : 'border-gray-200 bg-white group-hover:border-green-400'
+                }`}>
+                  <input type="checkbox" {...register('isActive')} className="hidden" id="isActive" />
+                  {register('isActive').value && <CheckCircle className="h-4 w-4 text-white" />}
+                </div>
+                <label htmlFor="isActive" className="ml-3 cursor-pointer">
+                  <p className="text-sm font-bold text-gray-700">Active</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Enable selection</p>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="max-h-[75vh] overflow-y-auto p-6 space-y-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="form-label flex items-center space-x-2">
-                <Hash className="h-4 w-4 text-gray-400" />
-                <span>Name *</span>
-              </label>
-              <Input
-                {...register('name', { required: 'Warehouse name is required' })}
-                placeholder="Main Warehouse"
-              />
-              {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>}
-            </div>
-
-            <div>
-              <label className="form-label flex items-center space-x-2">
-                <Layers className="h-4 w-4 text-gray-400" />
-                <span>Code *</span>
-              </label>
-              <Input
-                {...register('code', {
-                  required: 'Warehouse code is required',
-                  maxLength: { value: 50, message: 'Maximum 50 characters' },
-                })}
-                className="uppercase"
-                placeholder="MAIN"
-              />
-              {errors.code && <p className="mt-1 text-sm text-red-500">{errors.code.message}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className="form-label flex items-center space-x-2">
-              <StickyNote className="h-4 w-4 text-gray-400" />
-              <span>Description</span>
-            </label>
-            <Textarea
-              {...register('description', { maxLength: { value: 500, message: 'Max 500 characters' } })}
-              rows={3}
-              placeholder="Short description about warehouse purpose or coverage"
-            />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-500">{errors.description.message}</p>
-            )}
-          </div>
-
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className="form-label flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span>Address Line 1</span>
-              </label>
-              <Input
-                {...register('address.line1')}
-                placeholder="Street, number..."
-              />
-            </div>
-            <div>
-              <label className="form-label flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span>Address Line 2</span>
-              </label>
-              <Input
-                {...register('address.line2')}
-                placeholder="Suite, building..."
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div>
-              <label className="form-label">City</label>
-              <Input {...register('address.city')} />
-            </div>
-            <div>
-              <label className="form-label">State/Province</label>
-              <Input {...register('address.state')} />
-            </div>
-            <div>
-              <label className="form-label">Postal Code</label>
-              <Input {...register('address.postalCode')} />
-            </div>
-            <div>
-              <label className="form-label flex items-center space-x-2">
-                <Flag className="h-4 w-4 text-gray-400" />
-                <span>Country</span>
-              </label>
-              <Input {...register('address.country')} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div>
-              <label className="form-label flex items-center space-x-2">
-                <User className="h-4 w-4 text-gray-400" />
-                <span>Contact Person</span>
-              </label>
-              <Input {...register('contact.name')} placeholder="Person in charge" />
-            </div>
-            <div>
-              <label className="form-label flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-gray-400" />
-                <span>Phone</span>
-              </label>
-              <Input {...register('contact.phone')} placeholder="+1 555 123 4567" />
-            </div>
-            <div>
-              <label className="form-label flex items-center space-x-2">
-                <Mail className="h-4 w-4 text-gray-400" />
-                <span>Email</span>
-              </label>
-              <Input
-                {...register('contact.email', {
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: 'Please enter a valid email address',
-                  },
-                })}
-                placeholder="contact@example.com"
-              />
-              {errors.contact?.email && (
-                <p className="mt-1 text-sm text-red-500">{errors.contact.email.message}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div>
-              <label className="form-label">Storage Capacity (optional)</label>
-              <Input
-                type="number"
-                min={0}
-                step={1}
-                {...register('capacity', {
-                  min: { value: 0, message: 'Capacity must be zero or higher' },
-                })}
-                placeholder="Units or pallets"
-              />
-              {errors.capacity && (
-                <p className="mt-1 text-sm text-red-500">{errors.capacity.message}</p>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" {...register('isPrimary')} className="checkbox" />
-              <div>
-                <p className="text-sm font-medium text-gray-700">Primary Warehouse</p>
-                <p className="text-xs text-gray-500">
-                  Marks this warehouse as default for new inventory records.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" {...register('isActive')} className="checkbox" />
-              <div>
-                <p className="text-sm font-medium text-gray-700">Active</p>
-                <p className="text-xs text-gray-500">
-                  Inactive warehouses will be hidden from selection lists.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="form-label">Notes</label>
-            <Textarea
-              {...register('notes')}
-              rows={3}
-              placeholder="Internal notes or handling instructions"
-            />
-          </div>
-
-          <div className="flex items-center justify-end space-x-3 border-t pt-4">
-            <Button type="button" variant="secondary" size="default" onClick={onCancel} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="default" size="default" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <LoadingButton />
-              ) : (
-                <span className="flex items-center space-x-2">
-                  <Plus className="h-4 w-4" />
-                  <span>{warehouse ? 'Update Warehouse' : 'Create Warehouse'}</span>
-                </span>
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-end space-x-4">
+          <Button type="button" variant="ghost" className="px-8 font-bold text-gray-400 hover:text-gray-600" onClick={onCancel} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="default" className="px-10 rounded-2xl font-bold shadow-lg shadow-primary-600/20 active:scale-95 transition-all" disabled={isSubmitting}>
+            {isSubmitting ? <LoadingButton /> : (warehouse ? 'Update Warehouse' : 'Create Warehouse')}
+          </Button>
+        </div>
+      </form>
+    </BaseModal>
   );
 };
 
@@ -679,6 +646,7 @@ const Warehouses = () => {
 
       {isModalOpen && (
         <WarehouseFormModal
+          isOpen={isModalOpen}
           warehouse={selectedWarehouse}
           onSave={handleSave}
           onCancel={() => {

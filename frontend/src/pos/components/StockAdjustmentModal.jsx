@@ -245,336 +245,289 @@ const StockAdjustmentModal = ({ isOpen, onClose, onSuccess }) => {
   const totalCostImpact = adjustments.reduce((sum, adj) => sum + (adj.variance * adj.cost), 0);
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-[1000]" onClose={handleClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black bg-opacity-40" />
-        </Transition.Child>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Create Stock Adjustment"
+      maxWidth="xl"
+    >
+      <div className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Adjustment Type and Basic Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+                Adjustment Type
+              </label>
+              <select
+                value={adjustmentType}
+                onChange={(e) => setAdjustmentType(e.target.value)}
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:outline-none font-bold text-gray-700 shadow-sm"
+              >
+                <option value="physical_count">Physical Count</option>
+                <option value="damage">Damage</option>
+                <option value="theft">Theft</option>
+                <option value="transfer">Transfer</option>
+                <option value="correction">Correction</option>
+                <option value="return">Return</option>
+                <option value="write_off">Write Off</option>
+              </select>
+            </div>
 
-        <div className="fixed inset-0 overflow-y-auto pos-app">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <Dialog.Title
-                  as="h3"
-                  className="text-lg font-medium leading-6 text-gray-900 flex justify-between items-center mb-6"
-                >
-                  Create Stock Adjustment
-                  <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
-                    <X className="h-5 w-5" />
-                  </button>
-                </Dialog.Title>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+                Warehouse Location
+              </label>
+              <Input
+                type="text"
+                name="warehouse"
+                value={values.warehouse}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className="rounded-xl py-6 font-bold"
+                placeholder="Enter warehouse name"
+              />
+            </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Adjustment Type and Basic Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Adjustment Type
-                      </label>
-                      <select
-                        value={adjustmentType}
-                        onChange={(e) => setAdjustmentType(e.target.value)}
-                        className="select"
-                      >
-                        <option value="physical_count">Physical Count</option>
-                        <option value="damage">Damage</option>
-                        <option value="theft">Theft</option>
-                        <option value="transfer">Transfer</option>
-                        <option value="correction">Correction</option>
-                        <option value="return">Return</option>
-                        <option value="write_off">Write Off</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Warehouse
-                      </label>
-                      <Input
-                        type="text"
-                        name="warehouse"
-                        value={values.warehouse}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        placeholder="Warehouse location"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Reason <span className="text-red-500">*</span>
-                    </label>
-                    <Input
-                      type="text"
-                      name="reason"
-                      value={values.reason}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      className={errors.reason ? 'input-error' : ''}
-                      placeholder="Enter reason for adjustment"
-                    />
-                    {errors.reason && <p className="text-red-600 text-sm mt-1">{errors.reason}</p>}
-                  </div>
-
-                  {/* Add Products */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Add Products
-                    </label>
-                    <SearchableDropdown
-                      placeholder="Search products to adjust..."
-                      items={products?.data?.products || []}
-                      onSelect={handleProductSelect}
-                      onSearch={setProductSearchTerm}
-                      displayKey={productDisplayKey}
-                      loading={productsLoading}
-                      emptyMessage="No products found"
-                    />
-                  </div>
-
-                  {/* Product Adjustment Form */}
-                  {isAddingProduct && selectedProduct && (
-                    <div className="bg-gray-50 p-4 rounded-lg border">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-gray-900">Adjust Stock for {selectedProduct.name}</h4>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedProduct(null);
-                            setIsAddingProduct(false);
-                          }}
-                          className="text-gray-400 hover:text-gray-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Current Stock
-                          </label>
-                          <Input
-                            type="number"
-                            value={selectedProduct.inventory?.currentStock || 0}
-                            className="bg-gray-100"
-                            readOnly
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Adjusted Stock
-                          </label>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="Enter new stock level"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const adjustedStock = parseFloat(e.target.value) || 0;
-                                addProductToAdjustment(
-                                  selectedProduct.inventory?.currentStock || 0,
-                                  adjustedStock
-                                );
-                              }
-                            }}
-                            autoFocus
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="mt-3 flex space-x-2">
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            const adjustedStock = document.querySelector('input[placeholder="Enter new stock level"]').value;
-                            addProductToAdjustment(
-                              selectedProduct.inventory?.currentStock || 0,
-                              parseFloat(adjustedStock) || 0
-                            );
-                          }}
-                          variant="default"
-                          className="flex-1"
-                        >
-                          Add to Adjustment
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            setSelectedProduct(null);
-                            setIsAddingProduct(false);
-                          }}
-                          variant="secondary"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Adjustments List */}
-                  {adjustments.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Adjustments ({adjustments.length})</h4>
-                      <div className="space-y-3">
-                        {adjustments.map((adjustment) => (
-                          <div key={adjustment.product._id} className="bg-white border rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
-                              <Package className="h-5 w-5 text-gray-400" />
-                              <div className="flex-1 flex items-center gap-3">
-                                <span className="font-semibold text-gray-900">
-                                  {adjustment.product.name}
-                                </span>
-                                <div className="ml-auto flex flex-wrap items-center justify-end gap-2 text-xs text-gray-500 text-right">
-                                  <span>
-                                    Category: {normalizeCategoryLabel(adjustment.product.category)}
-                                  </span>
-                                  <span className="text-gray-300">•</span>
-                                  <span>Stock: {adjustment.currentStock}</span>
-                                  <span className="text-gray-300">•</span>
-                                  <span>{formatProductPrice(adjustment.product)}</span>
-                                </div>
-                              </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeAdjustment(adjustment.product._id)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                            
-                            <div className="grid grid-cols-4 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Current Stock
-                                </label>
-                                <Input
-                                  type="number"
-                                  value={adjustment.currentStock}
-                                  className="bg-gray-100"
-                                  readOnly
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Adjusted Stock
-                                </label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={adjustment.adjustedStock}
-                                  onChange={(e) => updateAdjustment(adjustment.product._id, 'adjustedStock', parseFloat(e.target.value) || 0)}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Variance
-                                </label>
-                                <div className={`input bg-gray-100 ${adjustment.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {adjustment.variance >= 0 ? '+' : ''}{adjustment.variance}
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Cost Impact
-                                </label>
-                                <div className={`input bg-gray-100 ${adjustment.variance * adjustment.cost >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  ${(adjustment.variance * adjustment.cost).toFixed(2)}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Summary */}
-                  {adjustments.length > 0 && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-gray-900 mb-3">Adjustment Summary</h4>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <div className="text-sm text-gray-600">Total Products</div>
-                          <div className="text-lg font-semibold">{adjustments.length}</div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-600">Total Variance</div>
-                          <div className={`text-lg font-semibold ${totalVariance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {totalVariance >= 0 ? '+' : ''}{totalVariance}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-600">Cost Impact</div>
-                          <div className={`text-lg font-semibold ${totalCostImpact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            ${totalCostImpact.toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Notes */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Notes
-                    </label>
-                    <Textarea
-                      name="notes"
-                      value={values.notes}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      rows={3}
-                      placeholder="Additional notes (optional)"
-                    />
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex justify-end space-x-3 pt-6 border-t">
-                    <Button
-                      type="button"
-                      onClick={handleClose}
-                      variant="secondary"
-                    >
-                      Cancel
-                    </Button>
-                    <LoadingButton
-                      type="submit"
-                      isLoading={creating}
-                      variant="default"
-                    >
-                      Create Adjustment Request
-                    </LoadingButton>
-                  </div>
-                </form>
-              </Dialog.Panel>
-            </Transition.Child>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+                Reason for Adjustment <span className="text-red-500">*</span>
+              </label>
+              <Input
+                type="text"
+                name="reason"
+                value={values.reason}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={`rounded-xl py-6 font-bold ${errors.reason ? 'border-red-500' : ''}`}
+                placeholder="e.g. Monthly stock take"
+              />
+              {errors.reason && <p className="text-red-600 text-[10px] font-bold uppercase mt-1.5 px-1">{errors.reason}</p>}
+            </div>
           </div>
-        </div>
-      </Dialog>
-    </Transition>
+
+          {/* Add Products */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-gray-900 flex items-center">
+              <span className="w-1.5 h-4 bg-primary-600 rounded-full mr-2" />
+              Manage Inventory Items
+            </h3>
+            <SearchableDropdown
+              placeholder="Search products to adjust..."
+              items={products || []}
+              onSelect={handleProductSelect}
+              onSearch={setProductSearchTerm}
+              displayKey={productDisplayKey}
+              loading={productsLoading}
+              emptyMessage="No products found"
+              className="rounded-2xl shadow-md border-gray-200"
+            />
+          </div>
+
+          {/* Product Adjustment Form */}
+          {isAddingProduct && selectedProduct && (
+            <div className="bg-primary-50/50 p-6 rounded-2xl border-2 border-dashed border-primary-100 animate-in fade-in zoom-in duration-300">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary-600">
+                    <Package className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 leading-tight">{selectedProduct.name}</h4>
+                    <p className="text-[10px] font-bold text-primary-600 uppercase tracking-widest">Adjusting stock level</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProduct(null);
+                    setIsAddingProduct(false);
+                  }}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-full transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">
+                    Current Stock
+                  </label>
+                  <div className="px-4 py-4 bg-white border border-gray-100 rounded-xl font-mono font-bold text-gray-500 text-lg shadow-sm">
+                    {selectedProduct.inventory?.currentStock || 0}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">
+                    New Stock Count
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    className="rounded-xl py-8 font-mono font-bold text-lg text-primary-600 focus:ring-primary-500 shadow-sm border-primary-100"
+                    placeholder="Counted qty"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const adjustedStock = parseFloat(e.target.value) || 0;
+                        addProductToAdjustment(
+                          selectedProduct.inventory?.currentStock || 0,
+                          adjustedStock
+                        );
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex space-x-3">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const input = document.querySelector('input[placeholder="Counted qty"]');
+                    addProductToAdjustment(
+                      selectedProduct.inventory?.currentStock || 0,
+                      parseFloat(input?.value) || 0
+                    );
+                  }}
+                  className="flex-1 py-6 rounded-xl shadow-lg shadow-primary-500/20"
+                >
+                  Add to Adjustment
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProduct(null);
+                    setIsAddingProduct(false);
+                  }}
+                  variant="outline"
+                  className="px-6 rounded-xl border-gray-200"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Adjustments List */}
+          {adjustments.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-gray-900">Adjustment Items ({adjustments.length})</h4>
+              <div className="space-y-4">
+                {adjustments.map((adjustment) => (
+                  <div key={adjustment.product._id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-primary-50 group-hover:text-primary-600 transition-colors">
+                          <Package className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">{adjustment.product.name}</p>
+                          <p className="text-[10px] text-gray-400 font-mono">Current: {adjustment.currentStock}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAdjustment(adjustment.product._id)}
+                        className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="col-span-1">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 px-1">Adjusted</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={adjustment.adjustedStock}
+                          onChange={(e) => updateAdjustment(adjustment.product._id, 'adjustedStock', parseFloat(e.target.value) || 0)}
+                          className="rounded-xl font-mono font-bold"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 px-1">Variance</label>
+                        <div className={`h-10 flex items-center px-4 rounded-xl font-mono font-bold text-sm bg-gray-50 ${adjustment.variance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {adjustment.variance >= 0 ? '+' : ''}{adjustment.variance}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 px-1">Cost Impact</label>
+                        <div className={`h-10 flex items-center px-4 rounded-xl font-mono font-bold text-sm bg-gray-50 ${adjustment.variance * adjustment.cost >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          PKR {(adjustment.variance * adjustment.cost).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Summary */}
+          {adjustments.length > 0 && (
+            <div className="bg-gray-900 rounded-2xl p-6 text-white shadow-xl">
+              <div className="grid grid-cols-3 gap-6">
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Items</p>
+                  <p className="text-xl font-bold">{adjustments.length}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Variance</p>
+                  <p className={`text-xl font-bold ${totalVariance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {totalVariance >= 0 ? '+' : ''}{totalVariance}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cost Impact</p>
+                  <p className={`text-xl font-bold ${totalCostImpact >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    PKR {totalCostImpact.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
+              Internal Notes
+            </label>
+            <Textarea
+              name="notes"
+              value={values.notes}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              rows={3}
+              className="rounded-2xl p-4 bg-gray-50/50"
+              placeholder="Record any specific observations..."
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-100">
+            <Button
+              type="button"
+              onClick={handleClose}
+              variant="outline"
+              className="px-8 rounded-xl border-gray-200"
+            >
+              Discard
+            </Button>
+            <LoadingButton
+              type="submit"
+              isLoading={creating}
+              className="px-10 rounded-xl shadow-lg shadow-primary-500/20"
+            >
+              Submit Adjustment
+            </LoadingButton>
+          </div>
+        </form>
+      </div>
+    </BaseModal>
   );
 };
 

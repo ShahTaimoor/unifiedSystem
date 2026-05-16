@@ -145,7 +145,7 @@ const MobileNavigation = ({ user, onLogout, isLoggingOut = false }) => {
     <>
       {/* Mobile Search Overlay */}
       {isSearchOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20">
+        <div className="pos-app fixed inset-0 bg-black bg-opacity-50 z-[1000] flex items-start justify-center pt-20">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center space-x-3">
@@ -173,7 +173,7 @@ const MobileNavigation = ({ user, onLogout, isLoggingOut = false }) => {
 
       {/* Mobile Sidebar Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] lg:hidden">
+        <div className="pos-app fixed inset-0 bg-black bg-opacity-50 z-[1000] lg:hidden">
           <div className="mobile-menu fixed inset-y-0 left-0 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">

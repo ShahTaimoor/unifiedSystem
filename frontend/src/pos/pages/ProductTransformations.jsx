@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ValidatedInput, { ValidatedSelect } from '../components/ValidatedInput';
 import BarcodeLabelPrinter from '../components/BarcodeLabelPrinter';
+import BaseModal from '../components/BaseModal';
 
 /** Rows for BarcodeLabelPrinter: base product + target variant (labels for both). */
 function buildLabelPrinterRows(baseProduct, variant, options = {}) {
@@ -403,8 +404,9 @@ const ProductTransformations = () => {
         />
       )}
 
-      {barcodePrintQueue?.length > 0 && (
+      {barcodePrintQueue && (
         <BarcodeLabelPrinter
+          isOpen={!!barcodePrintQueue}
           products={barcodePrintQueue}
           onClose={() => setBarcodePrintQueue(null)}
           modalTitle="Print product / variant barcode labels"
@@ -565,19 +567,16 @@ const TransformationModal = ({ products, productsLoading, isOpen, onClose, onSuc
     [selectedBaseProductData, selectedVariantData, formData.optionalBarcode]
   );
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 xl:p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 xl:px-6 xl:py-4 flex items-center justify-between">
-          <h2 className="text-base xl:text-xl font-bold text-gray-900">Create Product Transformation</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
-            <X className="h-5 w-5 xl:h-6 xl:w-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-4 xl:p-6 space-y-3 xl:space-y-4">
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create Product Transformation"
+      maxWidth="2xl"
+      variant="centered"
+    >
+      <div className="p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <ProductSearchableSelect
             label="Base Product"
             placeholder="Search base product…"
@@ -591,15 +590,17 @@ const TransformationModal = ({ products, productsLoading, isOpen, onClose, onSuc
           />
 
           {formData.baseProduct && (
-            <>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 xl:p-4">
-                <div className="flex items-center gap-1.5 xl:gap-2 mb-1.5 xl:mb-2">
-                  <Package className="h-4 w-4 xl:h-5 xl:w-5 text-blue-600" />
-                  <span className="text-sm xl:text-base font-medium text-blue-900">Available Stock</span>
+            <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="bg-primary-50/50 border border-primary-100 rounded-2xl p-5 flex items-start space-x-4">
+                <div className="bg-white p-2 rounded-xl shadow-sm border border-primary-100">
+                  <Package className="h-5 w-5 text-primary-600" />
                 </div>
-                <p className="text-xs xl:text-sm text-blue-700">
-                  {availableStock} units available for transformation
-                </p>
+                <div>
+                  <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-1">Available Inventory</p>
+                  <p className="text-sm font-bold text-slate-900">
+                    {availableStock} units available for transformation
+                  </p>
+                </div>
               </div>
 
               <VariantSearchableSelect
@@ -615,216 +616,164 @@ const TransformationModal = ({ products, productsLoading, isOpen, onClose, onSuc
               />
 
               {!variantsForBaseLoading && selectableVariants.length === 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 xl:p-4">
-                  <div className="flex items-center gap-1.5 xl:gap-2">
-                    <AlertCircle className="h-4 w-4 xl:h-5 xl:w-5 text-yellow-600" />
-                    <span className="text-xs xl:text-sm text-yellow-800">
-                      No variants found for this product. Please create a variant first.
-                    </span>
-                  </div>
+                <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-5 flex items-start space-x-4">
+                  <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <p className="text-xs font-semibold text-amber-700 leading-relaxed">
+                    No variants found for this product. Please create a variant first in the Product Management module.
+                  </p>
                 </div>
               )}
 
               {formData.targetVariant && (
-                <>
-                  <ValidatedInput
-                    name="transformationQuantity"
-                    label="Quantity (units from base stock)"
-                    type="number"
-                    value={formData.quantity < 1 ? 1 : formData.quantity}
-                    onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
-                      setFormData({
-                        ...formData,
-                        quantity: Number.isFinite(n) && n >= 1 ? n : 1,
-                      });
-                    }}
-                    min="1"
-                    {...(availableStock > 0 ? { max: availableStock } : {})}
-                    required
-                    helpText={
-                      availableStock > 0
-                        ? `Cannot exceed available base stock (${availableStock}).`
-                        : 'No base stock on hand — add stock in Inventory (or receive on Purchase) before transforming.'
-                    }
-                  />
-
-                  <div>
-                    <label
-                      htmlFor="transformation-optional-barcode"
-                      className="block text-xs xl:text-sm font-medium text-gray-700 mb-0.5 xl:mb-1"
-                    >
-                      Barcode for labels (optional)
-                    </label>
-                    <Input
-                      id="transformation-optional-barcode"
-                      type="text"
-                      autoComplete="off"
-                      value={formData.optionalBarcode}
-                      onChange={(e) =>
-                        setFormData({ ...formData, optionalBarcode: e.target.value })
-                      }
-                      className="w-full text-sm"
-                      placeholder="Leave blank to use the variant’s saved barcode on printed labels"
+                <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <ValidatedInput
+                      name="transformationQuantity"
+                      label="Quantity to Transform"
+                      type="number"
+                      value={formData.quantity < 1 ? 1 : formData.quantity}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10);
+                        setFormData({
+                          ...formData,
+                          quantity: Number.isFinite(n) && n >= 1 ? n : 1,
+                        });
+                      }}
+                      min="1"
+                      {...(availableStock > 0 ? { max: availableStock } : {})}
+                      required
                     />
-                    <p className="mt-0.5 text-[10px] xl:text-xs text-gray-500">
-                      Only affects label printing here — does not change the variant in Product Variants.
-                    </p>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                        Label Barcode (Optional)
+                      </label>
+                      <Input
+                        type="text"
+                        autoComplete="off"
+                        value={formData.optionalBarcode}
+                        onChange={(e) => setFormData({ ...formData, optionalBarcode: e.target.value })}
+                        className="rounded-xl border-gray-200"
+                        placeholder="Leave blank for default"
+                      />
+                    </div>
                   </div>
 
                   {formData.quantity > availableStock && availableStock >= 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 xl:p-4">
-                      <div className="flex items-center gap-1.5 xl:gap-2">
-                        <AlertCircle className="h-4 w-4 xl:h-5 xl:w-5 text-red-600" />
-                        <span className="text-xs xl:text-sm text-red-800">
-                          Insufficient stock. Available: {availableStock}, Requested: {formData.quantity}
-                        </span>
-                      </div>
+                    <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-5 flex items-start space-x-4">
+                      <AlertCircle className="h-5 w-5 text-rose-500 mt-0.5" />
+                      <p className="text-xs font-bold text-rose-700">
+                        Insufficient stock. Available: {availableStock}, Requested: {formData.quantity}
+                      </p>
                     </div>
                   )}
 
                   {selectedVariantData && labelPrinterProducts.length > 0 && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 xl:p-4 space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs xl:text-sm font-medium text-gray-800">Barcodes &amp; SKUs</span>
-                        <Button
+                    <div className="bg-slate-50/50 border border-slate-100 rounded-[2rem] p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identification Mapping</h3>
+                        <button
                           type="button"
-                          variant="outline"
-                          size="sm"
-                          className="text-xs min-h-[2rem]"
                           onClick={() => onOpenBarcodePrint?.(labelPrinterProducts)}
+                          className="flex items-center space-x-2 text-[10px] font-black text-primary-600 uppercase tracking-widest hover:text-primary-700 transition-colors"
                         >
-                          <Printer className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-                          Print labels
-                        </Button>
+                          <Printer className="h-3 w-3" />
+                          <span>Generate Labels</span>
+                        </button>
                       </div>
-                      <div className="text-[10px] xl:text-xs text-gray-600 space-y-1">
-                        <p>
-                          <span className="font-medium text-gray-700">Base:</span>{' '}
-                          {selectedBaseProductData?.barcode ? `BC ${selectedBaseProductData.barcode}` : 'No barcode'}{' '}
-                          · {selectedBaseProductData?.sku ? `SKU ${selectedBaseProductData.sku}` : 'No SKU'}
-                        </p>
-                        <p>
-                          <span className="font-medium text-gray-700">Variant:</span>{' '}
-                          {formData.optionalBarcode?.trim()
-                            ? `BC ${formData.optionalBarcode.trim()} (for labels)`
-                            : selectedVariantData.barcode
-                              ? `BC ${selectedVariantData.barcode}`
-                              : 'No barcode'}{' '}
-                          · {selectedVariantData.sku ? `SKU ${selectedVariantData.sku}` : 'No SKU'}
-                        </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Base Identifier</p>
+                          <p className="text-xs font-bold text-slate-900">
+                            {selectedBaseProductData?.barcode ? `BC: ${selectedBaseProductData.barcode}` : 'No Barcode'}
+                          </p>
+                        </div>
+                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Variant Identifier</p>
+                          <p className="text-xs font-bold text-slate-900">
+                            {formData.optionalBarcode?.trim() ? `BC: ${formData.optionalBarcode.trim()}` : selectedVariantData.barcode ? `BC: ${selectedVariantData.barcode}` : 'No Barcode'}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
-            </>
+            </div>
           )}
 
-          <ValidatedInput
-            label="Unit Transformation Cost"
-            type="number"
-            value={formData.unitTransformationCost}
-            onChange={(e) => setFormData({ ...formData, unitTransformationCost: parseFloat(e.target.value) || 0 })}
-            min="0"
-            step="0.01"
-            required
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <ValidatedInput
+              label="Unit Transformation Cost"
+              type="number"
+              value={formData.unitTransformationCost}
+              onChange={(e) => setFormData({ ...formData, unitTransformationCost: parseFloat(e.target.value) || 0 })}
+              min="0"
+              step="0.01"
+              required
+            />
+            <div className="bg-slate-900 p-5 rounded-2xl flex flex-col justify-center">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Batch Cost</p>
+              <p className="text-xl font-black text-white">Rs. {totalCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            </div>
+          </div>
 
           {selectedVariantData && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 xl:p-4">
-              <div className="flex items-center justify-between mb-1.5 xl:mb-2">
-                <span className="text-xs xl:text-sm text-gray-600">Variant default cost:</span>
-                <span className="text-xs xl:text-sm font-medium text-gray-900">
-                  {getEffectiveVariantTransformationCost(selectedVariantData, selectedBaseProductData).toFixed(2)}
-                </span>
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  Variant Reference Cost: Rs. {getEffectiveVariantTransformationCost(selectedVariantData, selectedBaseProductData).toFixed(2)}
+                </p>
               </div>
-              {(() => {
-                const stored = Number(selectedVariantData.transformationCost ?? selectedVariantData.transformation_cost ?? 0);
-                const effective = getEffectiveVariantTransformationCost(selectedVariantData, selectedBaseProductData);
-                if (!Number.isFinite(stored) || stored <= 0) {
-                  if (effective > 0) {
-                    return (
-                      <p className="text-[10px] xl:text-xs text-blue-800 mb-1.5 xl:mb-2">
-                        Stored transformation cost is 0 — using retail difference (variant retail − base retail). Set a value in Product Variants to save it on the variant.
-                      </p>
-                    );
-                  }
-                  return (
-                    <p className="text-[10px] xl:text-xs text-blue-800 mb-1.5 xl:mb-2">
-                      No stored transformation cost (0). Enter a unit cost above or set &quot;Transformation cost&quot; on the variant in Product Variants.
-                    </p>
-                  );
-                }
-                return null;
-              })()}
               <button
                 type="button"
                 onClick={() =>
                   setFormData({
                     ...formData,
-                    unitTransformationCost: getEffectiveVariantTransformationCost(
-                      selectedVariantData,
-                      selectedBaseProductData
-                    ),
+                    unitTransformationCost: getEffectiveVariantTransformationCost(selectedVariantData, selectedBaseProductData),
                   })
                 }
-                className="text-xs text-blue-600 hover:text-blue-800 underline"
+                className="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:underline"
               >
-                Use default cost
+                Apply Default
               </button>
             </div>
           )}
 
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 xl:p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs xl:text-sm font-medium text-gray-700">Total Transformation Cost:</span>
-              <span className="text-base xl:text-lg font-bold text-gray-900">
-                {totalCost.toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs xl:text-sm font-medium text-gray-700 mb-0.5 xl:mb-1">
-              Notes (optional)
-            </label>
+          <div className="pt-2">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Internal Audit Notes</label>
             <Textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              className="w-full"
-              placeholder="Add any additional notes about this transformation..."
+              className="rounded-2xl border-gray-200"
+              placeholder="Record batch details or processing notes..."
             />
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 xl:gap-3 pt-3 xl:pt-4 border-t">
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="secondary"
-              size="default"
-              className="w-full sm:w-auto text-sm min-h-[2rem] xl:min-h-9"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <LoadingButton
-              type="submit"
-              isLoading={isSubmitting}
-              disabled={formData.quantity > availableStock || !formData.baseProduct || !formData.targetVariant}
-              variant="default"
-              size="default"
-              className="w-full sm:w-auto text-sm min-h-[2rem] xl:min-h-9"
-            >
-              Execute Transformation
-            </LoadingButton>
+              <div className="pt-4 flex justify-end space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || formData.quantity > availableStock || !formData.baseProduct || !formData.targetVariant}
+                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                >
+                  {isSubmitting ? <LoadingSpinner size="sm" /> : 'Execute Transformation'}
+                </Button>
+              </div>
+            </form>
           </div>
-        </form>
-      </div>
-    </div>
-  );
-};
+        </BaseModal>
+      );
+    };
 
 export default ProductTransformations;
 

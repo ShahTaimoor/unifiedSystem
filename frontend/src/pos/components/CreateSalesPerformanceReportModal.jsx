@@ -21,6 +21,8 @@ import { LoadingButton } from '../components/LoadingSpinner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+import BaseModal from './BaseModal';
+
 const CreateSalesPerformanceReportModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     reportType: 'comprehensive',
@@ -222,103 +224,93 @@ const CreateSalesPerformanceReportModal = ({ isOpen, onClose, onSuccess }) => {
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-[100dvh] pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-          <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={handleClose}></div>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Create Sales Performance Report"
+      maxWidth="4xl"
+      variant="centered"
+    >
+      <div className="flex flex-col max-h-[85vh]">
+        {/* Tabs */}
+        <div className="border-b border-gray-100 flex-shrink-0">
+          <nav className="-mb-px flex space-x-8 px-6">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`${
+                  activeTab === tab.id
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-semibold text-sm flex items-center transition-all`}
+              >
+                <tab.icon className={`h-4 w-4 mr-2 ${activeTab === tab.id ? 'text-primary-600' : 'text-gray-400'}`} />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-          {/* Header */}
-          <div className="bg-white px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <BarChart3 className="h-6 w-6 text-blue-600 mr-3" />
-                <h3 className="text-lg font-medium text-gray-900">Create Sales Performance Report</h3>
-              </div>
-              <button
-                onClick={handleClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
-                >
-                  <tab.icon className="h-4 w-4 mr-2" />
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <div className="bg-white px-6 py-6 max-h-96 overflow-y-auto">
-              {/* Basic Settings Tab */}
-              {activeTab === 'basic' && (
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Report Type
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {reportTypes.map((type) => (
-                        <div
-                          key={type.value}
-                          className={`relative rounded-lg border-2 p-4 cursor-pointer transition-colors ${
-                            formData.reportType === type.value
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => handleInputChange('reportType', type.value)}
-                        >
-                          <div className="flex items-start">
-                            <type.icon className={`h-5 w-5 mr-3 ${
-                              formData.reportType === type.value ? 'text-blue-600' : 'text-gray-400'
-                            }`} />
-                            <div className="flex-1">
-                              <h4 className={`text-sm font-medium ${
-                                formData.reportType === type.value ? 'text-blue-900' : 'text-gray-900'
-                              }`}>
-                                {type.label}
-                              </h4>
-                              <p className={`text-xs mt-1 ${
-                                formData.reportType === type.value ? 'text-blue-700' : 'text-gray-500'
-                              }`}>
-                                {type.description}
-                              </p>
-                            </div>
-                            {formData.reportType === type.value && (
-                              <CheckCircle className="h-5 w-5 text-blue-600" />
-                            )}
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white">
+            {/* Basic Settings Tab */}
+            {activeTab === 'basic' && (
+              <div className="space-y-8">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                    Report Type
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {reportTypes.map((type) => (
+                      <div
+                        key={type.value}
+                        className={`relative rounded-2xl border-2 p-5 cursor-pointer transition-all duration-200 ${
+                          formData.reportType === type.value
+                            ? 'border-primary-500 bg-primary-50/30'
+                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                        }`}
+                        onClick={() => handleInputChange('reportType', type.value)}
+                      >
+                        <div className="flex items-start">
+                          <div className={`p-2.5 rounded-xl mr-4 ${
+                            formData.reportType === type.value ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-400'
+                          }`}>
+                            <type.icon className="h-6 w-6" />
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className={`text-sm font-bold truncate ${
+                              formData.reportType === type.value ? 'text-primary-900' : 'text-gray-900'
+                            }`}>
+                              {type.label}
+                            </h4>
+                            <p className={`text-xs mt-1.5 leading-relaxed ${
+                              formData.reportType === type.value ? 'text-primary-700/70' : 'text-gray-500'
+                            }`}>
+                              {type.description}
+                            </p>
+                          </div>
+                          {formData.reportType === type.value && (
+                            <div className="absolute top-4 right-4">
+                              <CheckCircle className="h-5 w-5 text-primary-600" />
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                    {errors.reportType && (
-                      <p className="mt-2 text-sm text-red-600">{errors.reportType}</p>
-                    )}
+                      </div>
+                    ))}
                   </div>
+                  {errors.reportType && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" /> {errors.reportType}
+                    </p>
+                  )}
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
                       Limit Results
                     </label>
                     <Input
@@ -328,185 +320,193 @@ const CreateSalesPerformanceReportModal = ({ isOpen, onClose, onSuccess }) => {
                       value={formData.limit}
                       onChange={(e) => handleInputChange('limit', parseInt(e.target.value))}
                       placeholder="10"
+                      className="rounded-xl border-gray-200 focus:border-primary-500 focus:ring-primary-500"
                     />
                     {errors.limit && (
-                      <p className="mt-2 text-sm text-red-600">{errors.limit}</p>
+                      <p className="mt-2 text-sm text-red-600 flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-1" /> {errors.limit}
+                      </p>
                     )}
-                    <p className="mt-1 text-sm text-gray-500">
-                      Number of top results to include in the report (1-100)
+                    <p className="mt-2 text-xs text-gray-400 italic">
+                      Number of top results (1-100)
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Include Metrics
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {Object.entries(formData.includeMetrics).map(([key, value]) => (
-                        <label key={key} className="flex items-center">
+                  {formData.reportType === 'top_customers' && (
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                        Ranking Metric
+                      </label>
+                      <div className="flex space-x-3">
+                        {[
+                          { value: 'revenue', label: 'Sales Volume' },
+                          { value: 'profit', label: 'Profitability' }
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleInputChange('rankBy', option.value)}
+                            className={`flex-1 px-4 py-2.5 rounded-xl border text-sm font-bold transition-all ${
+                              formData.rankBy === option.value
+                                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                                : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                    Include Metrics
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+                    {Object.entries(formData.includeMetrics).map(([key, value]) => (
+                      <label key={key} className="flex items-center group cursor-pointer">
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                          value ? 'bg-primary-600 border-primary-600' : 'border-gray-300 bg-white group-hover:border-primary-400'
+                        }`}>
                           <input
                             type="checkbox"
                             checked={value}
                             onChange={(e) => handleNestedInputChange('includeMetrics', key, e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                            className="hidden"
                           />
-                          <span className="ml-2 text-sm text-gray-700 capitalize">
-                            {key.replace(/([A-Z])/g, ' $1').trim()}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
+                          {value && <CheckCircle className="h-3.5 w-3.5 text-white" />}
+                        </div>
+                        <span className={`ml-3 text-sm font-semibold transition-colors ${value ? 'text-gray-900' : 'text-gray-500'}`}>
+                          {key.replace(/([A-Z])/g, ' $1').trim()}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Time Period Tab */}
+            {activeTab === 'period' && (
+              <div className="space-y-8">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                    Period Type
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {periodTypes.map((period) => (
+                      <button
+                        key={period.value}
+                        type="button"
+                        onClick={() => handleInputChange('periodType', period.value)}
+                        className={`p-4 rounded-2xl border-2 text-sm font-bold transition-all ${
+                          formData.periodType === period.value
+                            ? 'border-primary-500 bg-primary-50 text-primary-700 shadow-sm'
+                            : 'border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {period.label}
+                      </button>
+                    ))}
+                  </div>
+                  {errors.periodType && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" /> {errors.periodType}
+                    </p>
+                  )}
                 </div>
 
-                {formData.reportType === 'top_customers' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Customer Ranking Metric
-                    </label>
-                    <div className="flex space-x-3">
-                      {[
-                        { value: 'revenue', label: 'Sales Volume' },
-                        { value: 'profit', label: 'Profitability' }
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => handleInputChange('rankBy', option.value)}
-                          className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                            formData.rankBy === option.value
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
+                {formData.periodType === 'custom' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-primary-50/30 p-8 rounded-2xl border border-primary-100">
+                    <div>
+                      <label className="block text-xs font-bold text-primary-700 uppercase tracking-widest mb-2">
+                        Start Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => handleInputChange('startDate', e.target.value)}
+                        className="rounded-xl border-primary-200 focus:border-primary-500 focus:ring-primary-500 bg-white"
+                      />
+                      {errors.startDate && (
+                        <p className="mt-2 text-xs text-red-600 font-semibold">{errors.startDate}</p>
+                      )}
                     </div>
-                    <p className="mt-2 text-sm text-gray-500">
-                      Choose whether to rank customers by total sales or profit.
-                    </p>
+                    <div>
+                      <label className="block text-xs font-bold text-primary-700 uppercase tracking-widest mb-2">
+                        End Date
+                      </label>
+                      <Input
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) => handleInputChange('endDate', e.target.value)}
+                        className="rounded-xl border-primary-200 focus:border-primary-500 focus:ring-primary-500 bg-white"
+                      />
+                      {errors.endDate && (
+                        <p className="mt-2 text-xs text-red-600 font-semibold">{errors.endDate}</p>
+                      )}
+                    </div>
                   </div>
                 )}
-                </div>
-              )}
 
-              {/* Time Period Tab */}
-              {activeTab === 'period' && (
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Period Type
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {periodTypes.map((period) => (
-                        <button
-                          key={period.value}
-                          type="button"
-                          onClick={() => handleInputChange('periodType', period.value)}
-                          className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
-                            formData.periodType === period.value
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                          }`}
-                        >
-                          {period.label}
-                        </button>
-                      ))}
-                    </div>
-                    {errors.periodType && (
-                      <p className="mt-2 text-sm text-red-600">{errors.periodType}</p>
-                    )}
+                <div className="bg-primary-50 rounded-2xl p-6 flex items-start">
+                  <div className="p-2 bg-primary-100 rounded-xl mr-4 text-primary-600">
+                    <Info className="h-5 w-5" />
                   </div>
-
-                  {formData.periodType === 'custom' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Start Date
-                        </label>
-                        <Input
-                          type="date"
-                          value={formData.startDate}
-                          onChange={(e) => handleInputChange('startDate', e.target.value)}
-                        />
-                        {errors.startDate && (
-                          <p className="mt-2 text-sm text-red-600">{errors.startDate}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          End Date
-                        </label>
-                        <Input
-                          type="date"
-                          value={formData.endDate}
-                          onChange={(e) => handleInputChange('endDate', e.target.value)}
-                        />
-                        {errors.endDate && (
-                          <p className="mt-2 text-sm text-red-600">{errors.endDate}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex">
-                      <Info className="h-5 w-5 text-blue-400 mr-2 mt-0.5" />
-                      <div className="text-sm text-blue-700">
-                        <p className="font-medium">Period Information</p>
-                        <p className="mt-1">
-                          {formData.periodType === 'custom' 
-                            ? 'Custom date range selected'
-                            : `${formData.periodType.charAt(0).toUpperCase() + formData.periodType.slice(1)} period will be analyzed`
-                          }
-                        </p>
-                      </div>
-                    </div>
+                  <div className="text-sm">
+                    <p className="font-bold text-primary-900">Analysis Scope</p>
+                    <p className="mt-1 text-primary-700/80 leading-relaxed">
+                      {formData.periodType === 'custom' 
+                        ? 'Analyzing data for the custom date range selected above.'
+                        : `Generating a ${formData.periodType} analysis based on the current calendar cycle.`
+                      }
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Filters Tab */}
-              {activeTab === 'filters' && (
-                <div className="space-y-6">
+            {/* Filters Tab */}
+            {activeTab === 'filters' && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
                       Order Types
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {orderTypes.map((type) => (
-                        <label key={type.value} className="flex items-center">
+                        <label key={type.value} className="flex items-center group cursor-pointer">
                           <input
                             type="checkbox"
                             checked={formData.filters.orderTypes.includes(type.value)}
                             onChange={(e) => handleArrayChange('filters', 'orderTypes', type.value, e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                            className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 transition-all"
                           />
-                          <span className="ml-2 text-sm text-gray-700 capitalize">
+                          <span className="ml-3 text-sm font-semibold text-gray-700 group-hover:text-primary-600 transition-colors">
                             {type.label}
                           </span>
                         </label>
                       ))}
                     </div>
-                    <p className="mt-2 text-sm text-gray-500">
-                      Leave empty to include all order types
-                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
                       Customer Tiers
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {customerTiers.map((tier) => (
-                        <label key={tier.value} className="flex items-center">
+                        <label key={tier.value} className="flex items-center group cursor-pointer">
                           <input
                             type="checkbox"
                             checked={formData.filters.customerTiers.includes(tier.value)}
                             onChange={(e) => handleArrayChange('filters', 'customerTiers', tier.value, e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                            className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           />
-                          <span className="ml-2 text-sm text-gray-700 capitalize">
+                          <span className="ml-3 text-sm font-semibold text-gray-700 group-hover:text-primary-600 transition-colors">
                             {tier.label}
                           </span>
                         </label>
@@ -515,19 +515,19 @@ const CreateSalesPerformanceReportModal = ({ isOpen, onClose, onSuccess }) => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
                       Business Types
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {businessTypes.map((type) => (
-                        <label key={type.value} className="flex items-center">
+                        <label key={type.value} className="flex items-center group cursor-pointer">
                           <input
                             type="checkbox"
                             checked={formData.filters.businessTypes.includes(type.value)}
                             onChange={(e) => handleArrayChange('filters', 'businessTypes', type.value, e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                            className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                           />
-                          <span className="ml-2 text-sm text-gray-700 capitalize">
+                          <span className="ml-3 text-sm font-semibold text-gray-700 group-hover:text-primary-600 transition-colors">
                             {type.label}
                           </span>
                         </label>
@@ -535,66 +535,89 @@ const CreateSalesPerformanceReportModal = ({ isOpen, onClose, onSuccess }) => {
                     </div>
                   </div>
                 </div>
-              )}
+                
+                <p className="text-xs text-gray-400 bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200">
+                  <Info className="h-3.5 w-3.5 inline mr-1.5" /> Leave options unchecked to include all data for that category.
+                </p>
+              </div>
+            )}
 
-              {/* Advanced Tab */}
-              {activeTab === 'advanced' && (
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Group By
-                    </label>
-                    <select
-                      value={formData.groupBy}
-                      onChange={(e) => handleInputChange('groupBy', e.target.value)}
-                      className="input"
-                    >
-                      {groupByOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Primary grouping method for the report data
-                    </p>
+            {/* Advanced Tab */}
+            {activeTab === 'advanced' && (
+              <div className="space-y-8">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                    Group Data By
+                  </label>
+                  <select
+                    value={formData.groupBy}
+                    onChange={(e) => handleInputChange('groupBy', e.target.value)}
+                    className="w-full px-5 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-primary-500 bg-white font-semibold text-gray-700"
+                  >
+                    {groupByOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-3 text-xs text-gray-400 leading-relaxed">
+                    This determines the primary structure of your report rows. All metrics will be aggregated according to this selection.
+                  </p>
+                </div>
+
+                <div className="bg-gray-900 rounded-3xl p-8 text-white shadow-2xl">
+                  <div className="flex items-center mb-6">
+                    <div className="p-2.5 bg-white/10 rounded-xl mr-4">
+                      <TrendingUp className="h-6 w-6 text-primary-400" />
+                    </div>
+                    <h4 className="text-lg font-bold">Generation Summary</h4>
                   </div>
-
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-gray-900 mb-2">Report Preview</h4>
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <p><strong>Type:</strong> {reportTypes.find(t => t.value === formData.reportType)?.label}</p>
-                      <p><strong>Period:</strong> {periodTypes.find(p => p.value === formData.periodType)?.label}</p>
-                      <p><strong>Limit:</strong> {formData.limit} results</p>
-                      <p><strong>Group By:</strong> {groupByOptions.find(g => g.value === formData.groupBy)?.label}</p>
+                  
+                  <div className="grid grid-cols-2 gap-y-6 gap-x-8">
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Report Focus</p>
+                      <p className="text-sm font-bold">{reportTypes.find(t => t.value === formData.reportType)?.label}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Time Range</p>
+                      <p className="text-sm font-bold capitalize">{formData.periodType}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Data Density</p>
+                      <p className="text-sm font-bold">{formData.limit} Data Points</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-white/40 uppercase tracking-wider">Aggregation</p>
+                      <p className="text-sm font-bold">{groupByOptions.find(g => g.value === formData.groupBy)?.label}</p>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
-            {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-              <Button
-                type="button"
-                onClick={handleClose}
-                variant="secondary"
-              >
-                Cancel
-              </Button>
-              <LoadingButton
-                type="submit"
-                isLoading={isGenerating}
-                variant="default"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Generate Report
-              </LoadingButton>
-            </div>
-          </form>
-        </div>
+          {/* Footer */}
+          <div className="bg-gray-50 px-8 py-5 flex justify-end space-x-4 border-t border-gray-100 flex-shrink-0">
+            <Button
+              type="button"
+              onClick={handleClose}
+              variant="secondary"
+              className="px-8 rounded-xl font-bold border-gray-200 text-gray-600"
+            >
+              Cancel
+            </Button>
+            <LoadingButton
+              type="submit"
+              isLoading={isGenerating}
+              className="px-10 rounded-xl font-bold bg-primary-600 text-white shadow-lg shadow-primary-600/20 hover:bg-primary-700 active:scale-[0.98] transition-all"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Generate Report
+            </LoadingButton>
+          </div>
+        </form>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 

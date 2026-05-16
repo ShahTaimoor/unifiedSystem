@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { LoadingPage } from '../components/LoadingSpinner';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
+import BaseModal from '../components/BaseModal';
 
 import ProductFilters from '../components/ProductFilters';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -620,23 +621,24 @@ export const Products = () => {
         scanMode="both"
       />
 
-      {showBarcodeGenerator && productOps.selectedProduct && (
-        <div className="fixed inset-0 z-[1000] overflow-y-auto pos-app">
-          <div className="fixed inset-0 bg-black bg-opacity-75" onClick={() => setShowBarcodeGenerator(false)}></div>
-          <div className="flex items-center justify-center min-h-screen p-4">
-            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
-            <BarcodeGenerator
-              product={productOps.selectedProduct}
-              barcodeValue={productOps.selectedProduct.barcode}
-              onClose={() => {
-                setShowBarcodeGenerator(false);
-                productOps.setSelectedProduct(null);
-              }}
-            />
-            </div>
-          </div>
-        </div>
-      )}
+      <BaseModal
+        isOpen={showBarcodeGenerator && !!productOps.selectedProduct}
+        onClose={() => {
+          setShowBarcodeGenerator(false);
+          productOps.setSelectedProduct(null);
+        }}
+        title={`Barcode for ${productOps.selectedProduct?.name}`}
+        maxWidth="md"
+      >
+        <BarcodeGenerator
+          product={productOps.selectedProduct}
+          barcodeValue={productOps.selectedProduct?.barcode}
+          onClose={() => {
+            setShowBarcodeGenerator(false);
+            productOps.setSelectedProduct(null);
+          }}
+        />
+      </BaseModal>
 
       {showLabelPrinter && (
         <BarcodeLabelPrinter

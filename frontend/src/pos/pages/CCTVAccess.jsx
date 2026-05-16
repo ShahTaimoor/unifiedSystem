@@ -23,6 +23,7 @@ import DateFilter from '../components/DateFilter';
 import PageShell from '../components/PageShell';
 import { getDatePresets } from '../utils/dateUtils';
 import { showSuccessToast, showErrorToast } from '../utils/errorHandler';
+import BaseModal from '../components/BaseModal';
 
 const CCTVAccess = ({ tabId }) => {
   const [page, setPage] = useState(1);
@@ -501,156 +502,130 @@ const CCTVAccess = ({ tabId }) => {
         )}
 
         {/* Details Modal */}
-        {showDetails && selectedOrder && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-[2px]">
-            <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl shadow-slate-900/20">
-              <div className="h-1 bg-[#2563eb]" aria-hidden />
-              <div className="overflow-y-auto max-h-[calc(90vh-0.25rem)] p-6 sm:p-8">
-                <div className="flex justify-between items-start gap-4 mb-6">
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Invoice details</h2>
-                    <p className="text-sm text-slate-500 mt-1">Review timestamps before opening playback</p>
+        <BaseModal
+          isOpen={showDetails}
+          onClose={() => {
+            setShowDetails(false);
+            setSelectedOrder(null);
+          }}
+          title="Invoice CCTV Analysis"
+          maxWidth="2xl"
+          variant="centered"
+        >
+          {selectedOrder && (
+            <div className="p-8">
+              <div className="mb-8">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className="bg-primary-50 p-2.5 rounded-2xl">
+                    <FileText className="h-6 w-6 text-primary-600" />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowDetails(false);
-                      setSelectedOrder(null);
-                    }}
-                    className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-                    aria-label="Close"
-                  >
-                    <X className="h-5 w-5 sm:h-6 sm:w-6" />
-                  </button>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">{selectedOrder.orderNumber}</h2>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Transaction Audit Details</p>
+                  </div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Invoice number</label>
-                      <p className="text-slate-900 font-semibold mt-1">{selectedOrder.orderNumber}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date</label>
-                      <p className="text-slate-900 mt-1">{formatDateOnly(selectedOrder.createdAt)}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Customer</label>
-                      <p className="text-slate-900 mt-1">
-                        {selectedOrder.customer?.displayName ||
-                          selectedOrder.customerInfo?.name ||
-                          'Walk-in Customer'}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total amount</label>
-                      <p className="text-slate-900 font-semibold mt-1">
-                        {Math.round(selectedOrder.pricing?.total || 0)}
-                      </p>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer</label>
+                    <p className="text-sm font-bold text-gray-900">
+                      {selectedOrder.customer?.displayName || selectedOrder.customerInfo?.name || 'Walk-in Customer'}
+                    </p>
                   </div>
-
-                  {/* Bill Date vs CCTV Timestamps Warning */}
-                  {selectedOrder.billDate && selectedOrder.billStartTime && (
-                    (() => {
-                      const billDateOnly = new Date(selectedOrder.billDate).toDateString();
-                      const cctvDateOnly = new Date(selectedOrder.billStartTime).toDateString();
-                      const isMismatch = billDateOnly !== cctvDateOnly;
-                      return isMismatch ? (
-                        <div className="bg-amber-50 border border-amber-200/90 rounded-xl p-4 mb-4">
-                          <div className="flex items-start gap-3">
-                            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                              <h4 className="text-sm font-semibold text-amber-950 mb-1">
-                                Date mismatch detected
-                              </h4>
-                              <p className="text-sm text-amber-900/90 mb-2">
-                                This invoice has been backdated/postdated. The bill date is different from the actual CCTV recording time.
-                              </p>
-                              <div className="text-xs text-amber-900/80 space-y-1">
-                                <div><strong>Bill Date (Accounting):</strong> {formatDateOnly(selectedOrder.billDate)}</div>
-                                <div><strong>CCTV Recording Date:</strong> {formatDateOnly(selectedOrder.billStartTime)}</div>
-                                <div className="mt-2 italic">
-                                  Note: CCTV footage is available at the actual recording time, not the bill date.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null;
-                    })()
-                  )}
-
-                  <div className="border-t border-slate-100 pt-4 mt-4">
-                    <h3 className="text-base font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                        <Camera className="h-4 w-4" aria-hidden />
-                      </span>
-                      CCTV timestamps
-                    </h3>
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <span className="text-sm font-medium text-slate-600">Bill start time</span>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-slate-900 font-mono text-sm truncate">
-                            {formatDateTime(selectedOrder.billStartTime)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(formatDateTime(selectedOrder.billStartTime), 'detail-start')}
-                            className="text-slate-600 hover:text-slate-900 shrink-0"
-                          >
-                            {copiedTime === 'detail-start' ? (
-                              <CheckCircle className="h-4 w-4" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <span className="text-sm font-medium text-slate-600">Bill end time</span>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-slate-900 font-mono text-sm truncate">
-                            {formatDateTime(selectedOrder.billEndTime)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(formatDateTime(selectedOrder.billEndTime), 'detail-end')}
-                            className="text-slate-600 hover:text-slate-900 shrink-0"
-                          >
-                            {copiedTime === 'detail-end' ? (
-                              <CheckCircle className="h-4 w-4" />
-                            ) : (
-                              <Copy className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/80">
-                        <span className="text-sm font-medium text-slate-600">Duration</span>
-                        <span className="text-slate-900 font-medium">
-                          {calculateDuration(selectedOrder.billStartTime, selectedOrder.billEndTime)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-5">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenCCTV(selectedOrder)}
-                        className="w-full bg-slate-900 text-white px-4 py-3 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 font-semibold shadow-md shadow-slate-900/15"
-                      >
-                        <Eye className="h-5 w-5" />
-                        Open CCTV Playback
-                      </button>
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Amount</label>
+                    <p className="text-sm font-black text-slate-900">
+                      Rs. {Math.round(selectedOrder.pricing?.total || 0).toLocaleString()}
+                    </p>
                   </div>
                 </div>
               </div>
+
+              {/* Bill Date vs CCTV Timestamps Warning */}
+              {selectedOrder.billDate && selectedOrder.billStartTime && (
+                (() => {
+                  const billDateOnly = new Date(selectedOrder.billDate).toDateString();
+                  const cctvDateOnly = new Date(selectedOrder.billStartTime).toDateString();
+                  const isMismatch = billDateOnly !== cctvDateOnly;
+                  return isMismatch ? (
+                    <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-5 mb-8 flex items-start space-x-4">
+                      <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                      <div>
+                        <h4 className="text-xs font-black text-amber-700 uppercase tracking-widest mb-2">Backdate/Postdate Warning</h4>
+                        <p className="text-xs font-semibold text-amber-600 leading-relaxed">
+                          The accounting bill date ({formatDateOnly(selectedOrder.billDate)}) differs from the actual CCTV recording time. 
+                          Footage is available at the actual recording time shown below.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null;
+                })()
+              )}
+
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3 mb-2">
+                  <Camera className="h-4 w-4 text-gray-400" />
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Playback Timestamps</h3>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl group hover:border-primary-200 transition-all">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Session Start</p>
+                        <p className="text-sm font-mono font-bold text-slate-900">{formatDateTime(selectedOrder.billStartTime)}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(formatDateTime(selectedOrder.billStartTime), 'detail-start')}
+                      className="p-2 text-gray-300 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
+                    >
+                      {copiedTime === 'detail-start' ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl group hover:border-primary-200 transition-all">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-2 h-2 rounded-full bg-rose-500" />
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Session End</p>
+                        <p className="text-sm font-mono font-bold text-slate-900">{formatDateTime(selectedOrder.billEndTime)}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(formatDateTime(selectedOrder.billEndTime), 'detail-end')}
+                      className="p-2 text-gray-300 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
+                    >
+                      {copiedTime === 'detail-end' ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between px-2">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Duration</span>
+                  </div>
+                  <span className="text-sm font-black text-slate-900">
+                    {calculateDuration(selectedOrder.billStartTime, selectedOrder.billEndTime)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-10 pt-8 border-t border-gray-50">
+                <button
+                  type="button"
+                  onClick={() => handleOpenCCTV(selectedOrder)}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl transition-all flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95"
+                >
+                  <Eye className="h-5 w-5" />
+                  Initiate CCTV Playback
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </BaseModal>
       </div>
     </PageShell>
   );

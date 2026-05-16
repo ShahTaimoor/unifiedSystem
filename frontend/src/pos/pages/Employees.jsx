@@ -33,6 +33,7 @@ import { formatDate } from '../utils/formatters';
 import { DeleteConfirmationDialog } from '../components/ConfirmationDialog';
 import { useDeleteConfirmation } from '../hooks/useConfirmation';
 import PageShell from '../components/PageShell';
+import BaseModal from '../components/BaseModal';
 
 const Employees = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -499,187 +500,201 @@ const Employees = () => {
       </div>
 
       {/* Employee Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                  {selectedEmployee ? 'Edit Personnel Profile' : 'Register New Personnel'}
-                </h2>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-widest mt-1">Fill in the required information below</p>
+      <BaseModal
+        isOpen={showForm}
+        onClose={resetForm}
+        title={selectedEmployee ? 'Edit Personnel Profile' : 'Register New Personnel'}
+        maxWidth="4xl"
+        variant="centered"
+      >
+        <div className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Primary Information */}
+            <div className="space-y-6">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                <span className="w-8 h-px bg-gray-100 mr-3"></span>
+                Primary Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">First Name *</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      required
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Last Name *</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      required
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Employee ID</label>
+                  <input
+                    type="text"
+                    value={formData.employeeId}
+                    onChange={(e) => setFormData({ ...formData, employeeId: e.target.value.toUpperCase() })}
+                    placeholder="AUTO-GENERATE"
+                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold uppercase tracking-widest focus:ring-2 focus:ring-primary-500 transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Professional Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* Organizational Assignment */}
+            <div className="space-y-6">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                <span className="w-8 h-px bg-gray-100 mr-3"></span>
+                Organizational Assignment
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Job Position *</label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      required
+                      value={formData.position}
+                      onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Department</label>
+                  <div className="relative">
+                    <Building className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Date of Hire *</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="date"
+                      required
+                      value={formData.hireDate}
+                      onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Employment Type</label>
+                  <select
+                    value={formData.employmentType}
+                    onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold uppercase tracking-widest focus:ring-2 focus:ring-primary-500 transition-all"
+                  >
+                    <option value="full_time">Full Time</option>
+                    <option value="part_time">Part Time</option>
+                    <option value="contract">Contract</option>
+                    <option value="temporary">Temporary</option>
+                    <option value="intern">Intern</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">Operational Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-bold uppercase tracking-widest focus:ring-2 focus:ring-primary-500 transition-all"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="terminated">Terminated</option>
+                    <option value="on_leave">On Leave</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase px-1">System Account</label>
+                  <select
+                    value={formData.userAccount}
+                    onChange={(e) => setFormData({ ...formData, userAccount: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-primary-500 transition-all"
+                  >
+                    <option value="">None / Unlinked</option>
+                    {users?.filter(u => !u.employeeLinked || u._id === formData.userAccount).map((user) => (
+                      <option key={user._id} value={user._id}>
+                        {user.firstName} {user.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="pt-8 border-t border-gray-50 flex justify-end space-x-4">
               <button
+                type="button"
                 onClick={resetForm}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                className="px-8 py-3 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-all"
               >
-                <X className="h-6 w-6" />
+                Discard
+              </button>
+              <button
+                type="submit"
+                className="px-10 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-slate-200 active:scale-95 disabled:opacity-50"
+                disabled={creating || updating}
+              >
+                {creating || updating ? (
+                  <LoadingSpinner size="sm" />
+                ) : selectedEmployee ? (
+                  'Confirm Updates'
+                ) : (
+                  'Create Personnel Record'
+                )}
               </button>
             </div>
-
-            <div className="p-8 overflow-y-auto flex-1">
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Basic Section */}
-                <div>
-                  <h3 className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-6 border-b border-primary-100 pb-2">Primary Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-1">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">First Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium"
-                      />
-                    </div>
-                    <div className="md:col-span-1">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Last Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium"
-                      />
-                    </div>
-                    <div className="md:col-span-1">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Employee ID</label>
-                      <input
-                        type="text"
-                        value={formData.employeeId}
-                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value.toUpperCase() })}
-                        placeholder="AUTO-GENERATE"
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-bold uppercase tracking-widest placeholder:text-slate-300"
-                      />
-                    </div>
-                    <div className="md:col-span-1">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Professional Email</label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium"
-                      />
-                    </div>
-                    <div className="md:col-span-1">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Phone Number</label>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Assignment Section */}
-                <div>
-                  <h3 className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-6 border-b border-primary-100 pb-2">Organizational Assignment</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Job Position *</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.position}
-                        onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Department</label>
-                      <input
-                        type="text"
-                        value={formData.department}
-                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Date of Hire *</label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.hireDate}
-                        onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Employment Type</label>
-                      <select
-                        value={formData.employmentType}
-                        onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-bold uppercase tracking-widest"
-                      >
-                        <option value="full_time">Full Time</option>
-                        <option value="part_time">Part Time</option>
-                        <option value="contract">Contract</option>
-                        <option value="temporary">Temporary</option>
-                        <option value="intern">Intern</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Operational Status</label>
-                      <select
-                        value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-bold uppercase tracking-widest"
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                        <option value="terminated">Terminated</option>
-                        <option value="on_leave">On Leave</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Linked System Account</label>
-                      <select
-                        value={formData.userAccount}
-                        onChange={(e) => setFormData({ ...formData, userAccount: e.target.value })}
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all text-sm font-medium"
-                      >
-                        <option value="">None / Unlinked</option>
-                        {users?.filter(u => !u.employeeLinked || u._id === formData.userAccount).map((user) => (
-                          <option key={user._id} value={user._id}>
-                            {user.firstName} {user.lastName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Form Actions */}
-                <div className="pt-6 border-t border-slate-200 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="px-6 py-2.5 text-xs font-bold text-slate-600 uppercase tracking-widest hover:bg-slate-200 rounded-xl transition-all"
-                  >
-                    Discard
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-8 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={creating || updating}
-                  >
-                    {creating || updating ? (
-                      <LoadingSpinner size="sm" />
-                    ) : selectedEmployee ? (
-                      'Confirm Updates'
-                    ) : (
-                      'Create Personnel Record'
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+          </form>
         </div>
-      )}
+      </BaseModal>
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
