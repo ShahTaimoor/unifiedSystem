@@ -206,9 +206,9 @@ class SalesOrderRepository {
         so_number, customer_id, items, subtotal, tax, is_tax_exempt, total, status, confirmation_status,
         order_type, order_date, expected_delivery, confirmed_date, last_invoiced_date, notes, terms,
         conversions, ledger_posted, auto_posted, posted_at, ledger_reference_id, invoice_id, auto_converted,
-        shipping_address, shipping_phone, shipping_city,
+        shipping_address, shipping_phone, shipping_city, shipping_name,
         created_by, last_modified_by, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *`,
       [
         (data.soNumber || data.so_number || '').toUpperCase(),
@@ -241,6 +241,7 @@ class SalesOrderRepository {
         data.shipping_address || data.shippingAddress || null,
         data.shipping_phone || data.shippingPhone || null,
         data.shipping_city || data.shippingCity || null,
+        data.shipping_name || data.shippingName || null,
         data.createdBy || data.created_by,
         data.lastModifiedBy || data.last_modified_by || null
       ]
@@ -268,6 +269,7 @@ class SalesOrderRepository {
       shippingAddress: 'shipping_address', shipping_address: 'shipping_address',
       shippingPhone: 'shipping_phone', shipping_phone: 'shipping_phone',
       shippingCity: 'shipping_city', shipping_city: 'shipping_city',
+      shippingName: 'shipping_name', shipping_name: 'shipping_name',
       lastModifiedBy: 'last_modified_by'
     };
     for (const [k, col] of Object.entries(map)) {

@@ -386,9 +386,18 @@ const PrintDocument = ({
     // Bill creation date: sale_date/billDate when bill was created; Print Date = generatedAt (when printing)
     const invoiceDate = orderData?.sale_date || orderData?.saleDate || orderData?.billDate || orderData?.order_date || orderData?.createdAt || orderData?.invoiceDate;
 
-    const billToLines = [
-        showPrintContactName ? { label: 'Name:', value: partyInfo.name } : null,
-        showPrintBusinessName && partyInfo.extra ? { label: 'Business:', value: partyInfo.extra } : null,
+    const billToLines = [];
+    if (showPrintContactName && partyInfo.name) {
+        billToLines.push({ label: 'Name:', value: partyInfo.name });
+    }
+    if (showPrintBusinessName) {
+        if (partyInfo.extra) {
+            billToLines.push({ label: 'Business:', value: partyInfo.extra });
+        } else if (!showPrintContactName && partyInfo.name) {
+            billToLines.push({ label: 'Name:', value: partyInfo.name });
+        }
+    }
+    const otherBillToLines = [
         showEmail && partyInfo.email !== 'N/A' ? { label: 'Email:', value: partyInfo.email } : null,
         canViewPartyPhone && partyInfo.phone !== 'N/A' ? { label: 'Phone:', value: partyInfo.phone } : null,
         showPrintAddress && (partyInfo.street || partyInfo.address) ? { label: 'Address:', value: (partyInfo.street || partyInfo.address) } : null,
@@ -396,6 +405,8 @@ const PrintDocument = ({
         showPrintState && partyInfo.state ? { label: 'State:', value: partyInfo.state } : null,
         showPrintPostalCode && partyInfo.postalCode ? { label: 'Postal:', value: partyInfo.postalCode } : null
     ].filter(Boolean);
+    
+    billToLines.push(...otherBillToLines);
 
     const invoiceDetailLines = [
         showPrintInvoiceNumber ? { label: 'Invoice #:', value: formatText(documentNumber) } : null,

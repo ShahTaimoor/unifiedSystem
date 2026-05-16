@@ -1710,6 +1710,14 @@ const SalesOrders = ({ tabId }) => {
     (order) => {
       if (!order) return null;
 
+      // Ecommerce orders store shipping details as top-level fields on the order.
+      // Use them as fallback if customer object has no address/phone.
+      const ecommercePhone = order.shipping_phone || order.shippingPhone || '';
+      const ecommerceAddress = [
+        order.shipping_address || order.shippingAddress || '',
+        order.shipping_city || order.shippingCity || ''
+      ].filter(Boolean).join(', ');
+
       const customerData =
         order.customer ||
         selectedCustomer ||
@@ -1717,8 +1725,8 @@ const SalesOrders = ({ tabId }) => {
           ? {
             displayName: order.customerInfo.name,
             email: order.customerInfo.email,
-            phone: order.customerInfo.phone,
-            address: order.customerInfo.address,
+            phone: order.customerInfo.phone || ecommercePhone,
+            address: order.customerInfo.address || ecommerceAddress,
             pendingBalance: order.customerInfo.pendingBalance
           }
           : null);
@@ -1741,27 +1749,42 @@ const SalesOrders = ({ tabId }) => {
         return '';
       };
 
-      const customerInfo =
-        order.customerInfo ||
-        (customerData
-          ? {
-            name:
-              customerData.displayName ||
-              customerData.businessName ||
-              customerData.name ||
-              'Customer',
-            email: customerData.email || '',
-            phone: customerData.phone || '',
-            address:
-              (order.customerInfo?.address && typeof order.customerInfo.address === 'string')
-                ? order.customerInfo.address
-                : formatAddressForPrint(customerData) ||
-                customerData.address ||
-                customerData.location ||
-                customerData.companyAddress ||
-                ''
-          }
-          : null);
+      // Build resolved customer name from customerData (populated object from backend)
+      const resolvedCustomerName =
+        customerData?.displayName ||
+        customerData?.businessName ||
+        customerData?.business_name ||
+        customerData?.name ||
+        '';
+
+      // Build resolved address: prefer ecommerce shipping fields, then customer object
+      const resolvedAddress =
+        ecommerceAddress ||
+        (order.customerInfo?.address && typeof order.customerInfo.address === 'string'
+          ? order.customerInfo.address
+          : '') ||
+        formatAddressForPrint(customerData) ||
+        customerData?.address ||
+        '';
+
+      // Build resolved phone: prefer ecommerce shipping phone, then customer object
+      const resolvedPhone =
+        ecommercePhone ||
+        customerData?.phone ||
+        order.customerInfo?.phone ||
+        '';
+
+      // Merge customerInfo: if existing customerInfo lacks a name (ecommerce orders only get
+      // address from backend), enrich it with data from the populated customer object.
+      const existingInfo = order.customerInfo || {};
+      const customerInfo = {
+        name: existingInfo.name || resolvedCustomerName || 'Customer',
+        email: existingInfo.email || customerData?.email || '',
+        phone: existingInfo.phone || resolvedPhone,
+        address: existingInfo.address || resolvedAddress,
+        businessName: existingInfo.businessName || customerData?.businessName || customerData?.business_name || '',
+        pendingBalance: existingInfo.pendingBalance ?? customerData?.pendingBalance ?? customerData?.currentBalance
+      };
 
       const itemsSource = order.items || formData.items || [];
       const items = itemsSource.map((item) => {

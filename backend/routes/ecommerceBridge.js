@@ -715,6 +715,14 @@ router.post(
         });
       }
 
+      // Resolve customer display name for the order snapshot
+      const customerDisplayName = [
+        req.user?.firstName || req.user?.name || null,
+        req.user?.lastName || null,
+      ]
+        .filter(Boolean)
+        .join(" ") || req.user?.username || req.user?.email || null;
+
       const createdOrder = await salesOrderRepository.create({
         soNumber: salesOrderRepository.generateSONumber(),
         customer: customerId,
@@ -727,6 +735,7 @@ router.post(
         shipping_address: req.body.address,
         shipping_phone: req.body.phone,
         shipping_city: req.body.city,
+        shipping_name: customerDisplayName,
         notes: `E-commerce order (structured)`.trim(),
         createdBy: userId,
       });
