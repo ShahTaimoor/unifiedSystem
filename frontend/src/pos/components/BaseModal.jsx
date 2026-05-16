@@ -41,7 +41,7 @@ const BaseModal = ({
   className = '',
   contentClassName = '',
   headerClassName = '',
-  zIndex = 50,
+  zIndex = 1000,
   footer,
   footerClassName = '',
 }) => {
@@ -95,7 +95,7 @@ const BaseModal = ({
   const modalContent = (
     <div className="pos-app">
       <div
-        className="fixed inset-0 bg-gray-600/50 z-[100] overflow-y-auto"
+        className="fixed inset-0 bg-gray-600/50 overflow-y-auto"
         style={{ zIndex }}
         onClick={handleBackdropClick}
         role="dialog"

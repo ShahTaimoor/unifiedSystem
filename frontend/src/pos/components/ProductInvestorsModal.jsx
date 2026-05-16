@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useGetInvestorsQuery } from '../store/services/investorsApi';
 import { toast } from 'sonner';
+import BaseModal from './BaseModal';
 
 export const ProductInvestorsModal = ({ product, isOpen, onClose, onSave }) => {
   const [linkedInvestors, setLinkedInvestors] = useState([]);
@@ -141,149 +142,141 @@ export const ProductInvestorsModal = ({ product, isOpen, onClose, onSave }) => {
     onSave(productId, investorsToSave);
   };
 
-  if (!isOpen) return null;
+  const footer = (
+    <div className="flex flex-col sm:flex-row-reverse gap-3">
+      <Button
+        type="button"
+        onClick={handleSave}
+        variant="default"
+        className="w-full sm:w-auto"
+      >
+        Save Investors
+      </Button>
+      <Button
+        type="button"
+        onClick={onClose}
+        variant="secondary"
+        className="w-full sm:w-auto"
+      >
+        Cancel
+      </Button>
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-[100dvh] pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
-        
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                Manage Investors - {product?.name}
-              </h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Manage Investors - ${product?.name}`}
+      maxWidth="lg"
+      footer={footer}
+    >
+      <div className="p-4 sm:p-6">
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Add Investor</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <select
+                value={selectedInvestor}
+                onChange={(e) => setSelectedInvestor(e.target.value)}
+                disabled={investorsLoading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
               >
-                <X className="h-5 w-5" />
-              </button>
+                <option value="">
+                  {investorsLoading ? 'Loading investors...' : 'Select Investor'}
+                </option>
+                {!investorsLoading && investors.length === 0 ? (
+                  <option value="" disabled>No investors available. Create one from the Investors page.</option>
+                ) : (
+                  investors.map((inv) => {
+                    const id = investorRowId(inv);
+                    if (!id) return null;
+                    return (
+                      <option key={id} value={id}>
+                        {inv.name || inv.email || id}
+                      </option>
+                    );
+                  }).filter(Boolean)
+                )}
+              </select>
             </div>
+            <div className="sm:col-span-1 flex gap-2">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={sharePercentage}
+                onChange={(e) => setSharePercentage(parseFloat(e.target.value) || 0)}
+                placeholder="%"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              />
+              <Button
+                type="button"
+                onClick={handleAddInvestor}
+                variant="default"
+                className="px-4"
+              >
+                Add
+              </Button>
+            </div>
+          </div>
+          <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">
+            Set the profit share percentage for this product. This determines what % of profit goes to investors (split among all linked investors), with the remainder going to the company.
+          </p>
+        </div>
 
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Add Investor</h4>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <select
-                    value={selectedInvestor}
-                    onChange={(e) => setSelectedInvestor(e.target.value)}
-                    disabled={investorsLoading}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {investorsLoading ? 'Loading investors...' : 'Select Investor'}
-                    </option>
-                    {!investorsLoading && investors.length === 0 ? (
-                      <option value="" disabled>No investors available. Create one from the Investors page.</option>
-                    ) : (
-                      investors.map((inv) => {
-                        const id = investorRowId(inv);
-                        if (!id) return null;
-                        return (
-                          <option key={id} value={id}>
-                            {inv.name || inv.email || id}
-                          </option>
-                        );
-                      }).filter(Boolean)
-                    )}
-                  </select>
-                </div>
-                <div className="col-span-1 flex gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={sharePercentage}
-                    onChange={(e) => setSharePercentage(parseFloat(e.target.value) || 0)}
-                    placeholder="%"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleAddInvestor}
-                    variant="default"
-                    className="px-4"
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Set the profit share percentage for this product. This determines what % of profit goes to investors (split among all linked investors), with the remainder going to the company.
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            Linked Investors 
+            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold">
+              {linkedInvestors.length}
+            </span>
+          </h4>
+          {linkedInvestors.length === 0 ? (
+            <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl">
+              <p className="text-sm text-gray-400">
+                No investors linked. Add investors above.
               </p>
             </div>
-
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3">
-                Linked Investors ({linkedInvestors.length})
-              </h4>
-              {linkedInvestors.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-8">
-                  No investors linked. Add investors above.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {linkedInvestors.map((linkedInv) => (
-                    <div
-                      key={linkedInv.investorId}
-                      className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {linkedInv.investorName}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={linkedInv.sharePercentage}
-                            onChange={(e) => handleUpdatePercentage(linkedInv.investorId, e.target.value)}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                          <span className="text-sm text-gray-600">%</span>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveInvestor(linkedInv.investorId)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
+          ) : (
+            <div className="space-y-3">
+              {linkedInvestors.map((linkedInv) => (
+                <div
+                  key={linkedInv.investorId}
+                  className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-primary-200 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {linkedInv.investorName}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4 ml-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={linkedInv.sharePercentage}
+                        onChange={(e) => handleUpdatePercentage(linkedInv.investorId, e.target.value)}
+                        className="w-16 px-2 py-1.5 border border-gray-300 rounded-md text-sm font-medium focus:ring-2 focus:ring-primary-500 outline-none"
+                      />
+                      <span className="text-sm font-medium text-gray-500">%</span>
                     </div>
-                  ))}
+                    <button
+                      onClick={() => handleRemoveInvestor(linkedInv.investorId)}
+                      className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                      title="Remove"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
-          </div>
-
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <Button
-              type="button"
-              onClick={handleSave}
-              variant="default"
-              size="default"
-              className="w-full sm:w-auto sm:ml-3"
-            >
-              Save Investors
-            </Button>
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="secondary"
-              size="default"
-              className="w-full sm:w-auto mt-3 sm:mt-0"
-            >
-              Cancel
-            </Button>
-          </div>
+          )}
         </div>
       </div>
-    </div>
+    </BaseModal>
   );
 };
 

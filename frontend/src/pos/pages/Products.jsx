@@ -621,8 +621,10 @@ export const Products = () => {
       />
 
       {showBarcodeGenerator && productOps.selectedProduct && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-75 flex items-center justify-center p-4">
-          <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
+        <div className="fixed inset-0 z-[1000] overflow-y-auto pos-app">
+          <div className="fixed inset-0 bg-black bg-opacity-75" onClick={() => setShowBarcodeGenerator(false)}></div>
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
             <BarcodeGenerator
               product={productOps.selectedProduct}
               barcodeValue={productOps.selectedProduct.barcode}
@@ -631,6 +633,7 @@ export const Products = () => {
                 productOps.setSelectedProduct(null);
               }}
             />
+            </div>
           </div>
         </div>
       )}

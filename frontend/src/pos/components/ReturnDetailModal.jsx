@@ -141,8 +141,10 @@ const ReturnDetailModal = ({
   return (
     <>
       {/* View Modal - Same design as Orders/Sales Invoices view */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 z-[1000] overflow-y-auto pos-app">
+        <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
           <div className="p-6">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
@@ -316,14 +318,17 @@ const ReturnDetailModal = ({
                 </table>
               </div>
             </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Issue Refund Modal */}
       {showIssueRefundModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 z-[1001] overflow-y-auto pos-app">
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50" onClick={() => setShowIssueRefundModal(false)}></div>
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
             <h4 className="text-lg font-medium text-gray-900 mb-4">Issue Refund</h4>
             <p className="text-sm text-gray-600 mb-4">
               Record payment for Return {returnInfo?.returnNumber}. Amount: {formatCurrency(returnInfo?.netRefundAmount)}

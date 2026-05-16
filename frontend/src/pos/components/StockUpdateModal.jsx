@@ -147,7 +147,7 @@ const StockUpdateModal = ({ isOpen, onClose, product, onSuccess }) => {
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={handleClose}>
+      <Dialog as="div" className="relative z-[1000]" onClose={handleClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -160,7 +160,7 @@ const StockUpdateModal = ({ isOpen, onClose, product, onSuccess }) => {
           <div className="fixed inset-0 bg-black bg-opacity-40" />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-y-auto">
+        <div className="fixed inset-0 overflow-y-auto pos-app">
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
               as={Fragment}
