@@ -34,34 +34,45 @@ const decodeHtmlEntities = (value) => {
 
 const resolveCustomerIdForUser = async (user) => {
   if (!user) return null;
-  const searchTerm =
-    user.email || user.phone || user.username || user.name || user.firstName;
-  if (!searchTerm) return null;
 
-  const customers = await customerRepository.findAll(
-    { search: searchTerm },
-    { limit: 5 },
-  );
-  if (!customers || customers.length === 0) return null;
+  let matchedCustomer = null;
 
-  const exactMatch = customers.find((customer) => {
-    const normalized = (value) =>
-      String(value || "")
-        .trim()
-        .toLowerCase();
-    return (
-      normalized(customer.email) === normalized(user.email) ||
-      normalized(customer.phone) === normalized(user.phone) ||
-      normalized(customer.name) === normalized(user.name) ||
-      normalized(customer.business_name) === normalized(user.username) ||
-      normalized(customer.business_name) === normalized(user.name)
-    );
-  });
-  return (
-    (exactMatch && (exactMatch.id || exactMatch._id)) ||
-    customers[0].id ||
-    customers[0]._id
-  );
+  // 1. Precise Match: Exact Email
+  if (user.email) {
+    matchedCustomer = await customerRepository.findByEmail(user.email);
+  }
+
+  // 2. Precise Match: Exact Phone
+  if (!matchedCustomer && user.phone) {
+    matchedCustomer = await customerRepository.findByPhone(user.phone);
+  }
+
+  // 3. Fallback: Fuzzy Search on Username / Name / First Name
+  if (!matchedCustomer) {
+    const nameTerm = user.username || user.name || user.firstName;
+    if (nameTerm) {
+      const customers = await customerRepository.findAll(
+        { search: nameTerm },
+        { limit: 5 }
+      );
+      if (customers && customers.length > 0) {
+        // Try to get the closest name match first, else use the first match
+        const normalized = (value) => String(value || "").trim().toLowerCase();
+        const targetName = normalized(nameTerm);
+        const exactNameMatch = customers.find(
+          (c) =>
+            normalized(c.name) === targetName ||
+            normalized(c.business_name) === targetName
+        );
+        matchedCustomer = exactNameMatch || customers[0];
+      }
+    }
+  }
+
+  if (matchedCustomer) {
+    return matchedCustomer.id || matchedCustomer._id || null;
+  }
+  return null;
 };
 
 const normalizeOrder = (order) => {
@@ -648,21 +659,7 @@ router.post(
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      let customerId = null;
-      const searchTerm =
-        req.user?.email ||
-        req.user?.phone ||
-        req.user?.username ||
-        req.user?.name;
-      if (searchTerm) {
-        const existingCustomers = await customerRepository.findAll(
-          { search: searchTerm },
-          { limit: 1 },
-        );
-        if (existingCustomers.length > 0) {
-          customerId = existingCustomers[0].id || existingCustomers[0]._id;
-        }
-      }
+      const customerId = await resolveCustomerIdForUser(req.user);
 
       if (!customerId) {
         const name =

@@ -92,7 +92,10 @@ const MIGRATIONS = [
   '070_market_purchase_prices.sql',
   '071_dashboard_api_indexes.sql',
   '072_discounts_product_discount_rules.sql',
-  '073_increase_category_image_length.sql'
+  '073_increase_category_image_length.sql',
+  '070_add_shipping_fields_to_sales.sql',
+  '071_increase_image_url_length.sql',
+  '074_add_shipping_name_to_sales_orders.sql'
 ];
 
 async function ensureMigrationsTable() {
