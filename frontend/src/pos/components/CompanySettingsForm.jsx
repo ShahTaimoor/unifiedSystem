@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Building, Phone, MapPin, Mail, FileText, Image, Save } from 'lucide-react';
+import { Building, Phone, MapPin, Mail, FileText, Image, Save, Share2, Map, Globe, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useFetchCompanyQuery,
@@ -26,6 +26,17 @@ export function CompanySettingsForm() {
     taxRegistrationNumber: '',
     taxEnabled: false,
     defaultTaxRate: 0,
+    whatsappNumber: '',
+    facebookLink: '',
+    instagramLink: '',
+    tiktokLink: '',
+    mapLocation: '',
+    showWhatsapp: true,
+    showFacebook: true,
+    showInstagram: true,
+    showTiktok: true,
+    showMapLocation: true,
+    showContactInfo: true,
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -55,6 +66,17 @@ export function CompanySettingsForm() {
         settings.defaultTaxRate != null && settings.defaultTaxRate !== ''
           ? Number(settings.defaultTaxRate)
           : 0,
+      whatsappNumber: settings.whatsappNumber ?? '',
+      facebookLink: settings.facebookLink ?? '',
+      instagramLink: settings.instagramLink ?? '',
+      tiktokLink: settings.tiktokLink ?? '',
+      mapLocation: settings.mapLocation ?? '',
+      showWhatsapp: settings.showWhatsapp !== false,
+      showFacebook: settings.showFacebook !== false,
+      showInstagram: settings.showInstagram !== false,
+      showTiktok: settings.showTiktok !== false,
+      showMapLocation: settings.showMapLocation !== false,
+      showContactInfo: settings.showContactInfo !== false,
     }));
   }, [
     company.companyName,
@@ -67,6 +89,17 @@ export function CompanySettingsForm() {
     settings.taxId,
     settings.taxEnabled,
     settings.defaultTaxRate,
+    settings.whatsappNumber,
+    settings.facebookLink,
+    settings.instagramLink,
+    settings.tiktokLink,
+    settings.mapLocation,
+    settings.showWhatsapp,
+    settings.showFacebook,
+    settings.showInstagram,
+    settings.showTiktok,
+    settings.showMapLocation,
+    settings.showContactInfo,
   ]);
 
   useEffect(() => {
@@ -118,6 +151,17 @@ export function CompanySettingsForm() {
         taxId: form.taxRegistrationNumber,
         taxEnabled: !!form.taxEnabled,
         defaultTaxRate: Math.min(100, Math.max(0, Number(form.defaultTaxRate) || 0)),
+        whatsappNumber: form.whatsappNumber,
+        facebookLink: form.facebookLink,
+        instagramLink: form.instagramLink,
+        tiktokLink: form.tiktokLink,
+        mapLocation: form.mapLocation,
+        showWhatsapp: !!form.showWhatsapp,
+        showFacebook: !!form.showFacebook,
+        showInstagram: !!form.showInstagram,
+        showTiktok: !!form.showTiktok,
+        showMapLocation: !!form.showMapLocation,
+        showContactInfo: !!form.showContactInfo,
         orderSettings: {
           ...orderSettings,
           dashboardLogoSize: dashboardLogoSize,
@@ -281,6 +325,183 @@ export function CompanySettingsForm() {
             placeholder="Enter address"
             className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
+        </div>
+      </div>
+
+      {/* Online Presence & Location Settings Section */}
+      <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Online Presence & Location Settings</h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Configure links to your social media channels, contact visibility, and Google Maps embed location.
+          </p>
+        </div>
+
+        {/* Visibility Toggles Grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 bg-slate-50 p-4 rounded-lg border border-gray-100">
+          <label className="flex items-center gap-3 cursor-pointer py-1">
+            <input
+              type="checkbox"
+              name="showContactInfo"
+              checked={!!form.showContactInfo}
+              onChange={(e) => setForm((prev) => ({ ...prev, showContactInfo: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Show General Contact Info</span>
+          </label>
+          
+          <label className="flex items-center gap-3 cursor-pointer py-1">
+            <input
+              type="checkbox"
+              name="showWhatsapp"
+              checked={!!form.showWhatsapp}
+              onChange={(e) => setForm((prev) => ({ ...prev, showWhatsapp: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Show WhatsApp Link</span>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer py-1">
+            <input
+              type="checkbox"
+              name="showFacebook"
+              checked={!!form.showFacebook}
+              onChange={(e) => setForm((prev) => ({ ...prev, showFacebook: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Show Facebook Link</span>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer py-1">
+            <input
+              type="checkbox"
+              name="showInstagram"
+              checked={!!form.showInstagram}
+              onChange={(e) => setForm((prev) => ({ ...prev, showInstagram: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Show Instagram Link</span>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer py-1">
+            <input
+              type="checkbox"
+              name="showTiktok"
+              checked={!!form.showTiktok}
+              onChange={(e) => setForm((prev) => ({ ...prev, showTiktok: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Show TikTok Link</span>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer py-1">
+            <input
+              type="checkbox"
+              name="showMapLocation"
+              checked={!!form.showMapLocation}
+              onChange={(e) => setForm((prev) => ({ ...prev, showMapLocation: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm font-medium text-gray-700">Show Map Location</span>
+          </label>
+        </div>
+
+        {/* Input Fields */}
+        <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
+          {/* WhatsApp Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">WhatsApp number</label>
+            <div className="relative">
+              <MessageCircle className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                name="whatsappNumber"
+                value={form.whatsappNumber}
+                onChange={handleChange}
+                placeholder="e.g. +92 311 4000096"
+                className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          {/* Facebook Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Facebook link</label>
+            <div className="relative">
+              <Share2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="url"
+                name="facebookLink"
+                value={form.facebookLink}
+                onChange={handleChange}
+                placeholder="https://facebook.com/yourpage"
+                className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          {/* Instagram Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Instagram link</label>
+            <div className="relative">
+              <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="url"
+                name="instagramLink"
+                value={form.instagramLink}
+                onChange={handleChange}
+                placeholder="https://instagram.com/yourprofile"
+                className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          {/* TikTok Field */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">TikTok link</label>
+            <div className="relative">
+              <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input
+                type="url"
+                name="tiktokLink"
+                value={form.tiktokLink}
+                onChange={handleChange}
+                placeholder="https://tiktok.com/@yourprofile"
+                className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Map Embed URL */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-gray-700">Map location / embed link</label>
+            <span className="text-xs text-gray-500">Provide the iframe src value from Google Maps</span>
+          </div>
+          <div className="relative">
+            <Map className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <textarea
+              name="mapLocation"
+              value={form.mapLocation}
+              onChange={handleChange}
+              rows={3}
+              placeholder="https://www.google.com/maps/embed?pb=..."
+              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+          {form.mapLocation && form.showMapLocation && (
+            <div className="mt-2 rounded-lg border border-gray-200 overflow-hidden h-40">
+              <iframe
+                src={form.mapLocation}
+                title="Location Map Preview"
+                className="w-full h-full border-none"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          )}
         </div>
       </div>
 

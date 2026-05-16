@@ -45,6 +45,17 @@ class SettingsRepository {
       defaultTaxRate: row.default_tax_rate != null ? parseFloat(row.default_tax_rate) : 0,
       printSettings: typeof row.print_settings === 'string' ? JSON.parse(row.print_settings) : (row.print_settings || {}),
       orderSettings: typeof row.order_settings === 'string' ? JSON.parse(row.order_settings || '{}') : (row.order_settings || {}),
+      whatsappNumber: row.whatsapp_number,
+      facebookLink: row.facebook_link,
+      instagramLink: row.instagram_link,
+      tiktokLink: row.tiktok_link,
+      mapLocation: row.map_location,
+      showWhatsapp: row.show_whatsapp !== false,
+      showFacebook: row.show_facebook !== false,
+      showInstagram: row.show_instagram !== false,
+      showTiktok: row.show_tiktok !== false,
+      showMapLocation: row.show_map_location !== false,
+      showContactInfo: row.show_contact_info !== false,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };
@@ -70,7 +81,18 @@ class SettingsRepository {
       taxEnabled: 'tax_enabled',
       defaultTaxRate: 'default_tax_rate',
       printSettings: 'print_settings',
-      orderSettings: 'order_settings'
+      orderSettings: 'order_settings',
+      whatsappNumber: 'whatsapp_number',
+      facebookLink: 'facebook_link',
+      instagramLink: 'instagram_link',
+      tiktokLink: 'tiktok_link',
+      mapLocation: 'map_location',
+      showWhatsapp: 'show_whatsapp',
+      showFacebook: 'show_facebook',
+      showInstagram: 'show_instagram',
+      showTiktok: 'show_tiktok',
+      showMapLocation: 'show_map_location',
+      showContactInfo: 'show_contact_info'
     };
     const setClauses = [];
     const params = [];

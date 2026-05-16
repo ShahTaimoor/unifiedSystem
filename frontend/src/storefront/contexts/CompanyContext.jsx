@@ -16,7 +16,18 @@ export const CompanyProvider = ({ children }) => {
     companyName: 'GULTRADERS',
     phone: '+92 311 4000096',
     address: 'Grand Dil jan Plaza, Block A, Shop #7,8,9, Opposite Fahad CNG Pump, Near Toyota Khyber, Ring Road Peshawar, KPK, Pakistan',
-    logo: '/logo.jpeg'
+    logo: '/logo.jpeg',
+    whatsappNumber: '',
+    facebookLink: '',
+    instagramLink: '',
+    tiktokLink: '',
+    mapLocation: '',
+    showWhatsapp: true,
+    showFacebook: true,
+    showInstagram: true,
+    showTiktok: true,
+    showMapLocation: true,
+    showContactInfo: true
   });
   const [loading, setLoading] = useState(true);
 

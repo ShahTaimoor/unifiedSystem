@@ -95,7 +95,8 @@ const MIGRATIONS = [
   '073_increase_category_image_length.sql',
   '070_add_shipping_fields_to_sales.sql',
   '071_increase_image_url_length.sql',
-  '074_add_shipping_name_to_sales_orders.sql'
+  '074_add_shipping_name_to_sales_orders.sql',
+  '075_add_company_info_settings.sql'
 ];
 
 async function ensureMigrationsTable() {
