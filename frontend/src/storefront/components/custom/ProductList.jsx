@@ -735,7 +735,7 @@ const ProductList = () => {
     : status === "loading";
 
   return (
-    <div className="max-w-7xl lg:mx-auto lg:px-4 py-2 lg:py-8">
+    <div className="max-w-7xl lg:mx-auto lg:px-4 py-2 lg:py-2">
       {/* Mobile Header - Only visible on mobile */}
       {isMobile && (
         <>

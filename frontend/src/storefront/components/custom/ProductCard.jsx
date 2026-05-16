@@ -36,10 +36,10 @@ const ProductCard = React.memo(({
       e.preventDefault();
     }
     e.stopPropagation();
-    
+
     // Force close keyboard - multiple methods for maximum compatibility
     const activeElement = document.activeElement;
-    
+
     // Method 1: Focus the button itself (forces keyboard to close)
     if (e.target && e.target.focus) {
       e.target.focus();
@@ -49,7 +49,7 @@ const ProductCard = React.memo(({
         }
       }, 0);
     }
-    
+
     // Method 2: Set readonly and blur (iOS trick)
     if (quantityInputRef.current) {
       const input = quantityInputRef.current;
@@ -62,7 +62,7 @@ const ProductCard = React.memo(({
         }
       }, 200);
     }
-    
+
     // Method 3: Blur active element
     if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
       if (activeElement.tagName === 'INPUT') {
@@ -78,7 +78,7 @@ const ProductCard = React.memo(({
         activeElement.blur();
       }
     }
-    
+
     if (clickAudioRef.current) {
       clickAudioRef.current.currentTime = 0;
       clickAudioRef.current.play();
@@ -119,14 +119,14 @@ const ProductCard = React.memo(({
         }
       }, 100);
     }
-    
+
     e.stopPropagation();
     // Only prevent default if the event is cancelable (not passive)
     // Note: React's synthetic touch events are passive by default, so preventDefault may not work
     if (e.cancelable !== false && e.type !== 'touchend') {
       e.preventDefault(); // Prevent click event from firing after touch
     }
-    
+
     handleAddClick(e);
   }, [handleAddClick]);
 
@@ -149,12 +149,12 @@ const ProductCard = React.memo(({
     }
     e.stopPropagation();
     e.stopImmediatePropagation?.();
-    
+
     // Only blur the current card's input to avoid affecting other cards
     if (quantityInputRef.current && quantityInputRef.current === document.activeElement) {
       quantityInputRef.current.blur();
     }
-    
+
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.max(currentQty - 1, 0);
     onQuantityChange(product._id, newValue, product.stock);
@@ -169,12 +169,12 @@ const ProductCard = React.memo(({
     }
     e.stopPropagation();
     e.stopImmediatePropagation?.();
-    
+
     // Only blur the current card's input to avoid affecting other cards
     if (quantityInputRef.current && quantityInputRef.current === document.activeElement) {
       quantityInputRef.current.blur();
     }
-    
+
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.min(currentQty + 1, product.stock);
     onQuantityChange(product._id, newValue, product.stock);
@@ -203,16 +203,14 @@ const ProductCard = React.memo(({
 
   return (
     <div
-      className={`border border-gray-200/80 rounded-xl lg:mt-2 overflow-hidden hover:shadow-2xl hover:shadow-gray-300/30 hover:-translate-y-1 transition-all duration-300 flex h-full bg-white group ${
-        gridType === 'grid3' ? 'flex-row items-stretch' : 'flex-col'
-      }`}
+      className={`border border-gray-200/80 rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-gray-300/30 hover:-translate-y-1 transition-all duration-300 flex h-full bg-white group ${gridType === 'grid3' ? 'flex-row items-stretch' : 'flex-col'
+        }`}
     >
       <div
-        className={`relative cursor-pointer overflow-hidden group ${
-          gridType === 'grid3' 
-            ? 'w-1/4 sm:w-1/8 aspect-square' 
+        className={`relative cursor-pointer overflow-hidden group ${gridType === 'grid3'
+            ? 'w-1/4 sm:w-1/8 aspect-square'
             : 'aspect-square w-full'
-        }`}
+          }`}
       >
         {/* Featured Badge */}
         {product.isFeatured && (
@@ -231,7 +229,7 @@ const ProductCard = React.memo(({
           onClick={handleImageClick}
           fallback="/logo.jpeg"
           quality={85}
-         
+
         />
 
 
@@ -249,40 +247,37 @@ const ProductCard = React.memo(({
               stroke="currentColor"
               strokeWidth={2.5}
             >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-            />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
             </svg>
           </div>
         </div>
       </div>
 
       <div
-        className={`p-4 flex flex-col flex-grow ${
-          gridType === 'grid3' ? 'w-3/4 sm:w-7/8' : 'w-full'
-        }`}
+        className={`p-4 flex flex-col flex-grow ${gridType === 'grid3' ? 'w-3/4 sm:w-7/8' : 'w-full'
+          }`}
       >
-        <h3 className={`font-semibold leading-snug mb-3 text-gray-900 group-hover:text-primary transition-colors duration-200 ${
-          gridType === 'grid3' ? 'text-xs sm:text-sm' : 'text-xs sm:text-sm'
-        }`}>
+        <h3 className={`font-semibold leading-snug mb-3 text-gray-900 group-hover:text-primary transition-colors duration-200 ${gridType === 'grid3' ? 'text-xs sm:text-sm' : 'text-xs sm:text-sm'
+          }`}>
           {capitalizeTitle(product.title)}
         </h3>
-        
+
         <div className="flex-grow" />
 
-        <div className={`flex flex-row gap-2.5 ${
-          gridType === 'grid3' ? 'mt-3' : 'mt-auto'
-        }`}>
+        <div className={`flex flex-row gap-2.5 ${gridType === 'grid3' ? 'mt-3' : 'mt-auto'
+          }`}>
           {/* Quantity Controls - 63% mobile, 50% desktop (same width as button) */}
           <div className="flex items-center justify-center w-[63%] lg:w-1/2">
-            <div 
+            <div
               className="flex w-full items-stretch h-10 sm:h-9 bg-gray-50 border border-gray-200/60 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
               onTouchStart={(e) => {
                 // Prevent scroll when touching the quantity control area
@@ -420,7 +415,7 @@ const ProductCard = React.memo(({
                   }
                 }, 100);
               }
-              
+
               // Focus button to shift focus away from input
               if (addToCartButtonRef.current) {
                 addToCartButtonRef.current.focus();
@@ -430,7 +425,7 @@ const ProductCard = React.memo(({
                   }
                 }, 0);
               }
-              
+
               handleAddClick(e);
             }}
             onMouseDown={(e) => {
@@ -446,7 +441,7 @@ const ProductCard = React.memo(({
                   }
                 }, 100);
               }
-              
+
               // Focus button to shift focus
               if (addToCartButtonRef.current) {
                 addToCartButtonRef.current.focus();
@@ -465,23 +460,22 @@ const ProductCard = React.memo(({
                   }
                 }, 100);
               }
-              
+
               // Focus button to shift focus
               if (addToCartButtonRef.current) {
                 addToCartButtonRef.current.focus();
               }
-              
+
               handleTouchStart(e);
             }}
             onTouchEnd={handleTouchEnd}
             disabled={isDisabled}
-            className={`text-xs font-semibold cursor-pointer px-3 md:px-4 h-10 sm:h-9 rounded-lg transition-all duration-200 shadow-md hover:shadow-xl flex items-center justify-center gap-1.5 md:gap-2 w-[37%] lg:w-1/2 active:scale-[0.98] ${
-              isInCart
+            className={`text-xs font-semibold cursor-pointer px-3 md:px-4 h-10 sm:h-9 rounded-lg transition-all duration-200 shadow-md hover:shadow-xl flex items-center justify-center gap-1.5 md:gap-2 w-[37%] lg:w-1/2 active:scale-[0.98] ${isInCart
                 ? 'bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white shadow-gray-900/20'
                 : isDisabled
                   ? 'bg-gray-200 cursor-not-allowed text-gray-400 shadow-none'
                   : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white hover:scale-[1.02] shadow-primary/30'
-            }`}
+              }`}
             style={{
               touchAction: 'manipulation',
               WebkitTouchCallout: 'none',

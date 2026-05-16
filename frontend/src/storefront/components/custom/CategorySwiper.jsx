@@ -44,7 +44,7 @@ const CategorySwiper = React.memo(
         >
           {categoryChunks.map((chunk, idx) => (
             <SwiperSlide key={idx}>
-              <div className="grid grid-cols-4 lg:grid-cols-8 mt-4  pb-6 gap-2">
+              <div className="grid grid-cols-4 lg:grid-cols-8 mt-4 pb-2 gap-2">
                 {chunk
                   .filter((cat) => cat && cat._id)
                   .map((cat, index) => (
