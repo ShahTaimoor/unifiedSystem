@@ -3128,27 +3128,44 @@ const SalesOrders = ({ tabId }) => {
                                 <Receipt className="h-4 w-4" />
                               </LoadingButton>
                             )}
-                            {order.status === 'draft' && (
+                            {/* Always allow View (which includes Item Wise Confirmation) */}
+                            <button
+                              onClick={() => {
+                                setShowViewModal(true);
+                                setSelectedOrder(order);
+                              }}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View & Item Confirmation"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            
+                            {(order.status === 'draft' || order.status === 'confirmed') && (
+                              <button
+                                onClick={() => handleEdit(order)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="Edit"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                            )}
+                            
+                            {order.status !== 'cancelled' && order.status !== 'closed' && (
                               <>
-                                <button
-                                  onClick={() => handleEdit(order)}
-                                  className="text-indigo-600 hover:text-indigo-900"
-                                  title="Edit"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                                <LoadingButton
-                                  onClick={() => handleConfirm(order?.id ?? order?._id)}
-                                  isLoading={confirming}
-                                  size="icon-sm"
-                                  iconOnly
-                                  variant="ghost"
-                                  className="text-green-600 hover:text-green-900 shrink-0"
-                                  title="Confirm & create sales invoice (this becomes a Sale)"
-                                  disabled={confirming}
-                                >
-                                  <CheckCircle className="h-4 w-4" />
-                                </LoadingButton>
+                                {order.status === 'draft' && (
+                                  <LoadingButton
+                                    onClick={() => handleConfirm(order?.id ?? order?._id)}
+                                    isLoading={confirming}
+                                    size="icon-sm"
+                                    iconOnly
+                                    variant="ghost"
+                                    className="text-green-600 hover:text-green-900 shrink-0"
+                                    title="Confirm Order"
+                                    disabled={confirming}
+                                  >
+                                    <CheckCircle className="h-4 w-4" />
+                                  </LoadingButton>
+                                )}
                                 <LoadingButton
                                   onClick={() => handleCancel(order?.id ?? order?._id)}
                                   isLoading={cancelling}
@@ -3156,7 +3173,7 @@ const SalesOrders = ({ tabId }) => {
                                   iconOnly
                                   variant="ghost"
                                   className="text-red-600 hover:text-red-900 shrink-0"
-                                  title="Cancel Order"
+                                  title="Cancel Order / Invoice"
                                   disabled={cancelling}
                                 >
                                   <XCircle className="h-4 w-4" />

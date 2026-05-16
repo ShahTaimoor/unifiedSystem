@@ -77,9 +77,9 @@ const requireStaff = (req, res, next) => {
     return res.status(401).json({ message: 'Authentication required' });
   }
 
-  // Strictly deny customers from POS-related APIs
+  // Strictly deny customers from POS-related APIs (Return 401 so POS frontend clears the invalid session)
   if (req.user.role?.toLowerCase() === 'customer') {
-    return res.status(403).json({ message: 'Access denied: Customers cannot access POS system' });
+    return res.status(401).json({ message: 'Access denied: Customers cannot access POS system' });
   }
 
   // Also verify they are using a POS token if available (additional security)
@@ -89,7 +89,7 @@ const requireStaff = (req, res, next) => {
   }
 
   if (!staffRoles.includes(req.user.role?.toLowerCase())) {
-    return res.status(403).json({ message: 'Access denied: Staff privileges required' });
+    return res.status(401).json({ message: 'Access denied: Staff privileges required' });
   }
 
   next();
