@@ -18,7 +18,13 @@ const MobileBottomNav = () => {
     const saved = localStorage.getItem('bottomNavConfig');
     if (saved) {
       try {
-        setConfig(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        // Ensure all paths start with /pos
+        const fixed = parsed.map(item => ({
+          ...item,
+          href: item.href.startsWith('/pos') ? item.href : `/pos${item.href.startsWith('/') ? '' : '/'}${item.href}`
+        }));
+        setConfig(fixed);
       } catch (e) {
         console.error('Failed to parse bottomNavConfig', e);
         setDefaultConfig();
@@ -47,9 +53,15 @@ const MobileBottomNav = () => {
   }, []);
 
   const handleNavigationClick = (item) => {
-    const componentInfo = getComponentInfo(item.href);
+    // Ensure the path starts with /pos/ to avoid navigating to storefront
+    let href = item.href;
+    if (!href.startsWith('/pos')) {
+      href = `/pos${href.startsWith('/') ? '' : '/'}${href}`;
+    }
+
+    const componentInfo = getComponentInfo(href);
     if (componentInfo) {
-      const existingTab = tabs.find(tab => tab.path === item.href);
+      const existingTab = tabs.find(tab => tab.path === href);
       
       const reuseNavigationPaths = new Set([
         '/pos/sales-invoices',
@@ -61,11 +73,6 @@ const MobileBottomNav = () => {
       ]);
 
       if (!componentInfo.allowMultiple && existingTab) {
-        if (reuseNavigationPaths.has(item.href)) {
-          switchToTab(existingTab.id);
-          triggerTabHighlight(existingTab.id);
-          return;
-        }
         switchToTab(existingTab.id);
         triggerTabHighlight(existingTab.id);
         return;
@@ -74,31 +81,35 @@ const MobileBottomNav = () => {
       const tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       openTab({
         title: componentInfo.title,
-        path: item.href,
+        path: href,
         component: componentInfo.component,
         icon: componentInfo.icon,
         allowMultiple: componentInfo.allowMultiple || false,
         props: { tabId: tabId }
       });
     } else {
-      navigate(item.href);
+      navigate(href);
     }
   };
 
   const isActivePath = (href) => {
     const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
-    const normalizedHref = href.replace(/\/$/, '') || '/';
     
     // Check if path matches component registry
-    const componentInfo = getComponentInfo(href);
+    let normalizedHref = href;
+    if (!normalizedHref.startsWith('/pos')) {
+      normalizedHref = `/pos${normalizedHref.startsWith('/') ? '' : '/'}${normalizedHref}`;
+    }
+
+    const componentInfo = getComponentInfo(normalizedHref);
     if (componentInfo) {
       const activeTab = tabs.find(tab => tab.id === activeTabId);
-      const isActiveByTab = activeTab && activeTab.path === href;
-      const isActiveByLocation = normalizedPathname === normalizedHref;
+      const isActiveByTab = activeTab && activeTab.path === normalizedHref;
+      const isActiveByLocation = normalizedPathname === normalizedHref.replace(/\/$/, '') || normalizedPathname === normalizedHref;
       return isActiveByTab || isActiveByLocation;
     }
     
-    return normalizedPathname === normalizedHref;
+    return normalizedPathname === normalizedHref.replace(/\/$/, '') || normalizedPathname === normalizedHref;
   };
 
   // Filter items based on permissions
