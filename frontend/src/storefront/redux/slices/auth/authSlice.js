@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import authService from './authService';
+import { authService as sfAuthService } from '@/storefront/services/authService';
 
 const initialState = {
   user: null,
@@ -58,8 +59,7 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, thunkAPI) => {
     try {
-      const { authService } = await import('@/storefront/services/authService');
-      await authService.logout();
+      await sfAuthService.logout();
       return true;
     } catch (error) {
       return true;
