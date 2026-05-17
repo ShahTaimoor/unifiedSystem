@@ -12,12 +12,11 @@ import AuthDrawer from './components/custom/AuthDrawer';
 import { Toaster } from './components/ui/sonner';
 import { CompanyProvider } from './contexts/CompanyContext';
 
-// Lazy-load layouts and custom components
-const RootLayout = lazy(() => import('./components/layouts/RootLayout'));
-const ProtectedRoute = lazy(() => import('./components/custom/ProtectedRoute'));
+import RootLayout from './components/layouts/RootLayout';
+import ProtectedRoute from './components/custom/ProtectedRoute';
+import Home from './pages/Home';
 
 // Lazy-load pages
-const Home = lazy(() => import('./pages/Home'));
 const Products = lazy(() => import('./pages/Products'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Checkout = lazy(() => import('./pages/Checkout'));

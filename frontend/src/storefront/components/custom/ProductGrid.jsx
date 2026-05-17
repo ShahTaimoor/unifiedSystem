@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import ProductCard from './ProductCard';
-import OneLoader from '../ui/OneLoader';
+import { ProductGridSkeleton } from '../ui/ProductSkeleton';
 
 const ProductGrid = React.memo(({ 
   products, 
@@ -26,8 +26,8 @@ const ProductGrid = React.memo(({
 
   if (loading) {
     return (
-      <div className="flex justify-center py-10">
-        <OneLoader size="large" text="Loading Products..." />
+      <div className="py-2">
+        <ProductGridSkeleton gridType={gridType} count={12} />
       </div>
     );
   }
