@@ -1,5 +1,5 @@
 import React from 'react';
-import BaseModal from '@/components/BaseModal';
+import BaseModal from '../BaseModal';
 
 /**
  * Reusable preview dialog for product/variant images. Replaces the

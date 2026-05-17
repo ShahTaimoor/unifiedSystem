@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { LoadingButton } from '@/components/LoadingSpinner';
 import BarcodeScanner from '@/components/BarcodeScanner';
-import BaseModal from '@/components/BaseModal';
+import BaseModal from '../BaseModal';
 import { useSensitiveDataPermissions } from '@/hooks/useSensitiveDataPermissions';
 import { compressImageFileToDataUrl } from '@/utils/imageCompress';
 

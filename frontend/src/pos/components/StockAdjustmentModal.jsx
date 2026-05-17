@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BaseModal from './BaseModal';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { X, Plus, Minus, Package, AlertTriangle } from 'lucide-react';

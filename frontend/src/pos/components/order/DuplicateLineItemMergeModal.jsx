@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import BaseModal from '@/components/BaseModal';
+import BaseModal from '../BaseModal';
 import { Button } from '@/components/ui/button';
 
 /**

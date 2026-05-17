@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BaseModal from './BaseModal';
 import { Printer } from 'lucide-react';
 import { useGetReturnQuery } from '../store/services/returnsApi';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
