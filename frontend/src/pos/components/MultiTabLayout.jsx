@@ -452,7 +452,7 @@ export const MultiTabLayout = ({ children }) => {
 
   const { data: companyResponse } = useFetchCompanyQuery(undefined, { skip: !user });
   const company = companyResponse?.data || {};
-  const companyName = company.companyName || 'ZARYAB IMPEX';
+  const companyName = (company.companyName || 'ZARYAB IMPEX').slice(0, 18);
   const companyInitial = companyName.charAt(0).toUpperCase();
   const location = useLocation();
   const navigate = useNavigate();
@@ -654,10 +654,10 @@ export const MultiTabLayout = ({ children }) => {
       <div className={`fixed inset-0 z-[1000] lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="pos-app fixed inset-0 bg-black bg-opacity-50 z-[1000] lg:hidden" onClick={() => setSidebarOpen(false)} />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gray-100 shadow-xl z-[1001]">
-          <div className="flex h-14 items-center justify-between px-4 bg-gray-100">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white">{companyInitial}</div>
-              <h1 className="text-lg font-bold tracking-tight text-gray-900">{companyName}</h1>
+          <div className="flex min-h-[3.5rem] py-2 items-center justify-between px-4 bg-gray-100">
+            <div className="flex items-start gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white mt-0.5 flex-shrink-0">{companyInitial}</div>
+              <h1 className="text-lg font-bold tracking-tight text-gray-900 break-words leading-tight">{companyName}</h1>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -688,10 +688,10 @@ export const MultiTabLayout = ({ children }) => {
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-gray-100">
-          <div className="flex h-14 items-center px-6 bg-gray-100">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white">{companyInitial}</div>
-              <h1 className="text-lg font-bold tracking-tight text-gray-900">{companyName}</h1>
+          <div className="flex min-h-[3.5rem] py-2 items-center px-6 bg-gray-100">
+            <div className="flex items-start gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-black font-black text-white mt-0.5 flex-shrink-0">{companyInitial}</div>
+              <h1 className="text-lg font-bold tracking-tight text-gray-900 break-words leading-tight">{companyName}</h1>
             </div>
           </div>
           <nav className="flex-1 space-y-1 px-3 py-6 overflow-y-auto max-h-[calc(100dvh-3.5rem)] scrollbar-thin scrollbar-thumb-gray-200">
